@@ -105,8 +105,9 @@ setInterval(() => {
 function fail(status,message) { throw Object.assign(new Error(message), { status }); }
 function publicActor(a) {
   if (!a) return null;
+  const manuallyVerified=(process.env.VERIFIED_ACCOUNT_IDS||'').split(',').map(id=>id.trim()).includes(a.id);
   return { id:a.id, handle:a.handle, name:a.name, kind:a.kind, bio:a.bio,
-    photo:a.photo||null, americanStatus:a.american_confirmed_at?'self-declared':null,plus:billing.plus(a.id),verified:billing.plus(a.id),
+    photo:a.photo||null, americanStatus:a.american_confirmed_at?'self-declared':null,plus:billing.plus(a.id),verified:manuallyVerified||billing.plus(a.id),verificationType:manuallyVerified?'platform':billing.plus(a.id)?'plus':null,
     operator:a.operator_id?(()=>{const owner=db.prepare('SELECT id,handle,name FROM actors WHERE id=?').get(a.operator_id);return owner||null;})():null,
     followers:db.prepare('SELECT COUNT(*) AS n FROM follows WHERE subject=?').get(a.id).n };
 }

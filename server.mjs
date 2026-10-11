@@ -1,6 +1,6 @@
 import http from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
-import { DatabaseSync } from 'node:sqlite';
+import { DatabaseSync, backup } from 'node:sqlite';
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -56,12 +56,19 @@ CREATE INDEX IF NOT EXISTS messages_recipient ON messages(recipient,id);
 CREATE INDEX IF NOT EXISTS messages_sender ON messages(sender,id);`);
 function tagName(value) {if(typeof value!=='string'||! /^[\p{L}\p{N}_]{1,64}$/u.test(value))fail(400,'Use a hashtag of 1–64 letters, numbers, or underscores.');return value.toLowerCase();}
 function postRecord(text,parent,root) {
-  const facets=[...mentions(text).map(m=>({index:m.index,features:[{$type:'app.bsky.richtext.facet#mention',did:m.actor.id}]})),...tags(text).map(m=>({index:{byteStart:Buffer.byteLength(text.slice(0,m.index)),byteEnd:Buffer.byteLength(text.slice(0,m.index+m[0].length))},features:[{$type:'app.bsky.richtext.facet#tag',tag:m[1]}]}))].sort((a,b)=>a.index.byteStart-b.index.byteStart);
+  const facets=[...mentions(text).filter(m=>networkActor(m.actor.id)).map(m=>({index:m.index,features:[{$type:'app.bsky.richtext.facet#mention',did:m.actor.id}]})),...tags(text).map(m=>({index:{byteStart:Buffer.byteLength(text.slice(0,m.index)),byteEnd:Buffer.byteLength(text.slice(0,m.index+m[0].length))},features:[{$type:'app.bsky.richtext.facet#tag',tag:m[1]}]}))].sort((a,b)=>a.index.byteStart-b.index.byteStart);
   return {text,createdAt:new Date().toISOString(),...(parent?{reply:{root:{uri:root.uri,cid:root.cid},parent:{uri:parent.uri,cid:parent.cid}}}:{}),...(pds&&facets.length?{facets}:{})};
 }
 const mode = pds || 'preview';
 const previousMode = db.prepare('SELECT value FROM settings WHERE key=?').get('mode');
-if (previousMode && previousMode.value !== mode) throw new Error('Use a separate DATA_DIR for each PDS or preview mode.');
+if (previousMode && previousMode.value !== mode) {
+  if (!(pds && previousMode.value==='preview' && process.env.ALLOW_LEGACY_ACCOUNTS==='true')) throw new Error('Use a separate DATA_DIR for each PDS or preview mode.');
+  await backup(db,join(dir,'before-pds-connection-'+Date.now()+'.sqlite'));
+  db.prepare('UPDATE settings SET value=? WHERE key=?').run(mode,'mode');
+}
+function networkActor(id){return !!pds && id?.startsWith('did:');}
+const handleDomain=process.env.PDS_HANDLE_DOMAIN||null;
+db.exec('CREATE TABLE IF NOT EXISTS login_sessions(token_hash TEXT PRIMARY KEY,actor TEXT NOT NULL,expires INTEGER NOT NULL)');
 db.prepare('INSERT OR IGNORE INTO settings VALUES (?,?)').run('mode', mode);
 if (!pds && !db.prepare('SELECT id FROM actors LIMIT 1').get()) {
   const samples = [
@@ -90,6 +97,7 @@ const hash = token => createHash('sha256').update(token).digest('hex');
 function session(token) {
   const s = token && sessions.get(hash(token));
   if (s && s.expires > Date.now()) return s;
+  if(token){const saved=db.prepare('SELECT actor,expires FROM login_sessions WHERE token_hash=? AND expires>?').get(hash(token),Date.now());if(saved&&!networkActor(saved.actor))return saved;}
   if(token?.startsWith('as_agent_')) {
     const key=db.prepare('SELECT * FROM api_keys WHERE token_hash=? AND revoked IS NULL AND expires>?').get(hash(token),new Date().toISOString());
     if(key)return {actor:key.actor,operator:key.operator,keyId:key.id,scopes:JSON.parse(key.scopes),...(agentPdsSessions.get(key.actor)||{}),expires:Date.parse(key.expires)};
@@ -107,7 +115,7 @@ function publicActor(a) {
   if (!a) return null;
   const manuallyVerified=(process.env.VERIFIED_ACCOUNT_IDS||'').split(',').map(id=>id.trim()).includes(a.id);
   return { id:a.id, handle:a.handle, name:a.name, kind:a.kind, bio:a.bio,
-    photo:a.photo||null, americanStatus:a.american_confirmed_at?'self-declared':null,plus:billing.plus(a.id),verified:manuallyVerified||billing.plus(a.id),verificationType:manuallyVerified?'platform':billing.plus(a.id)?'plus':null,
+    photo:a.photo||null, americanStatus:a.american_confirmed_at?'self-declared':null,networkIdentity:networkActor(a.id),plus:billing.plus(a.id),verified:manuallyVerified||billing.plus(a.id),verificationType:manuallyVerified?'platform':billing.plus(a.id)?'plus':null,
     operator:a.operator_id?(()=>{const owner=db.prepare('SELECT id,handle,name FROM actors WHERE id=?').get(a.operator_id);return owner||null;})():null,
     followers:db.prepare('SELECT COUNT(*) AS n FROM follows WHERE subject=?').get(a.id).n };
 }
@@ -119,6 +127,7 @@ async function xrpc(method, data, jwt, get=false) {
   if (!response.ok) throw Object.assign(new Error(`Account server: ${String(result.error || 'request failed')}`),{status:response.status===401?401:502,code:result.error});
   return result;
 }
+async function adminXrpc(method,data){if(!pds||!process.env.PDS_ADMIN_PASSWORD)fail(503,'Account server administrator credentials are not configured.');const response=await fetch(pds+'/xrpc/'+method,{method:'POST',headers:{Authorization:'Basic '+Buffer.from('admin:'+process.env.PDS_ADMIN_PASSWORD).toString('base64'),'Content-Type':'application/json'},body:JSON.stringify(data),signal:AbortSignal.timeout(15000),redirect:'error'});if(!response.ok)fail(502,'Account server administrator action failed.');return response.json();}
 async function jwtFor(s) {
   if(!s.accessJwt)fail(409,'The operator must reconnect this agent to the account server after the server restarts.');
   if (s.jwtExpires > Date.now()) return s.accessJwt;
@@ -127,12 +136,12 @@ async function jwtFor(s) {
   if(s.keyId)agentPdsSessions.set(s.actor,{accessJwt:s.accessJwt,refreshJwt:s.refreshJwt,jwtExpires:s.jwtExpires});
   return s.accessJwt;
 }
-async function record(s,collection,value) {
-  if (!pds) return {uri:`preview:${randomUUID()}`,cid:'preview'};
+async function record(s,collection,value,localOnly=false) {
+  if (!networkActor(s.actor)||localOnly) return {uri:`preview:${randomUUID()}`,cid:'preview'};
   return xrpc('com.atproto.repo.createRecord', {repo:s.actor,collection,record:{$type:collection,...value}}, await jwtFor(s));
 }
 async function removeRecord(s,uri,collection) {
-  if (pds) await xrpc('com.atproto.repo.deleteRecord',{repo:s.actor,collection,rkey:uri.split('/').at(-1)},await jwtFor(s));
+  if (networkActor(s.actor)&&uri.startsWith('at://')) await xrpc('com.atproto.repo.deleteRecord',{repo:s.actor,collection,rkey:uri.split('/').at(-1)},await jwtFor(s));
 }
 async function body(req) {
   let str='';
@@ -178,7 +187,7 @@ const server = http.createServer(async(req,res)=>{
         const rows=db.prepare(`SELECT m.*,CASE WHEN sender=? THEN recipient ELSE sender END AS peer FROM messages m WHERE (sender=? OR recipient=?) AND id IN (SELECT MAX(id) FROM messages WHERE sender=? OR recipient=? GROUP BY CASE WHEN sender=? THEN recipient ELSE sender END) ORDER BY id DESC`).all(me,me,me,me,me,me);
         return json(res,200,{conversations:rows.map(m=>({...m,peer:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(m.peer)),unread:db.prepare('SELECT COUNT(*) AS n FROM messages WHERE recipient=? AND sender=? AND seen=0').get(me,m.peer).n})),unread:db.prepare('SELECT COUNT(*) AS n FROM messages WHERE recipient=? AND seen=0').get(me).n});
       }
-      if(path==='/api/config') return json(res,200,{name:'Amerika Social',tagline:'The Social Square of America',americanConfirmationRequired:true,rules:{version:rulesVersion,prohibited},feedOrder:'newest-first',mode:pds?'atproto':'preview',pds:pds||null});
+      if(path==='/api/config') return json(res,200,{name:'Amerika Social',tagline:'The Social Square of America',americanConfirmationRequired:true,rules:{version:rulesVersion,prohibited},feedOrder:'newest-first',mode:pds?'atproto':'preview',pds:pds||null,handleDomain,managedInvites:!!process.env.PDS_ADMIN_PASSWORD,legacyAccounts:process.env.ALLOW_LEGACY_ACCOUNTS==='true'});
       if(path==='/api/me') {const a=me&&db.prepare('SELECT * FROM actors WHERE id=?').get(me);return json(res,200,{actor:a?ownActor(a):null});}
       if(path==='/api/actors') return json(res,200,{actors:db.prepare('SELECT * FROM actors ORDER BY handle LIMIT 100').all().map(a=>({...publicActor(a),following:!!(me&&db.prepare('SELECT actor FROM follows WHERE actor=? AND subject=?').get(me,a.id))}))});
       if(path==='/api/profile') {
@@ -223,11 +232,12 @@ const server = http.createServer(async(req,res)=>{
     if(path==='/api/register'||path==='/api/login'||path==='/api/agents') {
       const creatingAgent=path==='/api/agents';
       let owner=null;if(creatingAgent){if(!s)fail(401,'Sign in to create an agent.');owner=operatorOnly(s);requireRules(owner);}
-      const handle=textField(b.handle,253,'a handle').toLowerCase();
+      let handle=textField(b.handle,253,'a handle').toLowerCase();
       const password=textField(b.password,256,'a password');
       if(password.length<10)fail(400,'Use a password of at least 10 characters.');
       let a,auth;
       if(path==='/api/register'||creatingAgent) {
+        if(pds&&handleDomain&&!handle.includes('.')){if(db.prepare('SELECT id FROM actors WHERE handle=?').get(handle))fail(409,'Handle already registered.');handle=handle+'.'+handleDomain;}
         if (b.americanConfirmed !== true) fail(400,'Confirm that you are American to join. For agent accounts, the operator must be American.');
         if (b.rulesAccepted !== true) fail(400,'Agree to the Community Rules to join. Crypto miners, phishing, card fraud & testing, spam, pirated content, and anything illegal are strictly banned.');
         const name=textField(b.name,64,'a display name'); const kind=creatingAgent?'agent':b.kind;
@@ -237,7 +247,8 @@ const server = http.createServer(async(req,res)=>{
         if(db.prepare('SELECT id FROM actors WHERE handle=?').get(handle))fail(409,'Handle already registered.');
         const bio=typeof b.bio==='string'?b.bio.slice(0,300):'';
         if(pds) {
-          auth=await xrpc('com.atproto.server.createAccount',{handle,password,email:textField(b.email,320,'an email address'),...(b.inviteCode?{inviteCode:b.inviteCode}:{})});
+          const inviteCode=b.inviteCode||(process.env.PDS_ADMIN_PASSWORD?(await adminXrpc('com.atproto.server.createInviteCode',{useCount:1})).code:null);
+          auth=await xrpc('com.atproto.server.createAccount',{handle,password,email:textField(b.email,320,'an email address'),...(inviteCode?{inviteCode}:{})});
           a={id:auth.did,handle:auth.handle,name,kind,bio};
           db.prepare('INSERT INTO actors(id,handle,name,kind,bio) VALUES (?,?,?,?,?)').run(a.id,a.handle,name,kind,bio);
           // Account creation remains successful if optional profile publication fails.
@@ -249,7 +260,7 @@ const server = http.createServer(async(req,res)=>{
         }
       } else {
         a=db.prepare('SELECT * FROM actors WHERE handle=?').get(handle);
-        if(pds){ auth=await xrpc('com.atproto.server.createSession',{identifier:handle,password}); a=db.prepare('SELECT * FROM actors WHERE id=?').get(auth.did); if(!a)fail(403,'This account is not enrolled in Amerika Social. Register through Amerika Social first.'); }
+        if(pds&&(!a||networkActor(a.id))){ if(!a&&handleDomain&&!handle.includes('.'))handle=handle+'.'+handleDomain;auth=await xrpc('com.atproto.server.createSession',{identifier:handle,password}); a=db.prepare('SELECT * FROM actors WHERE id=?').get(auth.did); if(!a)fail(403,'This account is not enrolled in Amerika Social. Register through Amerika Social first.'); }
         else {if(!a?.password || !timingSafeEqual(Buffer.from(a.password,'hex'),scryptSync(password,a.salt,64)))fail(401,'Incorrect handle or password.');}
       }
       if(a.rules_version!==rulesVersion||!a.rules_accepted_at){if(b.rulesAccepted!==true)fail(403,'Agree to the current Community Rules to continue.');acceptRules(a.id);}
@@ -264,6 +275,7 @@ const server = http.createServer(async(req,res)=>{
       }
       const newToken=randomBytes(32).toString('base64url');
       sessions.set(hash(newToken),{actor:a.id,expires:Date.now()+24*3600000,...(auth?{accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000}:{})});
+      if(!networkActor(a.id))db.prepare('INSERT INTO login_sessions VALUES (?,?,?)').run(hash(newToken),a.id,Date.now()+24*3600000);
       return json(res,200,{token:newToken,expiresIn:86400,actor:ownActor(db.prepare('SELECT * FROM actors WHERE id=?').get(a.id)),...(a.profileWarning?{warning:a.profileWarning}:{})});
     }
     if(!s)fail(401,'Sign in to continue.');
@@ -277,7 +289,7 @@ const server = http.createServer(async(req,res)=>{
       if(b.rulesAccepted!==true)fail(400,'Agree to the Community Rules for this agent.');
       operatorOnly(s);const handle=textField(b.handle,253,'the agent handle').toLowerCase();const password=textField(b.password,256,'the agent password');const a=db.prepare('SELECT * FROM actors WHERE handle=?').get(handle);
       if(!a||a.kind!=='agent')fail(404,'Agent account not found.');if(a.operator_id&&a.operator_id!==me)fail(403,'This agent is already linked to another operator.');
-      if(pds){const auth=await xrpc('com.atproto.server.createSession',{identifier:handle,password});if(auth.did!==a.id)fail(403,'Agent identity mismatch.');agentPdsSessions.set(a.id,{accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000});}
+      if(networkActor(a.id)){const auth=await xrpc('com.atproto.server.createSession',{identifier:handle,password});if(auth.did!==a.id)fail(403,'Agent identity mismatch.');agentPdsSessions.set(a.id,{accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000});}
       else if(!a.password||!timingSafeEqual(Buffer.from(a.password,'hex'),scryptSync(password,a.salt,64)))fail(401,'Incorrect agent credentials.');
       db.prepare('UPDATE actors SET operator_id=?,american_confirmed_at=COALESCE(american_confirmed_at,?) WHERE id=?').run(me,new Date().toISOString(),a.id);
       if(a.rules_version!==rulesVersion||!a.rules_accepted_at)acceptRules(a.id);
@@ -292,7 +304,7 @@ const server = http.createServer(async(req,res)=>{
       return json(res,201,{id,token:secret,expires,scopes:b.scopes});
     }
     if(path==='/api/agent-keys/revoke') {operatorOnly(s);const key=db.prepare('SELECT id FROM api_keys WHERE id=? AND operator=?').get(b.id,me);if(!key)fail(404,'Credential not found.');db.prepare('UPDATE api_keys SET revoked=? WHERE id=?').run(new Date().toISOString(),b.id);return json(res,200,{ok:true});}
-    if(path==='/api/logout'){sessions.delete(hash(token));return json(res,200,{ok:true});}
+    if(path==='/api/logout'){sessions.delete(hash(token));db.prepare('DELETE FROM login_sessions WHERE token_hash=?').run(hash(token));return json(res,200,{ok:true});}
     if(path==='/api/billing/checkout'||path==='/api/billing/portal'||path==='/api/billing/refresh'){if(s.keyId)fail(403,'Sign in to manage billing.');const actor=billingActor(s,b.actor);requireRules(actor);if(path.endsWith('/refresh')){if(billing.enabled)await billing.refresh(actor.id);return json(res,200,billing.status(actor.id));}return json(res,200,await (path.endsWith('/checkout')?billing.checkout(actor):billing.customerPortal(actor)));}
     if(path==='/api/hashtags/follow'){const tag=tagName(b.tag);if(typeof b.following!=='boolean')fail(400,'Choose follow or unfollow.');if(b.following)db.prepare('INSERT OR IGNORE INTO tag_follows VALUES (?,?)').run(me,tag);else db.prepare('DELETE FROM tag_follows WHERE actor=? AND tag=?').run(me,tag);return json(res,200,{tag,following:b.following});}
     if(path==='/api/messages') {
@@ -317,10 +329,10 @@ const server = http.createServer(async(req,res)=>{
           const valid=match[1]==='png'?bytes.subarray(0,8).equals(Buffer.from('89504e470d0a1a0a','hex')):match[1]==='jpeg'?bytes[0]===255&&bytes[1]===216&&bytes[2]===255:bytes.toString('ascii',0,4)==='RIFF'&&bytes.toString('ascii',8,12)==='WEBP';
           if(!valid||bytes.length>150000)fail(400,'Photo must be a valid image smaller than 150 KB.');
           photo=b.photo;
-          if(pds){const response=await fetch(`${pds}/xrpc/com.atproto.repo.uploadBlob`,{method:'POST',headers:{Authorization:`Bearer ${await jwtFor(s)}`,'Content-Type':`image/${match[1]}`},body:bytes,signal:AbortSignal.timeout(15000),redirect:'error'});if(!response.ok)fail(502,'Could not upload the photo to your account server.');blob=(await response.json()).blob;}
+          if(networkActor(me)){const response=await fetch(`${pds}/xrpc/com.atproto.repo.uploadBlob`,{method:'POST',headers:{Authorization:`Bearer ${await jwtFor(s)}`,'Content-Type':`image/${match[1]}`},body:bytes,signal:AbortSignal.timeout(15000),redirect:'error'});if(!response.ok)fail(502,'Could not upload the photo to your account server.');blob=(await response.json()).blob;}
         }
       }
-      if(pds) {
+      if(networkActor(me)) {
         let existing={};try{existing=(await xrpc('com.atproto.repo.getRecord',{repo:me,collection:'app.bsky.actor.profile',rkey:'self'},null,true)).value;}catch(e){if(e.code!=='RecordNotFound')throw e;}
         const profile={...existing,$type:'app.bsky.actor.profile',displayName:name,description:b.bio};
         if(b.photo===null)delete profile.avatar;else if(blob)profile.avatar=blob;
@@ -336,7 +348,7 @@ const server = http.createServer(async(req,res)=>{
       if(parent?.deleted)fail(410,'This post was deleted. Choose another reply in the thread.');
       const rootPost=parent?(parent.root?db.prepare('SELECT * FROM posts WHERE uri=?').get(parent.root):parent):null;
       const reservation=parent?null:billing.reserve(me);let result;
-      try{result=await record(s,'app.bsky.feed.post',{...postRecord(text,parent,rootPost),createdAt:created});}catch(e){billing.release(reservation);throw e;}
+      try{result=await record(s,'app.bsky.feed.post',{...postRecord(text,parent,rootPost),createdAt:created},!!parent&&!parent.uri.startsWith('at://'));}catch(e){billing.release(reservation);throw e;}
       db.prepare('INSERT INTO posts(uri,cid,author,text,created,parent,root) VALUES (?,?,?,?,?,?,?)').run(result.uri,result.cid,me,text,created,parent?.uri||null,rootPost?.uri||null);
       billing.confirm(reservation,result.uri);
       if(parent)notify(parent.author,me,'reply',result.uri);
@@ -353,7 +365,7 @@ const server = http.createServer(async(req,res)=>{
         return json(res,200,{ok:true});
       }
       const text=postText(b.text);let cid=post.cid;
-      if(pds){const parent=post.parent?db.prepare('SELECT * FROM posts WHERE uri=?').get(post.parent):null;const root=post.root?db.prepare('SELECT * FROM posts WHERE uri=?').get(post.root):null;const updated=await xrpc('com.atproto.repo.putRecord',{repo:me,collection:'app.bsky.feed.post',rkey:post.uri.split('/').at(-1),swapRecord:post.cid,record:{$type:'app.bsky.feed.post',...postRecord(text,parent,root),createdAt:post.created}},await jwtFor(s));cid=updated.cid;}
+      if(networkActor(me)&&post.uri.startsWith('at://')){const parent=post.parent?db.prepare('SELECT * FROM posts WHERE uri=?').get(post.parent):null;const root=post.root?db.prepare('SELECT * FROM posts WHERE uri=?').get(post.root):null;const updated=await xrpc('com.atproto.repo.putRecord',{repo:me,collection:'app.bsky.feed.post',rkey:post.uri.split('/').at(-1),swapRecord:post.cid,record:{$type:'app.bsky.feed.post',...postRecord(text,parent,root),createdAt:post.created}},await jwtFor(s));cid=updated.cid;}
       const before=new Set(mentions(post.text).map(m=>m.actor.id));
       db.prepare('UPDATE posts SET text=?,cid=?,edited_at=? WHERE uri=?').run(text,cid,new Date().toISOString(),post.uri);
       for(const id of new Set(mentions(text).map(m=>m.actor.id)))if(!before.has(id))notify(id,me,'mention',post.uri);
@@ -364,7 +376,7 @@ const server = http.createServer(async(req,res)=>{
       if(post.deleted)fail(410,'This post was deleted.');
       const existing=db.prepare('SELECT * FROM likes WHERE actor=? AND post=?').get(me,b.uri);
       if(existing){await removeRecord(s,existing.uri,'app.bsky.feed.like');db.prepare('DELETE FROM likes WHERE actor=? AND post=?').run(me,b.uri);}
-      else{const r=await record(s,'app.bsky.feed.like',{subject:{uri:post.uri,cid:post.cid},createdAt:new Date().toISOString()});db.prepare('INSERT INTO likes VALUES (?,?,?)').run(me,b.uri,r.uri);notify(post.author,me,'like',post.uri);}
+      else{const r=await record(s,'app.bsky.feed.like',{subject:{uri:post.uri,cid:post.cid},createdAt:new Date().toISOString()},!post.uri.startsWith('at://'));db.prepare('INSERT INTO likes VALUES (?,?,?)').run(me,b.uri,r.uri);notify(post.author,me,'like',post.uri);}
       return json(res,200,{liked:!existing});
     }
     if(path==='/api/follows') {
@@ -372,7 +384,7 @@ const server = http.createServer(async(req,res)=>{
       if(!db.prepare('SELECT id FROM actors WHERE id=?').get(b.subject))fail(404,'Account not found.');
       const existing=db.prepare('SELECT * FROM follows WHERE actor=? AND subject=?').get(me,b.subject);
       if(existing){await removeRecord(s,existing.uri,'app.bsky.graph.follow');db.prepare('DELETE FROM follows WHERE actor=? AND subject=?').run(me,b.subject);}
-      else{const r=await record(s,'app.bsky.graph.follow',{subject:b.subject,createdAt:new Date().toISOString()});db.prepare('INSERT INTO follows VALUES (?,?,?)').run(me,b.subject,r.uri);notify(b.subject,me,'follow');}
+      else{const r=await record(s,'app.bsky.graph.follow',{subject:b.subject,createdAt:new Date().toISOString()},!networkActor(b.subject));db.prepare('INSERT INTO follows VALUES (?,?,?)').run(me,b.subject,r.uri);notify(b.subject,me,'follow');}
       return json(res,200,{following:!existing});
     }
     fail(404,'Not found.');

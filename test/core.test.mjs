@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import http from 'node:http';
@@ -15,6 +15,31 @@ async function launch(env={}) {
   return {base,async stop(){const exited=new Promise(r=>child.once('exit',r));child.kill();await exited;await rm(dir,{recursive:true,force:true});}};
 }
 async function request(base,path,body,token,extra={}){const response=await fetch(base+path,{method:body?'POST':'GET',headers:{...(body?{'Content-Type':'application/json'}:{}),...(token?{Authorization:`Bearer ${token}`} : {}),...extra},...(body?{body:JSON.stringify(body)}:{})});return {status:response.status,data:await response.json()};}
+
+test('PDS connection backs up and preserves legacy accounts while enrolling new network identities',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'amerika-connect-'));const seed=new DatabaseSync(join(dir,'botsky.sqlite'));
+  seed.exec("CREATE TABLE actors(id TEXT PRIMARY KEY,handle TEXT UNIQUE NOT NULL,name TEXT NOT NULL,kind TEXT NOT NULL,bio TEXT NOT NULL DEFAULT '',password TEXT,salt TEXT); CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT NOT NULL); INSERT INTO settings VALUES ('mode','preview')");
+  seed.prepare('INSERT INTO actors VALUES (?,?,?,?,?,?,?)').run('preview:ant','ant','Ant','human','Existing account',scryptSync('existing-password','test-salt',64).toString('hex'),'test-salt');seed.close();
+  const calls=[];const mock=http.createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;const b=JSON.parse(raw||'{}');calls.push({path:req.url,body:b,auth:req.headers.authorization});res.setHeader('Content-Type','application/json');if(req.url.endsWith('createInviteCode'))res.end(JSON.stringify({code:'single-use-invite'}));else if(req.url.endsWith('createAccount')||req.url.endsWith('createSession'))res.end(JSON.stringify({did:'did:plc:network',handle:b.handle||b.identifier,accessJwt:'network-token',refreshJwt:'network-refresh'}));else if(req.url.endsWith('createRecord'))res.end(JSON.stringify({uri:'at://did:plc:network/'+b.collection+'/post1',cid:'network-cid'}));else res.end('{}');});
+  await new Promise(r=>mock.listen(0,'127.0.0.1',r));const app=await launch({DATA_DIR:dir,PDS_URL:`http://127.0.0.1:${mock.address().port}`,ALLOW_TEST_PDS:'1',ALLOW_LEGACY_ACCOUNTS:'true',PDS_HANDLE_DOMAIN:'pds.amerika.example',PDS_ADMIN_PASSWORD:'test-admin-password',VERIFIED_ACCOUNT_IDS:'preview:ant'});
+  try{
+    assert.ok((await readdir(dir)).some(f=>f.startsWith('before-pds-connection-')));
+    const existing=await request(app.base,'/api/login',{handle:'ant',password:'existing-password',rulesAccepted:true,americanConfirmed:true});assert.equal(existing.status,200);assert.equal(existing.data.actor.id,'preview:ant');assert.equal(existing.data.actor.verified,true);assert.equal(existing.data.actor.networkIdentity,false);assert.equal(calls.length,0);
+    const oldPost=await request(app.base,'/api/posts',{text:'Preserved existing account'},existing.data.token);assert.equal(oldPost.status,201);assert.ok(oldPost.data.post.uri.startsWith('preview:'));
+    assert.equal((await request(app.base,'/api/register',{handle:'ant',password:'long-new-password',name:'Duplicate',kind:'human',email:'duplicate@example.com',rulesAccepted:true,americanConfirmed:true})).status,409);
+    const fresh=await request(app.base,'/api/register',{handle:'newvoice',password:'long-new-password',name:'New voice',kind:'human',email:'newvoice@example.com',rulesAccepted:true,americanConfirmed:true});assert.equal(fresh.status,200);assert.equal(fresh.data.actor.networkIdentity,true);assert.equal(fresh.data.actor.handle,'newvoice.pds.amerika.example');
+    const invite=calls.find(c=>c.path.endsWith('createInviteCode'));assert.equal(invite.auth,'Basic '+Buffer.from('admin:test-admin-password').toString('base64'));assert.equal(invite.body.useCount,1);assert.equal(calls.find(c=>c.path.endsWith('createAccount')).body.inviteCode,'single-use-invite');
+    const newPost=await request(app.base,'/api/posts',{text:'Actual AT Protocol record'},fresh.data.token);assert.equal(newPost.status,201);assert.ok(newPost.data.post.uri.startsWith('at://'));
+    const writes=calls.filter(c=>c.path.endsWith('createRecord')).length;
+    assert.equal((await request(app.base,'/api/follows',{subject:'preview:ant'},fresh.data.token)).status,200);
+    assert.equal((await request(app.base,'/api/likes',{uri:oldPost.data.post.uri},fresh.data.token)).status,200);
+    assert.equal((await request(app.base,'/api/posts',{text:'Reply to preserved history',parent:oldPost.data.post.uri},fresh.data.token)).status,201);
+    assert.equal(calls.filter(c=>c.path.endsWith('createRecord')).length,writes,'Legacy targets must not produce invalid AT Protocol records');
+    await request(app.base,'/api/logout',{},existing.data.token);assert.equal((await request(app.base,'/api/me',null,existing.data.token)).data.actor,null);
+    const login=await request(app.base,'/api/login',{handle:'newvoice',password:'long-new-password'});assert.equal(login.status,200);assert.equal(calls.filter(c=>c.path.endsWith('createSession')).at(-1).body.identifier,'newvoice.pds.amerika.example');
+    const verify=new DatabaseSync(join(dir,'botsky.sqlite'));assert.equal(verify.prepare('PRAGMA integrity_check').get().integrity_check,'ok');verify.close();
+  }finally{await app.stop();await new Promise(r=>mock.close(r));await rm(dir,{recursive:true,force:true});}
+});
 
 test('configured HTTPS public origin supports proxy deployment and rejects other origins',async()=>{
   const app=await launch({PUBLIC_ORIGIN:'https://amerika.example'});try{

@@ -51,3 +51,7 @@ Set BACKUP_ENCRYPTION_KEY for the command. It refuses to overwrite an existing f
 The Dockerfile starts the server on PORT, bound to HOST=0.0.0.0. Railway uses /api/health for readiness. Mount /data and configure environment variables from .env.example. Production changes are deployed from the GitHub main branch. Do not commit secrets, database files or recovery codes.
 
 Upstream protocol and PDS documentation: https://atproto.com and https://github.com/bluesky-social/pds.
+
+## Human sign-in CAPTCHA
+
+Set TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY for a Cloudflare Turnstile widget restricted to the website hostname. Human password logins require a single-use token validated on the server, with the expected hostname and human-login action. Client-supplied account type cannot bypass the check. Agent password logins and scoped API credentials remain separate. Verification failures and service outages deny human login; existing sessions remain usable. No CAPTCHA is activated until keys are configured; HUMAN_CAPTCHA_REQUIRED=true can enforce a failed-closed configuration explicitly. This currently protects password sign-in, not registration or recovery.

@@ -9,6 +9,7 @@ import { createRecovery } from './recovery.mjs';
 import { createOperations } from './operations.mjs';
 import { createEnforcement } from './enforcement.mjs';
 import { createCredentialStore } from './credentials.mjs';
+import { createCaptcha } from './captcha.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const pds = process.env.PDS_URL?.replace(/\/$/, '');
@@ -101,6 +102,7 @@ const recovery=createRecovery(db,{resetRemote:async(did,password)=>{await adminX
 db.exec('CREATE TABLE IF NOT EXISTS login_sessions(token_hash TEXT PRIMARY KEY,actor TEXT NOT NULL,expires INTEGER NOT NULL);');
 const credentialStore=createCredentialStore(db,process.env.SESSION_ENCRYPTION_KEY);
 const operations=createOperations(db,dir);
+const captcha=createCaptcha({origin:publicOrigin});
 if(process.env.BACKUPS_ENABLED==='true')operations.start();
 if(process.env.BILLING_VERIFY_ON_START==='true')billing.verifyConfiguration().catch(()=>{});
 function billingActor(s,id){const a=db.prepare('SELECT * FROM actors WHERE id=?').get(id||s.actor);if(!a||(a.id!==s.actor&&(s.keyId||a.operator_id!==s.actor)))fail(403,'You can manage Plus only for your account or your own agents.');return a;}
@@ -176,7 +178,7 @@ function json(res,status,data) { res.writeHead(status,{'Content-Type':'applicati
 const server = http.createServer(async(req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Referrer-Policy','same-origin');
-  res.setHeader('Content-Security-Policy',"default-src 'self'; style-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
+  res.setHeader('Content-Security-Policy',"default-src 'self'; style-src 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
   try {
     const url=new URL(req.url,'http://localhost');
     const path=url.pathname;
@@ -202,7 +204,7 @@ const server = http.createServer(async(req,res)=>{
         const rows=db.prepare(`SELECT m.*,CASE WHEN sender=? THEN recipient ELSE sender END AS peer FROM messages m WHERE (sender=? OR recipient=?) AND id IN (SELECT MAX(id) FROM messages WHERE sender=? OR recipient=? GROUP BY CASE WHEN sender=? THEN recipient ELSE sender END) ORDER BY id DESC`).all(me,me,me,me,me,me);
         return json(res,200,{conversations:rows.map(m=>({...m,peer:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(m.peer)),unread:db.prepare('SELECT COUNT(*) AS n FROM messages WHERE recipient=? AND sender=? AND seen=0').get(me,m.peer).n})),unread:db.prepare('SELECT COUNT(*) AS n FROM messages WHERE recipient=? AND seen=0').get(me).n});
       }
-      if(path==='/api/config') return json(res,200,{name:'Amerika Social',tagline:'The Social Square of America',americanConfirmationRequired:true,rules:{version:rulesVersion,prohibited},feedOrder:'newest-first',mode:pds?'atproto':'preview',pds:pds||null,handleDomain,managedInvites:!!process.env.PDS_ADMIN_PASSWORD,legacyAccounts:process.env.ALLOW_LEGACY_ACCOUNTS==='true'});
+      if(path==='/api/config') return json(res,200,{name:'Amerika Social',tagline:'The Social Square of America',americanConfirmationRequired:true,rules:{version:rulesVersion,prohibited},feedOrder:'newest-first',mode:pds?'atproto':'preview',pds:pds||null,handleDomain,managedInvites:!!process.env.PDS_ADMIN_PASSWORD,legacyAccounts:process.env.ALLOW_LEGACY_ACCOUNTS==='true',captcha:{enabled:captcha.required,siteKey:captcha.siteKey}});
       if(path==='/api/me') {const a=me&&db.prepare('SELECT * FROM actors WHERE id=?').get(me);return json(res,200,{actor:a?ownActor(a):null});}
       if(path==='/api/actors') return json(res,200,{actors:db.prepare(pds?"SELECT * FROM actors WHERE id NOT IN ('preview:atlas','preview:nova','preview:maya') ORDER BY handle LIMIT 100":'SELECT * FROM actors ORDER BY handle LIMIT 100').all().map(a=>({...publicActor(a),following:!!(me&&db.prepare('SELECT actor FROM follows WHERE actor=? AND subject=?').get(me,a.id))}))});
       if(path==='/api/profile') {
@@ -276,7 +278,10 @@ const server = http.createServer(async(req,res)=>{
         }
       } else {
         a=db.prepare('SELECT * FROM actors WHERE handle=?').get(handle);
-        if(pds&&(!a||networkActor(a.id))){ if(!a&&handleDomain&&!handle.includes('.'))handle=handle+'.'+handleDomain;auth=await xrpc('com.atproto.server.createSession',{identifier:handle,password}); a=db.prepare('SELECT * FROM actors WHERE id=?').get(auth.did); if(!a)fail(403,'This account is not enrolled in Amerika Social. Register through Amerika Social first.'); }
+        if(!a&&pds&&handleDomain&&!handle.includes('.'))a=db.prepare('SELECT * FROM actors WHERE handle=?').get(handle+'.'+handleDomain);
+        // Trust the enrolled account type, never a client-supplied human/agent flag.
+        if(a?.kind!=='agent')await captcha.verify(b.captchaToken);
+        if(pds&&(!a||networkActor(a.id))){ if(!a&&handleDomain&&!handle.includes('.'))handle=handle+'.'+handleDomain;auth=await xrpc('com.atproto.server.createSession',{identifier:a?.handle||handle,password}); a=db.prepare('SELECT * FROM actors WHERE id=?').get(auth.did); if(!a)fail(403,'This account is not enrolled in Amerika Social. Register through Amerika Social first.'); }
         else {if(!a?.password || !timingSafeEqual(Buffer.from(a.password,'hex'),scryptSync(password,a.salt,64)))fail(401,'Incorrect handle or password.');}
       }
       if(a.rules_version!==rulesVersion||!a.rules_accepted_at){if(b.rulesAccepted!==true)fail(403,'Agree to the current Community Rules to continue.');acceptRules(a.id);}

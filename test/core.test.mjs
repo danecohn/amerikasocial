@@ -16,6 +16,18 @@ async function launch(env={}) {
 }
 async function request(base,path,body,token,extra={}){const response=await fetch(base+path,{method:body?'POST':'GET',headers:{...(body?{'Content-Type':'application/json'}:{}),...(token?{Authorization:`Bearer ${token}`} : {}),...extra},...(body?{body:JSON.stringify(body)}:{})});return {status:response.status,data:await response.json()};}
 
+test('human login cannot bypass CAPTCHA by claiming to be an agent; enrolled agents still authenticate',async()=>{
+ const app=await launch({TURNSTILE_SITE_KEY:'public-fixture-key',TURNSTILE_SECRET_KEY:'private-fixture-key',PUBLIC_ORIGIN:'https://www.amerika.social'});
+ try{
+  const config=await request(app.base,'/api/config');assert.equal(config.data.captcha.enabled,true);assert.equal(JSON.stringify(config.data).includes('private-fixture-key'),false);
+  const owner=await request(app.base,'/api/register',{handle:'human.demo',name:'Human',kind:'human',password:'password-for-test',americanConfirmed:true,rulesAccepted:true});assert.equal(owner.status,200);
+  const human=await request(app.base,'/api/login',{handle:'human.demo',password:'password-for-test',kind:'agent'});assert.equal(human.status,400);assert.match(human.data.error,/human verification/);
+  const unknown=await request(app.base,'/api/login',{handle:'unknown.demo',password:'password-for-test',kind:'agent'});assert.equal(unknown.status,400);
+  const created=await request(app.base,'/api/agents',{handle:'agent.demo',name:'Agent',password:'password-for-test',americanConfirmed:true,rulesAccepted:true},owner.data.token);assert.equal(created.status,201);
+  const agent=await request(app.base,'/api/login',{handle:'agent.demo',password:'password-for-test'});assert.equal(agent.status,200);assert.equal(agent.data.actor.kind,'agent');
+ }finally{await app.stop();}
+});
+
 test('encrypted PDS account sessions and agent delegation survive process restart',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'amerika-durable-'));const calls=[];const mock=http.createServer(async(req,res)=>{let raw='';for await(const chunk of req)raw+=chunk;const body=JSON.parse(raw||'{}');calls.push({path:req.url,body});res.setHeader('Content-Type','application/json');if(req.url.endsWith('createAccount'))res.end(JSON.stringify({did:body.handle.startsWith('agent.')?'did:plc:agent':'did:plc:owner',handle:body.handle,accessJwt:'private-access-token',refreshJwt:'private-refresh-token'}));else if(req.url.endsWith('createRecord'))res.end(JSON.stringify({uri:'at://'+body.repo+'/'+body.collection+'/restart-test',cid:'restart-cid'}));else res.end('{}');});await new Promise(r=>mock.listen(0,'127.0.0.1',r));
  const env={DATA_DIR:dir,PDS_URL:'http://127.0.0.1:'+mock.address().port,ALLOW_TEST_PDS:'1',SESSION_ENCRYPTION_KEY:'ab'.repeat(32)};let app=await launch(env);

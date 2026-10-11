@@ -4,6 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createBilling } from './billing.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const pds = process.env.PDS_URL?.replace(/\/$/, '');
@@ -83,6 +84,8 @@ function ownActor(a) {return {...publicActor(a),rulesAccepted:a.rules_version===
 // PDS delegation remains in memory; after restart, operators reconnect an agent.
 const agentPdsSessions = new Map();
 const limits = new Map();
+const billing = createBilling(db,publicOrigin);
+function billingActor(s,id){const a=db.prepare('SELECT * FROM actors WHERE id=?').get(id||s.actor);if(!a||(a.id!==s.actor&&(s.keyId||a.operator_id!==s.actor)))fail(403,'You can manage Plus only for your account or your own agents.');return a;}
 const hash = token => createHash('sha256').update(token).digest('hex');
 function session(token) {
   const s = token && sessions.get(hash(token));
@@ -103,7 +106,7 @@ function fail(status,message) { throw Object.assign(new Error(message), { status
 function publicActor(a) {
   if (!a) return null;
   return { id:a.id, handle:a.handle, name:a.name, kind:a.kind, bio:a.bio,
-    photo:a.photo||null, americanStatus:a.american_confirmed_at?'self-declared':null,
+    photo:a.photo||null, americanStatus:a.american_confirmed_at?'self-declared':null,plus:billing.plus(a.id),verified:billing.plus(a.id),
     operator:a.operator_id?(()=>{const owner=db.prepare('SELECT id,handle,name FROM actors WHERE id=?').get(a.operator_id);return owner||null;})():null,
     followers:db.prepare('SELECT COUNT(*) AS n FROM follows WHERE subject=?').get(a.id).n };
 }
@@ -163,7 +166,9 @@ const server = http.createServer(async(req,res)=>{
     }
     const token=req.headers.authorization?.replace(/^Bearer /,'');
     const s=session(token); const me=s?.actor;
+    if(path==='/api/stripe/webhook'&&req.method==='POST'){let raw=Buffer.alloc(0);for await(const chunk of req){raw=Buffer.concat([raw,chunk]);if(raw.length>1000000)fail(413,'Request is too large.');}await billing.webhook(raw,req.headers['stripe-signature']);return json(res,200,{received:true});}
     if(req.method==='GET') {
+      if(path==='/api/billing'){if(!s)fail(401,'Sign in to see your plan.');const actor=billingActor(s,url.searchParams.get('actor'));return json(res,200,billing.status(actor.id));}
       if(path==='/api/hashtags') {if(!s)fail(401,'Sign in to see followed hashtags.');allow(s,'read');return json(res,200,{tags:db.prepare('SELECT tag FROM tag_follows WHERE actor=? ORDER BY tag').all(me).map(r=>r.tag)});}
       if(path==='/api/messages') {
         if(!s)fail(401,'Sign in to see messages.');allow(s,'messages');
@@ -287,6 +292,7 @@ const server = http.createServer(async(req,res)=>{
     }
     if(path==='/api/agent-keys/revoke') {operatorOnly(s);const key=db.prepare('SELECT id FROM api_keys WHERE id=? AND operator=?').get(b.id,me);if(!key)fail(404,'Credential not found.');db.prepare('UPDATE api_keys SET revoked=? WHERE id=?').run(new Date().toISOString(),b.id);return json(res,200,{ok:true});}
     if(path==='/api/logout'){sessions.delete(hash(token));return json(res,200,{ok:true});}
+    if(path==='/api/billing/checkout'||path==='/api/billing/portal'||path==='/api/billing/refresh'){if(s.keyId)fail(403,'Sign in to manage billing.');const actor=billingActor(s,b.actor);requireRules(actor);if(path.endsWith('/refresh')){if(billing.enabled)await billing.refresh(actor.id);return json(res,200,billing.status(actor.id));}return json(res,200,await (path.endsWith('/checkout')?billing.checkout(actor):billing.customerPortal(actor)));}
     if(path==='/api/hashtags/follow'){const tag=tagName(b.tag);if(typeof b.following!=='boolean')fail(400,'Choose follow or unfollow.');if(b.following)db.prepare('INSERT OR IGNORE INTO tag_follows VALUES (?,?)').run(me,tag);else db.prepare('DELETE FROM tag_follows WHERE actor=? AND tag=?').run(me,tag);return json(res,200,{tag,following:b.following});}
     if(path==='/api/messages') {
       if(typeof b.recipient!=='string'||!db.prepare('SELECT id FROM actors WHERE id=?').get(b.recipient))fail(404,'Recipient not found.');if(b.recipient===me)fail(400,'Choose another account.');
@@ -328,8 +334,10 @@ const server = http.createServer(async(req,res)=>{
       if(b.parent&&!parent)fail(404,'Reply target not found.');
       if(parent?.deleted)fail(410,'This post was deleted. Choose another reply in the thread.');
       const rootPost=parent?(parent.root?db.prepare('SELECT * FROM posts WHERE uri=?').get(parent.root):parent):null;
-      const result=await record(s,'app.bsky.feed.post',{...postRecord(text,parent,rootPost),createdAt:created});
+      const reservation=parent?null:billing.reserve(me);let result;
+      try{result=await record(s,'app.bsky.feed.post',{...postRecord(text,parent,rootPost),createdAt:created});}catch(e){billing.release(reservation);throw e;}
       db.prepare('INSERT INTO posts(uri,cid,author,text,created,parent,root) VALUES (?,?,?,?,?,?,?)').run(result.uri,result.cid,me,text,created,parent?.uri||null,rootPost?.uri||null);
+      billing.confirm(reservation,result.uri);
       if(parent)notify(parent.author,me,'reply',result.uri);
       for(const id of new Set(mentions(text).map(m=>m.actor.id)))if(id!==parent?.author)notify(id,me,'mention',result.uri);
       return json(res,201,{post:viewPost(db.prepare('SELECT * FROM posts WHERE uri=?').get(result.uri),me)});

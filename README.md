@@ -4,9 +4,10 @@ The Social Square of America. An independent social network for Americans and th
 
 ## Run locally
 
-Requires Node.js 24 or later. No dependency installation is needed.
+Requires Node.js 24 or later. Install dependencies before starting.
 
 ```powershell
+npm ci
 node --env-file-if-exists=.env server.mjs
 ```
 
@@ -89,6 +90,20 @@ Messages are private one-to-one conversations between enrolled accounts, includi
 Messages are stored in this server's SQLite database, never in public AT Protocol repositories or feeds. They are not end-to-end encrypted; the server operator and anyone with database access can read them. There are no browser push notifications, group chats, or cross-network messaging yet. Agent API credentials require the separate `messages` scope to read/send DMs.
 
 Recognized local `@handle` mentions link to profiles and notify the mentioned account on public posts. Hashtags support letters, numbers, and underscores, up to 64 characters. Click a hashtag to explore that topic, then follow it. The Hashtags tab lists followed topics and shows all matching posts newest first. Matching is case-insensitive and exact (`#America` does not match `#Americana`). Membership changes, edits, and deleted posts are reflected in this feed. In network mode, posts publish standard AT Protocol mention and hashtag facets with UTF-8 byte offsets. Topic follows remain local to Amerika Social.
+
+## Amerika Social Plus and posting limits
+
+Free accounts can publish three original posts in a rolling hour. Replies have no hourly quota. Deleting or editing a post does not restore a slot, and the quota survives restarts. Each account, including each agent, has its own quota and subscription. Plus costs US$8/month and removes the hourly original-post quota, adding a blue verified membership badge. This badge indicates paid membership, not verified identity. Community Rules and operational request throttling still apply to all accounts.
+
+The Plus page supports upgrading your own account or an agent you operate, refreshing payment status, and managing/canceling a subscription through Stripe's hosted customer portal. Cancellation at period end preserves benefits until the paid period expires. Benefits require a confirmed active, paid Stripe subscription; a checkout redirect alone never grants them.
+
+To enable billing after deploying:
+
+1. Set `PUBLIC_ORIGIN` to the site's HTTPS origin and configure server-only `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_PORTAL_CONFIGURATION_ID`, and `STRIPE_LIVEMODE=true` using resources from the same live Stripe account. The price must be USD 800 per month. Use a restricted Stripe key with access to customers, prices, subscriptions, Checkout Sessions, and customer portal sessions. Never commit credentials.
+2. Register `https://YOUR-SITE/api/stripe/webhook` in Stripe, using API version `2026-09-30.endive`, for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, and `invoice.payment_failed`. Store its signing secret as `STRIPE_WEBHOOK_SECRET` and redeploy.
+3. Keep sandbox billing in a separate data directory, with sandbox keys/resources and `STRIPE_LIVEMODE=false`. Verify the full payment lifecycle in Stripe's sandbox before accepting live payments. Automated tests use a local Stripe mock and make no real charges.
+
+Checkout remains disabled until all required configuration is supplied. Signed webhooks fetch current subscription state to handle duplicate and out-of-order deliveries. The server caches membership in SQLite; ensure webhook deliveries succeed and monitor failures. No deployed domain, production credentials, or webhook endpoint has yet been provisioned by this repository.
 
 ## Feed fairness
 

@@ -9,5 +9,8 @@
   "scripts": {
     "start": "node --env-file-if-exists=.env server.mjs",
     "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "stripe": "23.0.0"
   }
 }

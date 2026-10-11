@@ -25,3 +25,5 @@
 .verified-badge.platform-verified{background:#c83239;color:#fff}
 
 
+
+@media(min-width:701px){.sidebar{height:100dvh;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding-top:24px}.sidebar>nav{flex-shrink:0;gap:4px;margin-bottom:18px}.sidebar>.brand,.sidebar>.primary,.sidebar-bottom,.sidebar>.network-label{flex-shrink:0}.sidebar-bottom{padding-top:24px}.sidebar .nav-item{padding-block:10px}.shell>main{min-width:0;padding-bottom:48px}.rightbar{padding-bottom:48px}}

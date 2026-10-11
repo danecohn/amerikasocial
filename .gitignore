@@ -1,7 +1,13 @@
 data/
-.env
-.env.*
-!.env.example
 node_modules/
 .railway/
 *.log
+
+.projects/cache
+.projects/vault
+.projects/state.test.json
+.projects/state.local.test.json
+.env
+.env.*
+!.env.example
+artifacts/

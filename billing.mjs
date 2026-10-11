@@ -22,6 +22,8 @@ export function createBilling(db,origin) {
   const stripe=key?new StripeClient(key,options):null;
   const enabled=!!(stripe&&secret&&price&&portal&&origin&&(!live||origin.startsWith('https://')));
   const locks=new Map();
+  let verification={status:'not-run'};
+  async function verifyConfiguration(){configured();try{const p=await stripe.prices.retrieve(price);if(!p.active||p.livemode!==live||p.currency!=='usd'||p.unit_amount!==800||p.recurring?.interval!=='month'||p.recurring.interval_count!==1)throw error(503,'The Plus price configuration must be US$8 per month.');await stripe.customers.list({limit:1});await stripe.subscriptions.list({limit:1});verification={status:'passed',checkedAt:new Date().toISOString()};console.info('Stripe configuration verified: US$8 per month and customer/subscription API access.');return verification;}catch(e){verification={status:'failed',checkedAt:new Date().toISOString()};console.error('Stripe configuration verification failed: '+(e.code||e.type||'configuration'));throw e;}}
   async function lock(id,fn){const previous=locks.get(id)||Promise.resolve();let release;const wait=new Promise(r=>release=r);const tail=previous.then(()=>wait);locks.set(id,tail);await previous;try{return await fn();}finally{release();if(locks.get(id)===tail)locks.delete(id);}}
   function configured(){if(!enabled)throw error(503,'Plus checkout is not available yet. Billing setup is still in progress.');}
   function plus(actor){return !!db.prepare("SELECT id FROM billing_subscriptions WHERE actor=? AND status='active' AND paid_until>? LIMIT 1").get(actor,Math.floor(Date.now()/1000));}
@@ -64,5 +66,5 @@ export function createBilling(db,origin) {
       if(id)await syncSubscription(id);
       db.prepare('INSERT OR IGNORE INTO stripe_events VALUES (?,?)').run(event.id,new Date().toISOString());
     });}
-  return {enabled,status,plus,reserve,release,confirm,checkout,customerPortal,webhook,refresh};
+  return {enabled,status,plus,reserve,release,confirm,checkout,customerPortal,webhook,refresh,verifyConfiguration,verification:()=>verification};
 }

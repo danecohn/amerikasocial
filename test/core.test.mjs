@@ -16,6 +16,17 @@ async function launch(env={}) {
 }
 async function request(base,path,body,token,extra={}){const response=await fetch(base+path,{method:body?'POST':'GET',headers:{...(body?{'Content-Type':'application/json'}:{}),...(token?{Authorization:`Bearer ${token}`} : {}),...extra},...(body?{body:JSON.stringify(body)}:{})});return {status:response.status,data:await response.json()};}
 
+test('encrypted PDS account sessions and agent delegation survive process restart',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'amerika-durable-'));const calls=[];const mock=http.createServer(async(req,res)=>{let raw='';for await(const chunk of req)raw+=chunk;const body=JSON.parse(raw||'{}');calls.push({path:req.url,body});res.setHeader('Content-Type','application/json');if(req.url.endsWith('createAccount'))res.end(JSON.stringify({did:body.handle.startsWith('agent.')?'did:plc:agent':'did:plc:owner',handle:body.handle,accessJwt:'private-access-token',refreshJwt:'private-refresh-token'}));else if(req.url.endsWith('createRecord'))res.end(JSON.stringify({uri:'at://'+body.repo+'/'+body.collection+'/restart-test',cid:'restart-cid'}));else res.end('{}');});await new Promise(r=>mock.listen(0,'127.0.0.1',r));
+ const env={DATA_DIR:dir,PDS_URL:'http://127.0.0.1:'+mock.address().port,ALLOW_TEST_PDS:'1',SESSION_ENCRYPTION_KEY:'ab'.repeat(32)};let app=await launch(env);
+ try{const owner=(await request(app.base,'/api/register',{handle:'owner.pds.example',name:'Owner',email:'owner@example.com',kind:'human',password:'owner-password',americanConfirmed:true,rulesAccepted:true})).data;assert.ok(owner.token);const agent=(await request(app.base,'/api/agents',{handle:'agent.pds.example',name:'Agent',email:'agent@example.com',password:'agent-password',americanConfirmed:true,rulesAccepted:true},owner.token)).data.actor;
+ const key=(await request(app.base,'/api/agent-keys',{actor:agent.id,name:'Durable key',scopes:['post'],days:1},owner.token)).data.token;assert.ok(key);
+ const db=new DatabaseSync(join(dir,'botsky.sqlite'));const saved=db.prepare('SELECT pds_session FROM login_sessions WHERE actor=?').get(owner.actor.id);assert.ok(saved.pds_session);assert.equal(saved.pds_session.includes('private-access-token'),false);assert.equal(db.prepare('SELECT encrypted FROM agent_sessions WHERE actor=?').get(agent.id).encrypted.includes('private-refresh-token'),false);db.close();
+ await app.stop();app=await launch(env);assert.equal((await request(app.base,'/api/me',null,owner.token)).data.actor.id,owner.actor.id);assert.equal((await request(app.base,'/api/posts',{text:'Owner after restart'},owner.token)).status,201);assert.equal((await request(app.base,'/api/posts',{text:'Agent after restart'},key)).status,201);
+ await request(app.base,'/api/logout',{},owner.token);assert.equal((await request(app.base,'/api/me',null,owner.token)).data.actor,null);
+ }finally{await app.stop();await new Promise(r=>mock.close(r));await rm(dir,{recursive:true,force:true});}
+});
+
 test('PDS connection backs up and preserves legacy accounts while enrolling new network identities',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'amerika-connect-'));const seed=new DatabaseSync(join(dir,'botsky.sqlite'));
   seed.exec("CREATE TABLE actors(id TEXT PRIMARY KEY,handle TEXT UNIQUE NOT NULL,name TEXT NOT NULL,kind TEXT NOT NULL,bio TEXT NOT NULL DEFAULT '',password TEXT,salt TEXT); CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT NOT NULL); INSERT INTO settings VALUES ('mode','preview')");

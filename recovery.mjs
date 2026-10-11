@@ -1,0 +1,13 @@
+import { randomBytes, createHash, scryptSync } from 'node:crypto';
+const digest=v=>createHash('sha256').update(v).digest('hex');
+const fail=(status,message)=>{throw Object.assign(new Error(message),{status});};
+export function createRecovery(db,{invalidate,resetRemote}={}) {
+  const locks=new Set();
+  db.exec('CREATE TABLE IF NOT EXISTS recovery_codes(hash TEXT PRIMARY KEY,actor TEXT NOT NULL REFERENCES actors(id),created TEXT NOT NULL,used TEXT);');
+  function normalize(code){if(typeof code!=='string'||code.length>100)fail(400,'Invalid recovery code.');return code.replace(/[\s-]/g,'').toUpperCase();}
+  function issue(actor){if(locks.has(actor))fail(409,'Account recovery is in progress. Try again shortly.');const codes=Array.from({length:10},()=>randomBytes(12).toString('hex').toUpperCase().match(/.{1,6}/g).join('-'));db.exec('BEGIN');try{db.prepare('DELETE FROM recovery_codes WHERE actor=?').run(actor);for(const code of codes)db.prepare('INSERT INTO recovery_codes VALUES (?,?,?,NULL)').run(digest(normalize(code)),actor,new Date().toISOString());db.exec('COMMIT');return codes;}catch(e){db.exec('ROLLBACK');throw e;}}
+  function status(actor){return {remaining:db.prepare('SELECT COUNT(*) AS n FROM recovery_codes WHERE actor=? AND used IS NULL').get(actor).n};}
+  async function reset(handle,code,password){if(typeof handle!=='string'||handle.length>253)fail(400,'Enter your account handle.');if(typeof password!=='string'||password.length<10||password.length>256)fail(400,'Use a password of 10–256 characters.');const a=db.prepare('SELECT * FROM actors WHERE handle=?').get(handle.toLowerCase());const h=digest(normalize(code));const record=a&&db.prepare('SELECT hash FROM recovery_codes WHERE hash=? AND actor=? AND used IS NULL').get(h,a.id);if(!record||locks.has(a.id))fail(400,'Incorrect handle or recovery code.');locks.add(a.id);
+    try{if(a.id.startsWith('did:')){if(!resetRemote)fail(503,'Account-server recovery is not configured.');await resetRemote(a.id,password);}const salt=randomBytes(16).toString('hex');db.exec('BEGIN');try{const consumed=db.prepare('UPDATE recovery_codes SET used=? WHERE hash=? AND used IS NULL').run(new Date().toISOString(),h);if(!consumed.changes)fail(400,'This recovery code has already been used.');if(!a.id.startsWith('did:'))db.prepare('UPDATE actors SET password=?,salt=? WHERE id=?').run(scryptSync(password,salt,64).toString('hex'),salt,a.id);db.prepare('UPDATE api_keys SET revoked=? WHERE (actor=? OR operator=?) AND revoked IS NULL').run(new Date().toISOString(),a.id,a.id);invalidate(a.id);db.exec('COMMIT');}catch(e){db.exec('ROLLBACK');throw e;}}finally{locks.delete(a.id);}}
+  return {issue,status,reset};
+}

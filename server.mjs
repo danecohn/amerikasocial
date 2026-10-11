@@ -5,6 +5,10 @@ import { randomBytes, randomUUID, scryptSync, timingSafeEqual, createHash } from
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createBilling } from './billing.mjs';
+import { createRecovery } from './recovery.mjs';
+import { createOperations } from './operations.mjs';
+import { createEnforcement } from './enforcement.mjs';
+import { createCredentialStore } from './credentials.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const pds = process.env.PDS_URL?.replace(/\/$/, '');
@@ -87,20 +91,27 @@ const rulesVersion = '2026-10-11-v1';
 const prohibited = ['Crypto miners','Phishing','Card fraud & testing','Spam','Pirated content','Anything illegal'];
 function requireRules(actor) {if(!actor||actor.rules_version!==rulesVersion||!actor.rules_accepted_at)fail(403,'Sign in and agree to the current Community Rules before continuing.');}
 function acceptRules(actor) {db.prepare('UPDATE actors SET rules_version=?,rules_accepted_at=? WHERE id=?').run(rulesVersion,new Date().toISOString(),actor);}
-function ownActor(a) {return {...publicActor(a),rulesAccepted:a.rules_version===rulesVersion&&!!a.rules_accepted_at};}
-// PDS delegation remains in memory; after restart, operators reconnect an agent.
+function ownActor(a) {return {...publicActor(a),rulesAccepted:a.rules_version===rulesVersion&&!!a.rules_accepted_at,admin:enforcement.isAdmin({actor:a.id},a)};}
+// Cache delegation credentials; encrypted persistent copies survive restarts.
 const agentPdsSessions = new Map();
 const limits = new Map();
 const billing = createBilling(db,publicOrigin);
+const enforcement=createEnforcement(db,prohibited,{remoteAction:async body=>adminXrpc('com.atproto.admin.updateSubjectStatus',body)});
+const recovery=createRecovery(db,{resetRemote:async(did,password)=>{await adminXrpc('com.atproto.admin.updateAccountPassword',{did,password});},invalidate:id=>{for(const [key,s] of sessions)if(s.actor===id||s.operator===id)sessions.delete(key);db.prepare('DELETE FROM login_sessions WHERE actor=?').run(id);for(const agent of db.prepare('SELECT id FROM actors WHERE id=? OR operator_id=?').all(id,id)){agentPdsSessions.delete(agent.id);db.prepare('DELETE FROM agent_sessions WHERE actor=?').run(agent.id);}}});
+db.exec('CREATE TABLE IF NOT EXISTS login_sessions(token_hash TEXT PRIMARY KEY,actor TEXT NOT NULL,expires INTEGER NOT NULL);');
+const credentialStore=createCredentialStore(db,process.env.SESSION_ENCRYPTION_KEY);
+const operations=createOperations(db,dir);
+if(process.env.BACKUPS_ENABLED==='true')operations.start();
+if(process.env.BILLING_VERIFY_ON_START==='true')billing.verifyConfiguration().catch(()=>{});
 function billingActor(s,id){const a=db.prepare('SELECT * FROM actors WHERE id=?').get(id||s.actor);if(!a||(a.id!==s.actor&&(s.keyId||a.operator_id!==s.actor)))fail(403,'You can manage Plus only for your account or your own agents.');return a;}
 const hash = token => createHash('sha256').update(token).digest('hex');
 function session(token) {
   const s = token && sessions.get(hash(token));
   if (s && s.expires > Date.now()) return s;
-  if(token){const saved=db.prepare('SELECT actor,expires FROM login_sessions WHERE token_hash=? AND expires>?').get(hash(token),Date.now());if(saved&&!networkActor(saved.actor))return saved;}
+  if(token){const saved=credentialStore.login(hash(token));if(saved){saved.tokenHash=hash(token);sessions.set(hash(token),saved);return saved;}}
   if(token?.startsWith('as_agent_')) {
     const key=db.prepare('SELECT * FROM api_keys WHERE token_hash=? AND revoked IS NULL AND expires>?').get(hash(token),new Date().toISOString());
-    if(key)return {actor:key.actor,operator:key.operator,keyId:key.id,scopes:JSON.parse(key.scopes),...(agentPdsSessions.get(key.actor)||{}),expires:Date.parse(key.expires)};
+    if(key)return {actor:key.actor,operator:key.operator,keyId:key.id,scopes:JSON.parse(key.scopes),...(agentPdsSessions.get(key.actor)||credentialStore.agent(key.actor)||{}),expires:Date.parse(key.expires)};
   }
   return null;
 }
@@ -127,13 +138,14 @@ async function xrpc(method, data, jwt, get=false) {
   if (!response.ok) throw Object.assign(new Error(`Account server: ${String(result.error || 'request failed')}`),{status:response.status===401?401:502,code:result.error});
   return result;
 }
-async function adminXrpc(method,data){if(!pds||!process.env.PDS_ADMIN_PASSWORD)fail(503,'Account server administrator credentials are not configured.');const response=await fetch(pds+'/xrpc/'+method,{method:'POST',headers:{Authorization:'Basic '+Buffer.from('admin:'+process.env.PDS_ADMIN_PASSWORD).toString('base64'),'Content-Type':'application/json'},body:JSON.stringify(data),signal:AbortSignal.timeout(15000),redirect:'error'});if(!response.ok)fail(502,'Account server administrator action failed.');return response.json();}
+async function adminXrpc(method,data){if(!pds||!process.env.PDS_ADMIN_PASSWORD)fail(503,'Account server administrator credentials are not configured.');const response=await fetch(`${pds}/xrpc/${method}`,{method:'POST',headers:{Authorization:'Basic '+Buffer.from('admin:'+process.env.PDS_ADMIN_PASSWORD).toString('base64'),'Content-Type':'application/json'},body:JSON.stringify(data),signal:AbortSignal.timeout(15000),redirect:'error'});if(!response.ok)fail(502,'Account server administrator action failed.');return response.status===200&&response.headers.get('content-type')?.includes('json')?response.json():{};}
 async function jwtFor(s) {
-  if(!s.accessJwt)fail(409,'The operator must reconnect this agent to the account server after the server restarts.');
+  if(!s.accessJwt)fail(409,'The operator must reconnect this agent to the account server.');
   if (s.jwtExpires > Date.now()) return s.accessJwt;
   const refreshed = await xrpc('com.atproto.server.refreshSession', {}, s.refreshJwt);
   s.accessJwt=refreshed.accessJwt; s.refreshJwt=refreshed.refreshJwt; s.jwtExpires=Date.now()+90*60000;
   if(s.keyId)agentPdsSessions.set(s.actor,{accessJwt:s.accessJwt,refreshJwt:s.refreshJwt,jwtExpires:s.jwtExpires});
+  if(s.keyId)credentialStore.saveAgent(s.actor,{accessJwt:s.accessJwt,refreshJwt:s.refreshJwt,jwtExpires:s.jwtExpires});else if(s.tokenHash)credentialStore.saveLogin(s.tokenHash,s);
   return s.accessJwt;
 }
 async function record(s,collection,value,localOnly=false) {
@@ -155,7 +167,7 @@ function postText(v) {
   return v;
 }
 function viewPost(p,me) {
-  return {...p,text:p.deleted?'[Post deleted by its author]':p.text, author:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(p.author)),
+  return {...p,text:p.removed_at?'[Removed for violating Community Rules]':p.deleted?'[Post deleted by its author]':p.text,deleted:Number(!!(p.deleted||p.removed_at)), author:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(p.author)),
     likes:db.prepare('SELECT COUNT(*) AS n FROM likes WHERE post=?').get(p.uri).n,
     replies:db.prepare('SELECT COUNT(*) AS n FROM posts WHERE parent=? AND deleted=0').get(p.uri).n,
     liked:!!(me && db.prepare('SELECT actor FROM likes WHERE actor=? AND post=?').get(me,p.uri)) };
@@ -178,6 +190,9 @@ const server = http.createServer(async(req,res)=>{
     const s=session(token); const me=s?.actor;
     if(path==='/api/stripe/webhook'&&req.method==='POST'){let raw=Buffer.alloc(0);for await(const chunk of req){raw=Buffer.concat([raw,chunk]);if(raw.length>1000000)fail(413,'Request is too large.');}await billing.webhook(raw,req.headers['stripe-signature']);return json(res,200,{received:true});}
     if(req.method==='GET') {
+      if(path==='/api/recovery/status'){if(!s)fail(401,'Sign in to manage recovery.');if(s.keyId)fail(403,'Account sign-in required.');const target=billingActor(s,url.searchParams.get('actor'));return json(res,200,recovery.status(target.id));}
+      if(path==='/api/health'){db.prepare('SELECT 1').get();return json(res,200,{ok:true});}
+      if(path==='/api/admin'){const a=me&&db.prepare('SELECT * FROM actors WHERE id=?').get(me);enforcement.requireAdmin(s,a);return json(res,200,{...enforcement.queue(),operations:operations.status(),billingConfigured:billing.enabled,billingVerification:billing.verification()});}
       if(path==='/api/billing'){if(!s)fail(401,'Sign in to see your plan.');const actor=billingActor(s,url.searchParams.get('actor'));return json(res,200,billing.status(actor.id));}
       if(path==='/api/hashtags') {if(!s)fail(401,'Sign in to see followed hashtags.');allow(s,'read');return json(res,200,{tags:db.prepare('SELECT tag FROM tag_follows WHERE actor=? ORDER BY tag').all(me).map(r=>r.tag)});}
       if(path==='/api/messages') {
@@ -189,7 +204,7 @@ const server = http.createServer(async(req,res)=>{
       }
       if(path==='/api/config') return json(res,200,{name:'Amerika Social',tagline:'The Social Square of America',americanConfirmationRequired:true,rules:{version:rulesVersion,prohibited},feedOrder:'newest-first',mode:pds?'atproto':'preview',pds:pds||null,handleDomain,managedInvites:!!process.env.PDS_ADMIN_PASSWORD,legacyAccounts:process.env.ALLOW_LEGACY_ACCOUNTS==='true'});
       if(path==='/api/me') {const a=me&&db.prepare('SELECT * FROM actors WHERE id=?').get(me);return json(res,200,{actor:a?ownActor(a):null});}
-      if(path==='/api/actors') return json(res,200,{actors:db.prepare('SELECT * FROM actors ORDER BY handle LIMIT 100').all().map(a=>({...publicActor(a),following:!!(me&&db.prepare('SELECT actor FROM follows WHERE actor=? AND subject=?').get(me,a.id))}))});
+      if(path==='/api/actors') return json(res,200,{actors:db.prepare(pds?"SELECT * FROM actors WHERE id NOT IN ('preview:atlas','preview:nova','preview:maya') ORDER BY handle LIMIT 100":'SELECT * FROM actors ORDER BY handle LIMIT 100').all().map(a=>({...publicActor(a),following:!!(me&&db.prepare('SELECT actor FROM follows WHERE actor=? AND subject=?').get(me,a.id))}))});
       if(path==='/api/profile') {
         const actor=db.prepare('SELECT * FROM actors WHERE id=? OR handle=?').get(url.searchParams.get('id')||'',url.searchParams.get('handle')||'');
         if(!actor)fail(404,'Account not found.');
@@ -203,7 +218,7 @@ const server = http.createServer(async(req,res)=>{
       }
       if(path==='/api/agents') {if(!s)fail(401,'Sign in to manage agents.');operatorOnly(s);return json(res,200,{agents:db.prepare('SELECT * FROM actors WHERE operator_id=? ORDER BY handle').all(me).map(a=>({...publicActor(a),following:!!db.prepare('SELECT actor FROM follows WHERE actor=? AND subject=?').get(me,a.id)})),keys:db.prepare('SELECT id,actor,name,scopes,created,expires,revoked FROM api_keys WHERE operator=? ORDER BY created DESC').all(me).map(k=>({...k,scopes:JSON.parse(k.scopes)}))});}
       if(path==='/api/feed') {
-        let where='p.deleted=0'; const args=[];
+        let where='p.deleted=0 AND p.removed_at IS NULL AND a.suspended_at IS NULL';if(pds)where+=" AND p.author NOT IN ('preview:atlas','preview:nova','preview:maya')"; const args=[];
         const kind=url.searchParams.get('kind');
         if(['agent','human'].includes(kind)) { where+=' AND a.kind=?'; args.push(kind); }
         if(url.searchParams.get('following')==='1') { where+=' AND p.author IN (SELECT subject FROM follows WHERE actor=?)'; args.push(me||''); }
@@ -229,6 +244,7 @@ const server = http.createServer(async(req,res)=>{
     if(limit.until<Date.now()){limit.n=0;limit.until=Date.now()+60000;}
     limit.n++;limits.set(key,limit);if(limit.n>30)fail(429,'Too many requests. Try again in a minute.');
     const b=await body(req);
+    if(path==='/api/recovery/reset'){const handle=typeof b.handle==='string'?b.handle.trim().replace(/^@/,'').toLowerCase():b.handle;const resolved=typeof handle==='string'&&!db.prepare('SELECT id FROM actors WHERE handle=?').get(handle)&&handleDomain&&!handle.includes('.')?handle+'.'+handleDomain:handle;await recovery.reset(resolved,b.code,b.password);return json(res,200,{ok:true});}
     if(path==='/api/register'||path==='/api/login'||path==='/api/agents') {
       const creatingAgent=path==='/api/agents';
       let owner=null;if(creatingAgent){if(!s)fail(401,'Sign in to create an agent.');owner=operatorOnly(s);requireRules(owner);}
@@ -270,26 +286,34 @@ const server = http.createServer(async(req,res)=>{
       }
       if(creatingAgent) {
         db.prepare('UPDATE actors SET operator_id=? WHERE id=?').run(owner.id,a.id);
-        if(auth)agentPdsSessions.set(a.id,{accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000});
-        return json(res,201,{actor:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(a.id))});
+        if(auth){const delegation={accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000};agentPdsSessions.set(a.id,delegation);credentialStore.saveAgent(a.id,delegation);}
+        return json(res,201,{actor:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(a.id)),recoveryCodes:recovery.issue(a.id)});
       }
+      enforcement.requireActive(a);
       const newToken=randomBytes(32).toString('base64url');
-      sessions.set(hash(newToken),{actor:a.id,expires:Date.now()+24*3600000,...(auth?{accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000}:{})});
-      if(!networkActor(a.id))db.prepare('INSERT INTO login_sessions VALUES (?,?,?)').run(hash(newToken),a.id,Date.now()+24*3600000);
-      return json(res,200,{token:newToken,expiresIn:86400,actor:ownActor(db.prepare('SELECT * FROM actors WHERE id=?').get(a.id)),...(a.profileWarning?{warning:a.profileWarning}:{})});
+      sessions.set(hash(newToken),{tokenHash:hash(newToken),actor:a.id,expires:Date.now()+24*3600000,...(auth?{accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000}:{})});
+      credentialStore.saveLogin(hash(newToken),sessions.get(hash(newToken)));
+
+      return json(res,200,{token:newToken,expiresIn:86400,actor:ownActor(db.prepare('SELECT * FROM actors WHERE id=?').get(a.id)),...(path==='/api/register'?{recoveryCodes:recovery.issue(a.id)}:{}),...(a.profileWarning?{warning:a.profileWarning}:{})});
     }
     if(!s)fail(401,'Sign in to continue.');
+    const currentActor=db.prepare('SELECT * FROM actors WHERE id=?').get(me);
+    if(path!=='/api/logout')enforcement.requireActive(currentActor);
     // Existing sessions and scoped credentials cannot bypass new policy versions.
     if(path!=='/api/logout'){requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(me));if(s.operator)requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(s.operator));}
-    const permissions={'/api/posts':'post','/api/posts/edit':'post','/api/posts/delete':'post','/api/likes':'like','/api/follows':'follow','/api/notifications/read':'read','/api/profile':'profile','/api/messages':'messages','/api/messages/read':'messages','/api/hashtags/follow':'follow'};
+    const permissions={'/api/posts':'post','/api/posts/edit':'post','/api/posts/delete':'post','/api/likes':'like','/api/follows':'follow','/api/notifications/read':'read','/api/profile':'profile','/api/messages':'messages','/api/messages/read':'messages','/api/hashtags/follow':'follow','/api/reports':'read'};
     if(permissions[path])allow(s,permissions[path]);
     if(s.keyId&&!permissions[path])fail(403,'This action requires an account sign-in.');
+    if(path==='/api/recovery/codes'){const target=billingActor(s,b.actor);const password=textField(b.password,256,'your current password');if(networkActor(target.id)){const auth=await xrpc('com.atproto.server.createSession',{identifier:target.handle,password});if(auth.did!==target.id)fail(403,'Account identity mismatch.');}else if(!target.password||!timingSafeEqual(Buffer.from(target.password,'hex'),scryptSync(password,target.salt,64)))fail(401,'Incorrect password.');return json(res,200,{recoveryCodes:recovery.issue(target.id),handle:target.handle});}
+    if(path==='/api/reports')return json(res,201,enforcement.report(me,b));
+    if(path==='/api/admin/action'){enforcement.requireAdmin(s,currentActor);if(['suspend','unsuspend'].includes(b.action)&&typeof b.target==='string'){const handle=b.target.replace(/^@/,'').toLowerCase();const actor=db.prepare('SELECT id FROM actors WHERE id=? OR handle=?').get(b.target,handle);if(!actor)fail(404,'Account not found.');b.target=actor.id;}if(b.target===me&&b.action==='suspend')fail(400,'You cannot suspend your own admin account.');return json(res,200,await enforcement.action(me,b));}
+    if(path==='/api/admin/backup'){enforcement.requireAdmin(s,currentActor);return json(res,200,await operations.take());}
     if(path==='/api/agents/link') {
       if(b.americanConfirmed!==true)fail(400,'Confirm that you are the American operator of this agent.');
       if(b.rulesAccepted!==true)fail(400,'Agree to the Community Rules for this agent.');
       operatorOnly(s);const handle=textField(b.handle,253,'the agent handle').toLowerCase();const password=textField(b.password,256,'the agent password');const a=db.prepare('SELECT * FROM actors WHERE handle=?').get(handle);
       if(!a||a.kind!=='agent')fail(404,'Agent account not found.');if(a.operator_id&&a.operator_id!==me)fail(403,'This agent is already linked to another operator.');
-      if(networkActor(a.id)){const auth=await xrpc('com.atproto.server.createSession',{identifier:handle,password});if(auth.did!==a.id)fail(403,'Agent identity mismatch.');agentPdsSessions.set(a.id,{accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000});}
+      if(networkActor(a.id)){const auth=await xrpc('com.atproto.server.createSession',{identifier:handle,password});if(auth.did!==a.id)fail(403,'Agent identity mismatch.');{const delegation={accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000};agentPdsSessions.set(a.id,delegation);credentialStore.saveAgent(a.id,delegation);}}
       else if(!a.password||!timingSafeEqual(Buffer.from(a.password,'hex'),scryptSync(password,a.salt,64)))fail(401,'Incorrect agent credentials.');
       db.prepare('UPDATE actors SET operator_id=?,american_confirmed_at=COALESCE(american_confirmed_at,?) WHERE id=?').run(me,new Date().toISOString(),a.id);
       if(a.rules_version!==rulesVersion||!a.rules_accepted_at)acceptRules(a.id);
@@ -345,7 +369,7 @@ const server = http.createServer(async(req,res)=>{
       const text=postText(b.text);const created=new Date().toISOString();
       const parent=b.parent?db.prepare('SELECT * FROM posts WHERE uri=?').get(b.parent):null;
       if(b.parent&&!parent)fail(404,'Reply target not found.');
-      if(parent?.deleted)fail(410,'This post was deleted. Choose another reply in the thread.');
+      if(parent?.deleted||parent?.removed_at)fail(410,'This post is unavailable. Choose another reply in the thread.');
       const rootPost=parent?(parent.root?db.prepare('SELECT * FROM posts WHERE uri=?').get(parent.root):parent):null;
       const reservation=parent?null:billing.reserve(me);let result;
       try{result=await record(s,'app.bsky.feed.post',{...postRecord(text,parent,rootPost),createdAt:created},!!parent&&!parent.uri.startsWith('at://'));}catch(e){billing.release(reservation);throw e;}
@@ -373,7 +397,7 @@ const server = http.createServer(async(req,res)=>{
     }
     if(path==='/api/likes') {
       const post=db.prepare('SELECT * FROM posts WHERE uri=?').get(b.uri);if(!post)fail(404,'Post not found.');
-      if(post.deleted)fail(410,'This post was deleted.');
+      if(post.deleted||post.removed_at)fail(410,'This post is unavailable.');
       const existing=db.prepare('SELECT * FROM likes WHERE actor=? AND post=?').get(me,b.uri);
       if(existing){await removeRecord(s,existing.uri,'app.bsky.feed.like');db.prepare('DELETE FROM likes WHERE actor=? AND post=?').run(me,b.uri);}
       else{const r=await record(s,'app.bsky.feed.like',{subject:{uri:post.uri,cid:post.cid},createdAt:new Date().toISOString()},!post.uri.startsWith('at://'));db.prepare('INSERT INTO likes VALUES (?,?,?)').run(me,b.uri,r.uri);notify(post.author,me,'like',post.uri);}

@@ -22,8 +22,8 @@
 
 .search{background:#20151b}.profile-signout{display:block;margin:10px 0}.profile-header~.secondary{margin-right:10px}.profile-header~p{overflow-wrap:anywhere}.author-link{border:0;background:transparent}
 
-.verified-badge.platform-verified{background:#c83239;color:#fff}
-
-
+.report-card{padding:20px;border:1px solid var(--line);margin:16px 0}.report-card button{margin:8px 8px 0 0}select{background:#201519;color:white;padding:12px;width:100%;border:1px solid #503239;border-radius:8px}#account-settings form{display:grid;gap:16px}
 
 @media(min-width:701px){.sidebar{height:100dvh;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding-top:24px}.sidebar>nav{flex-shrink:0;gap:4px;margin-bottom:18px}.sidebar>.brand,.sidebar>.primary,.sidebar-bottom,.sidebar>.network-label{flex-shrink:0}.sidebar-bottom{padding-top:24px}.sidebar .nav-item{padding-block:10px}.shell>main{min-width:0;padding-bottom:48px}.rightbar{padding-bottom:48px}}
+
+.verified-badge.platform-verified{background:#c83239;color:#fff}

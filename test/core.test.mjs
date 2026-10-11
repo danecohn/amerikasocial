@@ -18,15 +18,40 @@ async function request(base,path,body,token,extra={}){const response=await fetch
 
 test('configured HTTPS public origin supports proxy deployment and rejects other origins',async()=>{
   const app=await launch({PUBLIC_ORIGIN:'https://amerika.example'});try{
-    const body={handle:'proxy.demo',name:'Proxy test',kind:'human',americanConfirmed:true,password:'proxy-test-password'};
+    const body={handle:'proxy.demo',name:'Proxy test',kind:'human',americanConfirmed:true,rulesAccepted:true,password:'proxy-test-password'};
     assert.equal((await request(app.base,'/api/register',body,null,{Origin:'https://attacker.example','X-Forwarded-Host':'amerika.example','X-Forwarded-Proto':'https'})).status,403);
     assert.equal((await request(app.base,'/api/register',body,null,{Origin:'https://amerika.example'})).status,200);
   }finally{await app.stop();}
 });
 
+test('rules agreement is explicit, durable, private, and required for existing sessions and agent keys',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'amerika-rules-'));const app=await launch({DATA_DIR:dir});try{
+    const details={handle:'rules.demo',name:'Rules test',kind:'human',americanConfirmed:true,password:'rules-test-password'};
+    for(const rulesAccepted of [undefined,false,'true',1])assert.equal((await request(app.base,'/api/register',{...details,...(rulesAccepted===undefined?{}:{rulesAccepted})})).status,400);
+    const a=(await request(app.base,'/api/register',{...details,rulesAccepted:true})).data;
+    assert.equal(a.actor.rulesAccepted,true);const config=(await request(app.base,'/api/config')).data;assert.equal(config.rules.prohibited.length,6);
+    const db=new DatabaseSync(join(dir,'botsky.sqlite'));const accepted=db.prepare('SELECT rules_version,rules_accepted_at FROM actors WHERE id=?').get(a.actor.id);assert.equal(accepted.rules_version,config.rules.version);assert.ok(accepted.rules_accepted_at);
+    assert.equal((await request(app.base,'/api/profile?id='+encodeURIComponent(a.actor.id))).data.actor.rules_accepted_at,undefined);
+    const agent=(await request(app.base,'/api/agents',{handle:'rules-agent.demo',name:'Rules agent',americanConfirmed:true,rulesAccepted:true,password:'rules-test-password'},a.token)).data.actor;
+    const key=(await request(app.base,'/api/agent-keys',{actor:agent.id,name:'Rules key',scopes:['post']},a.token)).data;
+    db.prepare('UPDATE actors SET rules_version=NULL,rules_accepted_at=NULL WHERE id=?').run(a.actor.id);
+    assert.equal((await request(app.base,'/api/posts',{text:'Old session bypass'},a.token)).status,403);
+    assert.equal((await request(app.base,'/api/posts',{text:'Old operator bypass'},key.token)).status,403);
+    assert.equal((await request(app.base,'/api/me',null,a.token)).data.actor.rulesAccepted,false);
+    for(const rulesAccepted of [undefined,false,'true'])assert.equal((await request(app.base,'/api/login',{handle:details.handle,password:details.password,...(rulesAccepted===undefined?{}:{rulesAccepted})})).status,403);
+    assert.equal((await request(app.base,'/api/login',{handle:details.handle,password:details.password,rulesAccepted:true})).status,200);
+    assert.equal((await request(app.base,'/api/posts',{text:'Accepted operator'},key.token)).status,201);
+    db.prepare('UPDATE actors SET rules_version=NULL,rules_accepted_at=NULL WHERE id=?').run(agent.id);
+    assert.equal((await request(app.base,'/api/posts',{text:'Old agent bypass'},key.token)).status,403);
+    assert.equal((await request(app.base,'/api/agents/link',{handle:agent.handle,password:details.password,americanConfirmed:true},a.token)).status,400);
+    assert.equal((await request(app.base,'/api/agents/link',{handle:agent.handle,password:details.password,americanConfirmed:true,rulesAccepted:true},a.token)).status,200);
+    assert.equal((await request(app.base,'/api/posts',{text:'Accepted agent'},key.token)).status,201);db.close();
+  }finally{await app.stop();await rm(dir,{recursive:true,force:true});}
+});
+
 test('private messages, recipient alerts, agent permissions, and followed hashtag feeds',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'amerika-messages-'));let app=await launch({DATA_DIR:dir});try{
-    const register=async handle=>(await request(app.base,'/api/register',{handle,name:handle,kind:'human',americanConfirmed:true,password:'message-test-password'})).data;
+    const register=async handle=>(await request(app.base,'/api/register',{handle,name:handle,kind:'human',americanConfirmed:true,rulesAccepted:true,password:'message-test-password'})).data;
     const a=await register('first.demo'),b=await register('second.demo'),c=await register('third.demo');
     const get=(path,token)=>request(app.base,path,null,token),post=(path,body,token)=>request(app.base,path,body,token);
     assert.equal((await get('/api/messages')).status,401);
@@ -49,7 +74,7 @@ test('private messages, recipient alerts, agent permissions, and followed hashta
     assert.equal((await post('/api/messages',{recipient:a.actor.id,text:'   '},b.token)).status,400);
     assert.equal((await post('/api/messages',{recipient:a.actor.id,text:'x'.repeat(2001)},b.token)).status,400);
     assert.equal((await post('/api/messages',{recipient:a.actor.id,text:'self'},a.token)).status,400);
-    const agent=(await post('/api/agents',{handle:'messenger.demo',name:'Messenger',password:'message-test-password',americanConfirmed:true},a.token)).data.actor;
+    const agent=(await post('/api/agents',{handle:'messenger.demo',name:'Messenger',password:'message-test-password',americanConfirmed:true,rulesAccepted:true},a.token)).data.actor;
     const issue=async scopes=>(await post('/api/agent-keys',{actor:agent.id,name:'Test',scopes},a.token)).data.token;
     const restricted=await issue(['post','read']);assert.equal((await get('/api/messages',restricted)).status,403);assert.equal((await post('/api/messages',{recipient:b.actor.id,text:'Denied'},restricted)).status,403);
     const authorized=await issue(['messages']);assert.equal((await post('/api/messages',{recipient:b.actor.id,text:'An agent message'},authorized)).status,201);assert.equal((await get('/api/messages',authorized)).status,200);
@@ -79,8 +104,8 @@ test('local accounts, auth boundaries, conversations, graph, filtering, and revo
       }
     }
     assert.equal((await request(app.base,'/api/posts',{text:'anonymous'})).status,401);
-    const bob=(await request(app.base,'/api/register',{handle:'bob.demo',name:'Bob',kind:'human',americanConfirmed:true,password:'long-password-b'})).data;
-    const newAgent=await request(app.base,'/api/agents',{handle:'alice.demo',name:'Alice',americanConfirmed:true,password:'long-password-a'},bob.token);assert.equal(newAgent.status,201);
+    const bob=(await request(app.base,'/api/register',{handle:'bob.demo',name:'Bob',kind:'human',americanConfirmed:true,rulesAccepted:true,password:'long-password-b'})).data;
+    const newAgent=await request(app.base,'/api/agents',{handle:'alice.demo',name:'Alice',americanConfirmed:true,rulesAccepted:true,password:'long-password-a'},bob.token);assert.equal(newAgent.status,201);
     const alice=(await request(app.base,'/api/login',{handle:'alice.demo',password:'long-password-a'})).data;
     assert.ok(alice.token);assert.ok(bob.token);
     assert.equal(alice.actor.operator.id,bob.actor.id);
@@ -92,7 +117,7 @@ test('local accounts, auth boundaries, conversations, graph, filtering, and revo
     assert.equal((await request(app.base,'/api/profile',{name:'Robert',bio:'Photo test',photo},bob.token)).data.actor.photo,photo);
     assert.equal((await request(app.base,'/api/profile',{name:'Robert',bio:'',photo:'data:image/svg+xml;base64,PHN2Zy8+'},bob.token)).status,400);
     assert.equal((await request(app.base,'/api/profile',{name:'Robert',bio:'',photo:null},bob.token)).data.actor.photo,null);
-    assert.equal((await request(app.base,'/api/register',{handle:'alice.demo',name:'Imposter',kind:'human',americanConfirmed:true,password:'long-password-x'})).status,409);
+    assert.equal((await request(app.base,'/api/register',{handle:'alice.demo',name:'Imposter',kind:'human',americanConfirmed:true,rulesAccepted:true,password:'long-password-x'})).status,409);
     assert.equal((await request(app.base,'/api/login',{handle:'alice.demo',password:'wrong-password'})).status,401);
     assert.equal((await request(app.base,'/api/posts',{text:'wrong origin'},alice.token,{Origin:'https://evil.example'})).status,403);
     assert.equal((await request(app.base,'/api/posts',{text:'x'.repeat(301)},alice.token)).status,400);
@@ -128,8 +153,8 @@ test('local accounts, auth boundaries, conversations, graph, filtering, and revo
 
 test('scoped preview credentials survive restart and expired credentials are rejected',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'amerika-key-persistence-'));let app=await launch({DATA_DIR:dir});try{
-    const owner=(await request(app.base,'/api/register',{handle:'persistent.demo',name:'Owner',kind:'human',password:'persistent-password-123',americanConfirmed:true})).data;
-    const agent=(await request(app.base,'/api/agents',{handle:'persistent-agent.demo',name:'Agent',password:'persistent-password-123',americanConfirmed:true},owner.token)).data.actor;
+    const owner=(await request(app.base,'/api/register',{handle:'persistent.demo',name:'Owner',kind:'human',password:'persistent-password-123',americanConfirmed:true,rulesAccepted:true})).data;
+    const agent=(await request(app.base,'/api/agents',{handle:'persistent-agent.demo',name:'Agent',password:'persistent-password-123',americanConfirmed:true,rulesAccepted:true},owner.token)).data.actor;
     const key=(await request(app.base,'/api/agent-keys',{actor:agent.id,name:'Persistent',scopes:['post']},owner.token)).data;
     await app.stop();app=await launch({DATA_DIR:dir});
     assert.equal((await request(app.base,'/api/posts',{text:'After restart'},key.token)).status,201);
@@ -140,10 +165,10 @@ test('scoped preview credentials survive restart and expired credentials are rej
 
 test('agent credentials enforce ownership, scopes, expiry, and immediate revocation',async()=>{
   const app=await launch();try{
-    const signup=async(handle)=>{const r=await request(app.base,'/api/register',{handle,name:handle,kind:'human',americanConfirmed:true,password:'safe-password-123'});assert.equal(r.status,200);return r.data;};
+    const signup=async(handle)=>{const r=await request(app.base,'/api/register',{handle,name:handle,kind:'human',americanConfirmed:true,rulesAccepted:true,password:'safe-password-123'});assert.equal(r.status,200);return r.data;};
     const owner=await signup('owner.demo'),other=await signup('other.demo');
-    assert.equal((await request(app.base,'/api/register',{handle:'rogue.demo',name:'Unlinked',kind:'agent',americanConfirmed:true,password:'safe-password-123'})).status,400);
-    const agent=(await request(app.base,'/api/agents',{handle:'agent.demo',name:'Agent',password:'safe-password-123',americanConfirmed:true},owner.token)).data.actor;
+    assert.equal((await request(app.base,'/api/register',{handle:'rogue.demo',name:'Unlinked',kind:'agent',americanConfirmed:true,rulesAccepted:true,password:'safe-password-123'})).status,400);
+    const agent=(await request(app.base,'/api/agents',{handle:'agent.demo',name:'Agent',password:'safe-password-123',americanConfirmed:true,rulesAccepted:true},owner.token)).data.actor;
     assert.equal((await request(app.base,'/api/agent-keys',{actor:agent.id,name:'Stolen',scopes:['post']},other.token)).status,403);
     assert.equal((await request(app.base,'/api/agent-keys',{actor:agent.id,name:'Unknown scope',scopes:['admin']},owner.token)).status,400);
     assert.equal((await request(app.base,'/api/agent-keys',{actor:agent.id,name:'Bad expiry',scopes:['post'],days:91},owner.token)).status,400);
@@ -171,7 +196,7 @@ test('legacy accounts retain their credentials and must attest before a new sess
   old.close();
   const app=await launch({DATA_DIR:dir});try{
     assert.equal((await request(app.base,'/api/login',{handle:'legacy.demo',password})).status,403);
-    const login=await request(app.base,'/api/login',{handle:'legacy.demo',password,americanConfirmed:true});
+    const login=await request(app.base,'/api/login',{handle:'legacy.demo',password,americanConfirmed:true,rulesAccepted:true});
     assert.equal(login.status,200);assert.equal(login.data.actor.id,'preview:legacy');
     const check=new DatabaseSync(join(dir,'botsky.sqlite'));
     assert.ok(check.prepare('SELECT american_confirmed_at FROM actors WHERE id=?').get('preview:legacy').american_confirmed_at);check.close();
@@ -187,7 +212,7 @@ test('network adapter writes standard records to configured PDS and excludes pre
     assert.equal((await request(app.base,'/api/config')).data.mode,'atproto');assert.equal((await request(app.base,'/api/feed')).data.posts.length,0);
     assert.equal((await request(app.base,'/api/register',{handle:'unconfirmed.own-pds.example',name:'Agent',kind:'agent',email:'agent@example.com',password:'long-password-pds'})).status,400);
     assert.equal(calls.length,0,'Unconfirmed signups must not create upstream accounts');
-    const registered=(await request(app.base,'/api/register',{handle:'agent.own-pds.example',name:'Agent',kind:'human',americanConfirmed:true,email:'agent@example.com',password:'long-password-pds'})).data;
+    const registered=(await request(app.base,'/api/register',{handle:'agent.own-pds.example',name:'Agent',kind:'human',americanConfirmed:true,rulesAccepted:true,email:'agent@example.com',password:'long-password-pds'})).data;
     assert.ok(registered.token);assert.notEqual(registered.token,'access-secret');assert.equal(JSON.stringify(registered).includes('refresh-secret'),false);
     const richText='🇺🇸 Independent @agent.own-pds.example #America #AI';
     const result=await request(app.base,'/api/posts',{text:richText},registered.token);assert.equal(result.status,201);assert.ok(result.data.post.uri.startsWith('at://did:plc:testactor/'));

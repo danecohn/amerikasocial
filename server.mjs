@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL);`)
 if (!db.prepare('PRAGMA table_info(actors)').all().some(c => c.name === 'american_confirmed_at')) {
   db.exec('ALTER TABLE actors ADD COLUMN american_confirmed_at TEXT');
 }
-for (const [name,type] of [['photo','TEXT'],['avatar_blob','TEXT'],['operator_id','TEXT']]) {
+for (const [name,type] of [['photo','TEXT'],['avatar_blob','TEXT'],['operator_id','TEXT'],['rules_version','TEXT'],['rules_accepted_at','TEXT']]) {
   if (!db.prepare('PRAGMA table_info(actors)').all().some(c=>c.name===name)) db.exec(`ALTER TABLE actors ADD COLUMN ${name} ${type}`);
 }
 for (const [name,type] of [['deleted','INTEGER NOT NULL DEFAULT 0'],['edited_at','TEXT']]) {
@@ -75,6 +75,11 @@ if (!pds && !db.prepare('SELECT id FROM actors LIMIT 1').get()) {
   }
 }
 const sessions = new Map();
+const rulesVersion = '2026-10-11-v1';
+const prohibited = ['Crypto miners','Phishing','Card fraud & testing','Spam','Pirated content','Anything illegal'];
+function requireRules(actor) {if(!actor||actor.rules_version!==rulesVersion||!actor.rules_accepted_at)fail(403,'Sign in and agree to the current Community Rules before continuing.');}
+function acceptRules(actor) {db.prepare('UPDATE actors SET rules_version=?,rules_accepted_at=? WHERE id=?').run(rulesVersion,new Date().toISOString(),actor);}
+function ownActor(a) {return {...publicActor(a),rulesAccepted:a.rules_version===rulesVersion&&!!a.rules_accepted_at};}
 // PDS delegation remains in memory; after restart, operators reconnect an agent.
 const agentPdsSessions = new Map();
 const limits = new Map();
@@ -167,8 +172,8 @@ const server = http.createServer(async(req,res)=>{
         const rows=db.prepare(`SELECT m.*,CASE WHEN sender=? THEN recipient ELSE sender END AS peer FROM messages m WHERE (sender=? OR recipient=?) AND id IN (SELECT MAX(id) FROM messages WHERE sender=? OR recipient=? GROUP BY CASE WHEN sender=? THEN recipient ELSE sender END) ORDER BY id DESC`).all(me,me,me,me,me,me);
         return json(res,200,{conversations:rows.map(m=>({...m,peer:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(m.peer)),unread:db.prepare('SELECT COUNT(*) AS n FROM messages WHERE recipient=? AND sender=? AND seen=0').get(me,m.peer).n})),unread:db.prepare('SELECT COUNT(*) AS n FROM messages WHERE recipient=? AND seen=0').get(me).n});
       }
-      if(path==='/api/config') return json(res,200,{name:'Amerika Social',tagline:'The Social Square of America',americanConfirmationRequired:true,feedOrder:'newest-first',mode:pds?'atproto':'preview',pds:pds||null});
-      if(path==='/api/me') return json(res,200,{actor:publicActor(me && db.prepare('SELECT * FROM actors WHERE id=?').get(me))});
+      if(path==='/api/config') return json(res,200,{name:'Amerika Social',tagline:'The Social Square of America',americanConfirmationRequired:true,rules:{version:rulesVersion,prohibited},feedOrder:'newest-first',mode:pds?'atproto':'preview',pds:pds||null});
+      if(path==='/api/me') {const a=me&&db.prepare('SELECT * FROM actors WHERE id=?').get(me);return json(res,200,{actor:a?ownActor(a):null});}
       if(path==='/api/actors') return json(res,200,{actors:db.prepare('SELECT * FROM actors ORDER BY handle LIMIT 100').all().map(a=>({...publicActor(a),following:!!(me&&db.prepare('SELECT actor FROM follows WHERE actor=? AND subject=?').get(me,a.id))}))});
       if(path==='/api/profile') {
         const actor=db.prepare('SELECT * FROM actors WHERE id=? OR handle=?').get(url.searchParams.get('id')||'',url.searchParams.get('handle')||'');
@@ -211,13 +216,14 @@ const server = http.createServer(async(req,res)=>{
     const b=await body(req);
     if(path==='/api/register'||path==='/api/login'||path==='/api/agents') {
       const creatingAgent=path==='/api/agents';
-      let owner=null;if(creatingAgent){if(!s)fail(401,'Sign in to create an agent.');owner=operatorOnly(s);}
+      let owner=null;if(creatingAgent){if(!s)fail(401,'Sign in to create an agent.');owner=operatorOnly(s);requireRules(owner);}
       const handle=textField(b.handle,253,'a handle').toLowerCase();
       const password=textField(b.password,256,'a password');
       if(password.length<10)fail(400,'Use a password of at least 10 characters.');
       let a,auth;
       if(path==='/api/register'||creatingAgent) {
         if (b.americanConfirmed !== true) fail(400,'Confirm that you are American to join. For agent accounts, the operator must be American.');
+        if (b.rulesAccepted !== true) fail(400,'Agree to the Community Rules to join. Crypto miners, phishing, card fraud & testing, spam, pirated content, and anything illegal are strictly banned.');
         const name=textField(b.name,64,'a display name'); const kind=creatingAgent?'agent':b.kind;
         if(!['agent','human'].includes(kind))fail(400,'Choose agent or human.');
         if(kind==='agent'&&!creatingAgent)fail(400,'Create a human operator account first, then add your agent in Developer hub.');
@@ -240,6 +246,7 @@ const server = http.createServer(async(req,res)=>{
         if(pds){ auth=await xrpc('com.atproto.server.createSession',{identifier:handle,password}); a=db.prepare('SELECT * FROM actors WHERE id=?').get(auth.did); if(!a)fail(403,'This account is not enrolled in Amerika Social. Register through Amerika Social first.'); }
         else {if(!a?.password || !timingSafeEqual(Buffer.from(a.password,'hex'),scryptSync(password,a.salt,64)))fail(401,'Incorrect handle or password.');}
       }
+      if(a.rules_version!==rulesVersion||!a.rules_accepted_at){if(b.rulesAccepted!==true)fail(403,'Agree to the current Community Rules to continue.');acceptRules(a.id);}
       if (!a.american_confirmed_at) {
         if (b.americanConfirmed !== true) fail(403,'Confirm that you are American to continue. For agent accounts, the operator must be American.');
         db.prepare('UPDATE actors SET american_confirmed_at=? WHERE id=?').run(new Date().toISOString(),a.id);
@@ -251,19 +258,23 @@ const server = http.createServer(async(req,res)=>{
       }
       const newToken=randomBytes(32).toString('base64url');
       sessions.set(hash(newToken),{actor:a.id,expires:Date.now()+24*3600000,...(auth?{accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000}:{})});
-      return json(res,200,{token:newToken,expiresIn:86400,actor:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(a.id)),...(a.profileWarning?{warning:a.profileWarning}:{})});
+      return json(res,200,{token:newToken,expiresIn:86400,actor:ownActor(db.prepare('SELECT * FROM actors WHERE id=?').get(a.id)),...(a.profileWarning?{warning:a.profileWarning}:{})});
     }
     if(!s)fail(401,'Sign in to continue.');
+    // Existing sessions and scoped credentials cannot bypass new policy versions.
+    if(path!=='/api/logout'){requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(me));if(s.operator)requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(s.operator));}
     const permissions={'/api/posts':'post','/api/posts/edit':'post','/api/posts/delete':'post','/api/likes':'like','/api/follows':'follow','/api/notifications/read':'read','/api/profile':'profile','/api/messages':'messages','/api/messages/read':'messages','/api/hashtags/follow':'follow'};
     if(permissions[path])allow(s,permissions[path]);
     if(s.keyId&&!permissions[path])fail(403,'This action requires an account sign-in.');
     if(path==='/api/agents/link') {
       if(b.americanConfirmed!==true)fail(400,'Confirm that you are the American operator of this agent.');
+      if(b.rulesAccepted!==true)fail(400,'Agree to the Community Rules for this agent.');
       operatorOnly(s);const handle=textField(b.handle,253,'the agent handle').toLowerCase();const password=textField(b.password,256,'the agent password');const a=db.prepare('SELECT * FROM actors WHERE handle=?').get(handle);
       if(!a||a.kind!=='agent')fail(404,'Agent account not found.');if(a.operator_id&&a.operator_id!==me)fail(403,'This agent is already linked to another operator.');
       if(pds){const auth=await xrpc('com.atproto.server.createSession',{identifier:handle,password});if(auth.did!==a.id)fail(403,'Agent identity mismatch.');agentPdsSessions.set(a.id,{accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000});}
       else if(!a.password||!timingSafeEqual(Buffer.from(a.password,'hex'),scryptSync(password,a.salt,64)))fail(401,'Incorrect agent credentials.');
       db.prepare('UPDATE actors SET operator_id=?,american_confirmed_at=COALESCE(american_confirmed_at,?) WHERE id=?').run(me,new Date().toISOString(),a.id);
+      if(a.rules_version!==rulesVersion||!a.rules_accepted_at)acceptRules(a.id);
       return json(res,200,{actor:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(a.id))});
     }
     if(path==='/api/agent-keys') {

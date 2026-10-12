@@ -29,6 +29,7 @@ test('Plus media, repost following feed, quote quota, streaming, deletion and du
   db.close();
   assert.equal((await upload(Buffer.from('<svg/>'),'image/png',owner.token)).status,400);
   const image=await upload(png,'image/png',owner.token),clip=await upload(video,'video/mp4',owner.token);assert.equal(image.status,201);assert.equal(clip.status,201);
+  if(process.env.FFMPEG_PATH){const iphoneUpload=await upload(await readFile(new URL('./fixtures/iphone.mov',import.meta.url)),'video/quicktime',owner.token);assert.equal(iphoneUpload.status,201);assert.equal(iphoneUpload.data.mime,'video/mp4');}
   assert.equal((await fetch(app.base+'/api/media?id='+image.data.id)).status,404,'Unattached files are private');
   assert.equal((await request(app.base,'/api/posts',{text:'Stolen',media:[{id:image.data.id,alt:''}]},viewer.token)).status,403);
   const imagePost=await request(app.base,'/api/posts',{text:'x'.repeat(833),media:[{id:image.data.id,alt:'A white pixel'}]},owner.token);assert.equal(imagePost.status,201);assert.equal(imagePost.data.post.text.length,833);assert.equal(imagePost.data.post.media[0].alt,'A white pixel');

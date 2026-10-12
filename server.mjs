@@ -1,3 +1,5 @@
+let videoUploadBusy=false;
+import { normalizeVideo } from './video.mjs';
 import http from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
 import { DatabaseSync, backup } from 'node:sqlite';
@@ -276,11 +278,13 @@ const server = http.createServer(async(req,res)=>{
     limit.n++;limits.set(key,limit);if(limit.n>30)fail(429,'Too many requests. Try again in a minute.');
     if(path==='/api/media/upload'){
       if(!s)fail(401,'Sign in to upload media.');allow(s,'post');const actor=db.prepare('SELECT * FROM actors WHERE id=?').get(me);enforcement.requireActive(actor);requireRules(actor);if(s.operator)requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(s.operator));
-      const mime=req.headers['content-type'];if(!['image/png','image/jpeg','image/webp','video/mp4'].includes(mime))fail(400,'Use PNG, JPEG, WebP images or an H.264 MP4 video.');
-      requireMediaAccess(actor,mime==='video/mp4');media.checkQuota(me);
-      const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>maxMediaBytes)fail(413,'Media must be under 20 MB.');chunks.push(chunk);}const bytes=Buffer.concat(chunks);validateMedia(bytes,mime);
-      let blob=null;if(networkActor(me)){const response=await fetch(`${pds}/xrpc/com.atproto.repo.uploadBlob`,{method:'POST',headers:{Authorization:`Bearer ${await jwtFor(s)}`,'Content-Type':mime},body:bytes,signal:AbortSignal.timeout(60000),redirect:'error'});if(!response.ok)fail(502,'Your account server could not save this media.');blob=(await response.json()).blob;if(!blob?.ref)fail(502,'Account server returned an invalid media reference.');}
+      let mime=req.headers['content-type'];if(!['image/png','image/jpeg','image/webp','video/mp4','video/quicktime'].includes(mime))fail(400,'Use PNG, JPEG, WebP images, MP4 or iPhone MOV videos.');
+      requireMediaAccess(actor,mime.startsWith('video/'));media.checkQuota(me);
+      const videoUpload=mime.startsWith('video/');if(videoUpload&&videoUploadBusy)fail(503,'Another video is uploading or processing. Please retry shortly.');if(videoUpload)videoUploadBusy=true;try{
+      const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>(mime.startsWith('video/')?maxMediaBytes:1000000))fail(413,mime.startsWith('video/')?'Videos must be under 250 MB (0.25 GB).':'Images must be under 1 MB after resizing.');chunks.push(chunk);}let bytes=Buffer.concat(chunks);media.checkQuota(me,bytes.length);if(mime.startsWith('video/')){bytes=await normalizeVideo(bytes,mime);mime='video/mp4';}else validateMedia(bytes,mime);
+      let blob=null;if(networkActor(me)){const response=await fetch(`${pds}/xrpc/com.atproto.repo.uploadBlob`,{method:'POST',headers:{Authorization:`Bearer ${await jwtFor(s)}`,'Content-Type':mime},body:bytes,signal:AbortSignal.timeout(180000),redirect:'error'});if(!response.ok)fail(502,'Your account server could not save this media.');blob=(await response.json()).blob;if(!blob?.ref)fail(502,'Account server returned an invalid media reference.');}
       return json(res,201,media.save(me,mime,bytes,blob));
+      }finally{if(videoUpload)videoUploadBusy=false;}
     }
     const b=await body(req);
     if(path==='/api/recovery/reset'){const handle=typeof b.handle==='string'?b.handle.trim().replace(/^@/,'').toLowerCase():b.handle;const resolved=typeof handle==='string'&&!db.prepare('SELECT id FROM actors WHERE handle=?').get(handle)&&handleDomain&&!handle.includes('.')?handle+'.'+handleDomain:handle;await recovery.reset(resolved,b.code,b.password);return json(res,200,{ok:true});}

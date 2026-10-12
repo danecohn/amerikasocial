@@ -31,3 +31,32 @@
 .captcha-panel{margin:16px 0;display:grid;gap:10px;min-width:0}.captcha-panel small{color:var(--muted)}#captcha-widget{min-height:65px}
 
 .media-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}.upload-label{position:relative;overflow:hidden;cursor:pointer;padding:9px 13px;font-size:13px}.upload-label input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}.media-tools small{color:var(--muted);font-size:12px}.post-media{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:8px;margin-top:14px}.post-media img,.post-media video{width:100%;max-height:460px;object-fit:contain;border-radius:10px;background:#211519}.media-preview{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:12px}.attachment-preview{min-width:0}.attachment-preview img,.attachment-preview video{width:100%;max-height:160px;object-fit:contain;border-radius:8px}.attachment-preview textarea{min-height:60px;font-size:13px}.quote-card{border:1px solid #56313a;border-radius:10px;padding:16px;margin:12px 0;min-width:0}.quote-card .post-media img,.quote-card .post-media video{max-height:220px}.post-actions{flex-wrap:wrap;row-gap:10px}.full-address{margin:12px 0;font-size:12px}.full-address .handle{overflow-wrap:anywhere}.location-verified{border-color:#c9343c;color:#f77478}
+
+/* Keep phone content within its column, including long handles and focused forms. */
+.shell>*,.profile-header>div,.suggestion>div,.topic-form label{min-width:0}
+.author-link,.handle,.operator-label,.mode-banner,.membership-badge,.content-panel p,.content-panel h2,.content-panel h3{overflow-wrap:anywhere}
+img,video{max-width:100%}
+@media(max-width:700px){
+ html{scroll-padding-bottom:90px}body{padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+ .shell,main,.content-panel,.profile-header,.dashboard-panel{width:100%;min-width:0;max-width:100%}
+ .topbar{height:auto;min-height:58px;gap:10px;flex-wrap:wrap;padding:12px 16px}.topbar>div{min-width:0;flex-wrap:wrap;gap:10px}.topbar #page-label{overflow-wrap:anywhere}
+ .hero,.post,.composer,.content-panel{padding-left:16px;padding-right:16px}.hero h1{font-size:clamp(36px,11.5vw,49px)}.hero-bottom{flex-wrap:wrap}.hero-emblem{width:48px;height:48px;right:0}
+ .post,.composer{gap:10px}.post-header>*{max-width:100%;overflow-wrap:anywhere}.post-actions{gap:12px;row-gap:12px}.post-actions button{min-height:32px}
+ .suggestion{flex-wrap:wrap}.suggestion>div{flex:1}.suggestion button{max-width:100%;overflow-wrap:anywhere}
+ .tabs{padding-inline:16px;gap:0;justify-content:space-between;flex-wrap:wrap}.tabs button{padding-inline:3px}.content-panel>.tabs{padding-right:0}
+ .compose-footer{gap:8px}.compose-footer .posting-quota{flex-basis:100%}.media-tools>*{max-width:100%;overflow-wrap:anywhere}
+ .topic-form label{min-width:0;flex-basis:100%}.plus-actions>*{max-width:100%;white-space:normal}
+ dialog{width:calc(100% - 24px);max-width:440px;padding:16px;max-height:calc(100dvh - 24px);overscroll-behavior:contain}
+ dialog form,.captcha-panel,#captcha-widget{min-width:0;max-width:100%}.dialog-head{gap:8px}.dialog-head .brand{font-size:22px}.dialog-head .brand small{font-size:8px}
+ input:not([type=checkbox]):not([type=radio]),textarea,select,.portable-search input,.topic-form input,.message-form textarea,.field-label input,.field-label select,dialog input:not([type=checkbox]):not([type=radio]){font-size:16px}
+ .mobile-nav{padding-left:max(7px,env(safe-area-inset-left));padding-right:max(7px,env(safe-area-inset-right))}.mobile-post{right:16px;bottom:calc(90px + env(safe-area-inset-bottom))}.toast{max-width:calc(100% - 32px);overflow-wrap:anywhere}
+}
+
+@media(max-width:700px){html,body{width:100%;max-width:100%;overflow-x:clip}.feed-heading{flex-wrap:wrap}.profile-header h2,.suggestion .author-link{overflow-wrap:anywhere}.thread-root,.thread-reply,.thread-subtitle{margin-inline:16px}.content-panel pre{max-width:100%;min-width:0}.tag-row{gap:10px;flex-wrap:wrap}.tag-row>*{max-width:100%;overflow-wrap:anywhere}}
+
+/* A flat red header and hero keep the brand clear at every screen size. */
+.topbar,.hero{background:#c82433;color:#fff}.topbar{border-bottom-color:#ffffff40}.topbar .text-button,.topbar .plus-shortcut{color:#fff}.topbar .outline-label{color:#fff;border-color:#ffffff80}
+.hero h1>span:not(.hero-asterisk),.hero .eyebrow,.hero p,.hero .hero-code,.hero .pill{color:#fff}.hero .pill{border-color:#ffffff70;background:#ffffff0a}
+@media(max-width:360px){.hero-emblem{display:none}}
+
+@media(max-width:700px){.attachment-preview textarea,.secret-output textarea{font-size:16px}}

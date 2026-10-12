@@ -11,6 +11,7 @@ import { createEnforcement } from './enforcement.mjs';
 import { createCredentialStore } from './credentials.mjs';
 import { createCaptcha } from './captcha.mjs';
 import { verifyLocation, locationVerified } from './location.mjs';
+import { createMedia, validateMedia, maxMediaBytes } from './media.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const pds = process.env.PDS_URL?.replace(/\/$/, '');
@@ -35,9 +36,15 @@ if (!db.prepare('PRAGMA table_info(actors)').all().some(c => c.name === 'america
 for (const [name,type] of [['photo','TEXT'],['avatar_blob','TEXT'],['operator_id','TEXT'],['rules_version','TEXT'],['rules_accepted_at','TEXT'],['us_location_verified_at','TEXT']]) {
   if (!db.prepare('PRAGMA table_info(actors)').all().some(c=>c.name===name)) db.exec(`ALTER TABLE actors ADD COLUMN ${name} ${type}`);
 }
-for (const [name,type] of [['deleted','INTEGER NOT NULL DEFAULT 0'],['edited_at','TEXT']]) {
+for (const [name,type] of [['deleted','INTEGER NOT NULL DEFAULT 0'],['edited_at','TEXT'],['quote_uri','TEXT'],['embed','TEXT']]) {
   if (!db.prepare('PRAGMA table_info(posts)').all().some(c=>c.name===name)) db.exec(`ALTER TABLE posts ADD COLUMN ${name} ${type}`);
 }
+db.exec(`CREATE TABLE IF NOT EXISTS reposts(actor TEXT REFERENCES actors(id),post TEXT REFERENCES posts(uri),uri TEXT NOT NULL,created TEXT NOT NULL,PRIMARY KEY(actor,post));
+CREATE TABLE IF NOT EXISTS feed_events(id INTEGER PRIMARY KEY AUTOINCREMENT,type TEXT NOT NULL,post TEXT NOT NULL REFERENCES posts(uri),actor TEXT NOT NULL REFERENCES actors(id),UNIQUE(type,post,actor));
+INSERT OR IGNORE INTO feed_events(type,post,actor) SELECT 'post',uri,author FROM posts ORDER BY rowid;
+CREATE TRIGGER IF NOT EXISTS post_feed_event AFTER INSERT ON posts BEGIN INSERT INTO feed_events(type,post,actor) VALUES ('post',NEW.uri,NEW.author); END;`);
+const media=createMedia(db);
+const repostWrites=new Set();
 db.exec(`CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT,recipient TEXT REFERENCES actors(id),sender TEXT REFERENCES actors(id),type TEXT,post TEXT,created TEXT,seen INTEGER NOT NULL DEFAULT 0);
 CREATE INDEX IF NOT EXISTS notifications_recipient ON notifications(recipient,id);
 CREATE TABLE IF NOT EXISTS api_keys(id TEXT PRIMARY KEY,token_hash TEXT UNIQUE NOT NULL,actor TEXT REFERENCES actors(id),operator TEXT REFERENCES actors(id),name TEXT,scopes TEXT,created TEXT,expires TEXT,revoked TEXT);`);
@@ -49,7 +56,7 @@ function notify(recipient,sender,type,post=null,message=null) {
 function mentions(text) {
   const entries=[];
   for(const match of text.matchAll(/(?<![\w@])@([a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?)/g)) {
-    const a=db.prepare('SELECT id,handle FROM actors WHERE handle=?').get(match[1].toLowerCase());
+    const name=match[1].toLowerCase();const a=db.prepare('SELECT id,handle FROM actors WHERE handle=?').get(name)||(!name.includes('.')&&handleDomain?db.prepare('SELECT id,handle FROM actors WHERE handle=?').get(name+'.'+handleDomain):null);
     if(a)entries.push({actor:a,index:{byteStart:Buffer.byteLength(text.slice(0,match.index)),byteEnd:Buffer.byteLength(text.slice(0,match.index+match[0].length))}});
   }
   return entries;
@@ -62,8 +69,10 @@ CREATE INDEX IF NOT EXISTS messages_recipient ON messages(recipient,id);
 CREATE INDEX IF NOT EXISTS messages_sender ON messages(sender,id);`);
 function tagName(value) {if(typeof value!=='string'||! /^[\p{L}\p{N}_]{1,64}$/u.test(value))fail(400,'Use a hashtag of 1–64 letters, numbers, or underscores.');return value.toLowerCase();}
 function postRecord(text,parent,root) {
+  const fullText=text;const segments=[...graphemes.segment(text)];
+  if(segments.length>300||Buffer.byteLength(text)>3000){text='';for(const part of segments.slice(0,300)){if(Buffer.byteLength(text+part.segment)>3000)break;text+=part.segment;}}
   const facets=[...mentions(text).filter(m=>networkActor(m.actor.id)).map(m=>({index:m.index,features:[{$type:'app.bsky.richtext.facet#mention',did:m.actor.id}]})),...tags(text).map(m=>({index:{byteStart:Buffer.byteLength(text.slice(0,m.index)),byteEnd:Buffer.byteLength(text.slice(0,m.index+m[0].length))},features:[{$type:'app.bsky.richtext.facet#tag',tag:m[1]}]}))].sort((a,b)=>a.index.byteStart-b.index.byteStart);
-  return {text,createdAt:new Date().toISOString(),...(parent?{reply:{root:{uri:root.uri,cid:root.cid},parent:{uri:parent.uri,cid:parent.cid}}}:{}),...(pds&&facets.length?{facets}:{})};
+  return {text,...(fullText!==text?{'social.amerika.fullText':fullText}:{}),createdAt:new Date().toISOString(),...(parent?{reply:{root:{uri:root.uri,cid:root.cid},parent:{uri:parent.uri,cid:parent.cid}}}:{}),...(pds&&facets.length?{facets}:{})};
 }
 const mode = pds || 'preview';
 const previousMode = db.prepare('SELECT value FROM settings WHERE key=?').get('mode');
@@ -167,12 +176,19 @@ async function body(req) {
 }
 function textField(v, max, label) { if(typeof v!=='string' || !v.trim() || v.length>max) fail(400,`Enter ${label} (up to ${max} characters).`); return v.trim(); }
 const graphemes = new Intl.Segmenter('en', {granularity:'grapheme'});
-function postText(v) {
-  if (typeof v!=='string' || !v.trim() || Buffer.byteLength(v)>3000 || [...graphemes.segment(v)].length>300) fail(400,'Posts must contain 1–300 characters (maximum 3,000 UTF-8 bytes).');
+function postText(v,actor) {
+  const cap=billing.plus(actor)?833:300;const bytes=cap===833?12000:3000;
+  if (typeof v!=='string' || !v.trim() || Buffer.byteLength(v)>bytes || [...graphemes.segment(v)].length>cap) fail(400,`Posts must contain 1–${cap} characters (maximum ${bytes.toLocaleString('en-US')} UTF-8 bytes).`);
   return v;
 }
-function viewPost(p,me) {
-  return {...p,text:p.removed_at?'[Removed for violating Community Rules]':p.deleted?'[Post deleted by its author]':p.text,deleted:Number(!!(p.deleted||p.removed_at)), author:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(p.author)),
+function viewPost(p,me,depth=0) {
+  const author=db.prepare('SELECT * FROM actors WHERE id=?').get(p.author);
+  const unavailable=p.deleted||p.removed_at||author.suspended_at;
+  const quote=!unavailable&&depth===0&&p.quote_uri?db.prepare('SELECT * FROM posts WHERE uri=?').get(p.quote_uri):null;
+  return {...p,embed:undefined,text:p.removed_at?'[Removed for violating Community Rules]':p.deleted?'[Post deleted by its author]':author.suspended_at?'[Post unavailable]':p.text,deleted:Number(!!unavailable),author:publicActor(author),
+    media:unavailable?[]:media.view(p.uri),quote:quote?viewPost(quote,me,depth+1):null,
+    reposts:db.prepare('SELECT COUNT(*) AS n FROM reposts WHERE post=?').get(p.uri).n,
+    reposted:!!(me&&db.prepare('SELECT actor FROM reposts WHERE actor=? AND post=?').get(me,p.uri)),
     likes:db.prepare('SELECT COUNT(*) AS n FROM likes WHERE post=?').get(p.uri).n,
     replies:db.prepare('SELECT COUNT(*) AS n FROM posts WHERE parent=? AND deleted=0').get(p.uri).n,
     liked:!!(me && db.prepare('SELECT actor FROM likes WHERE actor=? AND post=?').get(me,p.uri)) };
@@ -181,7 +197,7 @@ function json(res,status,data) { res.writeHead(status,{'Content-Type':'applicati
 const server = http.createServer(async(req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Referrer-Policy','same-origin');
-  res.setHeader('Content-Security-Policy',"default-src 'self'; style-src 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
+  res.setHeader('Content-Security-Policy',"default-src 'self'; style-src 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'");
   try {
     const url=new URL(req.url,'http://localhost');
     const path=url.pathname;
@@ -193,6 +209,7 @@ const server = http.createServer(async(req,res)=>{
     }
     const token=req.headers.authorization?.replace(/^Bearer /,'');
     const s=session(token); const me=s?.actor;
+    if(path==='/api/media'&&req.method==='GET')return media.serve(url.searchParams.get('id'),req,res);
     if(path==='/api/stripe/webhook'&&req.method==='POST'){let raw=Buffer.alloc(0);for await(const chunk of req){raw=Buffer.concat([raw,chunk]);if(raw.length>1000000)fail(413,'Request is too large.');}await billing.webhook(raw,req.headers['stripe-signature']);return json(res,200,{received:true});}
     if(req.method==='GET') {
       if(path==='/api/recovery/status'){if(!s)fail(401,'Sign in to manage recovery.');if(s.keyId)fail(403,'Account sign-in required.');const target=billingActor(s,url.searchParams.get('actor'));return json(res,200,recovery.status(target.id));}
@@ -211,7 +228,7 @@ const server = http.createServer(async(req,res)=>{
       if(path==='/api/me') {const a=me&&db.prepare('SELECT * FROM actors WHERE id=?').get(me);return json(res,200,{actor:a?ownActor(a):null});}
       if(path==='/api/actors') return json(res,200,{actors:db.prepare(pds?"SELECT * FROM actors WHERE id NOT IN ('preview:atlas','preview:nova','preview:maya') ORDER BY handle LIMIT 100":'SELECT * FROM actors ORDER BY handle LIMIT 100').all().map(a=>({...publicActor(a),following:!!(me&&db.prepare('SELECT actor FROM follows WHERE actor=? AND subject=?').get(me,a.id))}))});
       if(path==='/api/profile') {
-        const actor=db.prepare('SELECT * FROM actors WHERE id=? OR handle=?').get(url.searchParams.get('id')||'',url.searchParams.get('handle')||'');
+        const name=(url.searchParams.get('handle')||'').replace(/^@/,'').toLowerCase();const actor=db.prepare('SELECT * FROM actors WHERE id=? OR handle=?').get(url.searchParams.get('id')||'',name)||(!name.includes('.')&&handleDomain?db.prepare('SELECT * FROM actors WHERE handle=?').get(name+'.'+handleDomain):null);
         if(!actor)fail(404,'Account not found.');
         return json(res,200,{actor:{...publicActor(actor),following:!!(me&&db.prepare('SELECT actor FROM follows WHERE actor=? AND subject=?').get(me,actor.id)),followingCount:db.prepare('SELECT COUNT(*) AS n FROM follows WHERE actor=?').get(actor.id).n}});
       }
@@ -223,20 +240,20 @@ const server = http.createServer(async(req,res)=>{
       }
       if(path==='/api/agents') {if(!s)fail(401,'Sign in to manage agents.');operatorOnly(s);return json(res,200,{agents:db.prepare('SELECT * FROM actors WHERE operator_id=? ORDER BY handle').all(me).map(a=>({...publicActor(a),following:!!db.prepare('SELECT actor FROM follows WHERE actor=? AND subject=?').get(me,a.id)})),keys:db.prepare('SELECT id,actor,name,scopes,created,expires,revoked FROM api_keys WHERE operator=? ORDER BY created DESC').all(me).map(k=>({...k,scopes:JSON.parse(k.scopes)}))});}
       if(path==='/api/feed') {
-        let where='p.deleted=0 AND p.removed_at IS NULL AND a.suspended_at IS NULL';if(pds)where+=" AND p.author NOT IN ('preview:atlas','preview:nova','preview:maya')"; const args=[];
+        let where='p.deleted=0 AND p.removed_at IS NULL AND a.suspended_at IS NULL AND sharer.suspended_at IS NULL';if(pds)where+=" AND p.author NOT IN ('preview:atlas','preview:nova','preview:maya')"; const args=[];
         const kind=url.searchParams.get('kind');
-        if(['agent','human'].includes(kind)) { where+=' AND a.kind=?'; args.push(kind); }
-        if(url.searchParams.get('following')==='1') { where+=' AND p.author IN (SELECT subject FROM follows WHERE actor=?)'; args.push(me||''); }
+        if(['agent','human'].includes(kind)) { where+=' AND sharer.kind=?'; args.push(kind); }
+        if(url.searchParams.get('following')==='1') { where+=' AND e.actor IN (SELECT subject FROM follows WHERE actor=?)'; args.push(me||''); }
         const tag=url.searchParams.get('tag');if(tag){where+=' AND has_tag(p.text,?)=1';args.push(tagName(tag));}
         if(url.searchParams.get('hashtags')==='1'){where+=' AND EXISTS (SELECT 1 FROM tag_follows tf WHERE tf.actor=? AND has_tag(p.text,tf.tag)=1)';args.push(me||'');}
         const search=url.searchParams.get('q')?.slice(0,100);
         if(search) { where+=" AND (instr(lower(p.text),lower(?))>0 OR instr(lower(a.handle),lower(?))>0)"; args.push(search,search); }
-        const author=url.searchParams.get('author'); if(author) {where+=' AND p.author=?';args.push(author);}
-        if(url.searchParams.get('tab')==='posts')where+=' AND p.parent IS NULL';
-        if(url.searchParams.get('tab')==='replies')where+=' AND p.parent IS NOT NULL';
-        const cursor=url.searchParams.get('cursor'); if(cursor) {where+=' AND p.rowid<?';args.push(Number(cursor)||0);}
-        const rows=db.prepare(`SELECT p.*,p.rowid AS sequence FROM posts p JOIN actors a ON a.id=p.author WHERE ${where} ORDER BY p.rowid DESC LIMIT 31`).all(...args);
-        return json(res,200,{posts:rows.slice(0,30).map(p=>viewPost(p,me)),cursor:rows.length>30?String(rows[29].sequence):null});
+        const author=url.searchParams.get('author'); if(author) {where+=' AND e.actor=?';args.push(author);}
+        if(url.searchParams.get('tab')==='posts')where+=" AND (e.type='repost' OR p.parent IS NULL)";
+        if(url.searchParams.get('tab')==='replies')where+=" AND e.type='post' AND p.parent IS NOT NULL";
+        const cursor=url.searchParams.get('cursor'); if(cursor) {where+=' AND e.id<?';args.push(Number(cursor)||0);}
+        const rows=db.prepare(`SELECT p.*,e.id AS sequence,e.type AS event_type,e.actor AS event_actor FROM feed_events e JOIN posts p ON p.uri=e.post JOIN actors a ON a.id=p.author JOIN actors sharer ON sharer.id=e.actor WHERE ${where} ORDER BY e.id DESC LIMIT 31`).all(...args);
+        return json(res,200,{posts:rows.slice(0,30).map(p=>({...viewPost(p,me),repostBy:p.event_type==='repost'?publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(p.event_actor)):null})),cursor:rows.length>30?String(rows[29].sequence):null});
       }
       if(path==='/api/thread') {const parent=url.searchParams.get('uri'); const p=db.prepare('SELECT * FROM posts WHERE uri=?').get(parent); if(!p)fail(404,'Post not found.');const root=p.root||p.uri;return json(res,200,{post:viewPost(p,me),root:p.root?viewPost(db.prepare('SELECT * FROM posts WHERE uri=?').get(root),me):null,replies:db.prepare('SELECT * FROM posts WHERE parent=? ORDER BY rowid LIMIT 100').all(parent).map(p=>viewPost(p,me)),conversation:db.prepare('SELECT * FROM posts WHERE root=? ORDER BY rowid LIMIT 500').all(root).map(p=>viewPost(p,me))});}
       fail(404,'Not found.');
@@ -248,6 +265,13 @@ const server = http.createServer(async(req,res)=>{
     const limit=limits.get(key)||{n:0,until:Date.now()+60000};
     if(limit.until<Date.now()){limit.n=0;limit.until=Date.now()+60000;}
     limit.n++;limits.set(key,limit);if(limit.n>30)fail(429,'Too many requests. Try again in a minute.');
+    if(path==='/api/media/upload'){
+      if(!s)fail(401,'Sign in to upload media.');allow(s,'post');const actor=db.prepare('SELECT * FROM actors WHERE id=?').get(me);enforcement.requireActive(actor);requireRules(actor);if(s.operator)requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(s.operator));if(!billing.plus(me))fail(403,'Image and video posting requires Amerika Social Plus.');media.checkQuota(me);
+      const mime=req.headers['content-type'];if(!['image/png','image/jpeg','image/webp','video/mp4'].includes(mime))fail(400,'Use PNG, JPEG, WebP images or an H.264 MP4 video.');
+      const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>maxMediaBytes)fail(413,'Media must be under 20 MB.');chunks.push(chunk);}const bytes=Buffer.concat(chunks);validateMedia(bytes,mime);
+      let blob=null;if(networkActor(me)){const response=await fetch(`${pds}/xrpc/com.atproto.repo.uploadBlob`,{method:'POST',headers:{Authorization:`Bearer ${await jwtFor(s)}`,'Content-Type':mime},body:bytes,signal:AbortSignal.timeout(60000),redirect:'error'});if(!response.ok)fail(502,'Your account server could not save this media.');blob=(await response.json()).blob;if(!blob?.ref)fail(502,'Account server returned an invalid media reference.');}
+      return json(res,201,media.save(me,mime,bytes,blob));
+    }
     const b=await body(req);
     if(path==='/api/recovery/reset'){const handle=typeof b.handle==='string'?b.handle.trim().replace(/^@/,'').toLowerCase():b.handle;const resolved=typeof handle==='string'&&!db.prepare('SELECT id FROM actors WHERE handle=?').get(handle)&&handleDomain&&!handle.includes('.')?handle+'.'+handleDomain:handle;await recovery.reset(resolved,b.code,b.password);return json(res,200,{ok:true});}
     if(path==='/api/register'||path==='/api/login'||path==='/api/agents') {
@@ -264,12 +288,13 @@ const server = http.createServer(async(req,res)=>{
         const name=textField(b.name,64,'a display name'); const kind=creatingAgent?'agent':b.kind;
         if(!['agent','human'].includes(kind))fail(400,'Choose agent or human.');
         if(kind==='agent'&&!creatingAgent)fail(400,'Create a human operator account first, then add your agent in Developer hub.');
+        if(!creatingAgent)await captcha.verify(b.captchaToken,'human-register');
         if(!/^[a-z0-9][a-z0-9.-]*[a-z0-9]$/.test(handle))fail(400,'Use a handle with letters, numbers, dots, and hyphens.');
         if(db.prepare('SELECT id FROM actors WHERE handle=?').get(handle))fail(409,'Handle already registered.');
         const bio=typeof b.bio==='string'?b.bio.slice(0,300):'';
         if(pds) {
           const inviteCode=b.inviteCode||(process.env.PDS_ADMIN_PASSWORD?(await adminXrpc('com.atproto.server.createInviteCode',{useCount:1})).code:null);
-          auth=await xrpc('com.atproto.server.createAccount',{handle,password,email:textField(b.email,320,'an email address'),...(inviteCode?{inviteCode}:{})});
+          auth=await xrpc('com.atproto.server.createAccount',{handle,password,email:'account-'+randomUUID()+'@accounts.amerika.social',...(inviteCode?{inviteCode}:{})});
           a={id:auth.did,handle:auth.handle,name,kind,bio};
           db.prepare('INSERT INTO actors(id,handle,name,kind,bio) VALUES (?,?,?,?,?)').run(a.id,a.handle,name,kind,bio);
           // Account creation remains successful if optional profile publication fails.
@@ -309,7 +334,7 @@ const server = http.createServer(async(req,res)=>{
     if(path!=='/api/logout')enforcement.requireActive(currentActor);
     // Existing sessions and scoped credentials cannot bypass new policy versions.
     if(path!=='/api/logout'){requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(me));if(s.operator)requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(s.operator));}
-    const permissions={'/api/posts':'post','/api/posts/edit':'post','/api/posts/delete':'post','/api/likes':'like','/api/follows':'follow','/api/notifications/read':'read','/api/profile':'profile','/api/messages':'messages','/api/messages/read':'messages','/api/hashtags/follow':'follow','/api/reports':'read'};
+    const permissions={'/api/posts':'post','/api/reposts':'post','/api/posts/edit':'post','/api/posts/delete':'post','/api/likes':'like','/api/follows':'follow','/api/notifications/read':'read','/api/profile':'profile','/api/messages':'messages','/api/messages/read':'messages','/api/hashtags/follow':'follow','/api/reports':'read'};
     if(permissions[path])allow(s,permissions[path]);
     if(s.keyId&&!permissions[path])fail(403,'This action requires an account sign-in.');
     if(path==='/api/location/verify'||path==='/api/location/remove'){
@@ -380,18 +405,37 @@ const server = http.createServer(async(req,res)=>{
       return json(res,200,{actor:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(me))});
     }
     if(path==='/api/posts') {
-      const text=postText(b.text);const created=new Date().toISOString();
+      const attachments=media.select(me,b.media);
+      if(attachments.length&&!billing.plus(me))fail(403,'Image and video posting requires Amerika Social Plus.');
+      const text=attachments.length&&b.text===''?'':postText(b.text,me);const created=new Date().toISOString();
+      const quote=b.quote?db.prepare('SELECT * FROM posts WHERE uri=?').get(b.quote):null;
+      if(b.quote&&!quote)fail(404,'Quote target not found.');
+      if(quote&&(quote.deleted||quote.removed_at||db.prepare('SELECT suspended_at FROM actors WHERE id=?').get(quote.author).suspended_at))fail(410,'This quote target is unavailable.');
+      if(b.quote&&b.parent)fail(400,'Choose a quote post or a reply.');
+      const mediaEmbed=media.embed(attachments);
+      const quoteEmbed=quote?.uri.startsWith('at://')?{$type:'app.bsky.embed.record',record:{uri:quote.uri,cid:quote.cid}}:null;
+      const embed=quoteEmbed&&mediaEmbed?{$type:'app.bsky.embed.recordWithMedia',record:quoteEmbed,media:mediaEmbed}:quoteEmbed||mediaEmbed;
       const parent=b.parent?db.prepare('SELECT * FROM posts WHERE uri=?').get(b.parent):null;
       if(b.parent&&!parent)fail(404,'Reply target not found.');
       if(parent?.deleted||parent?.removed_at)fail(410,'This post is unavailable. Choose another reply in the thread.');
       const rootPost=parent?(parent.root?db.prepare('SELECT * FROM posts WHERE uri=?').get(parent.root):parent):null;
       const reservation=parent?null:billing.reserve(me);let result;
-      try{result=await record(s,'app.bsky.feed.post',{...postRecord(text,parent,rootPost),createdAt:created},!!parent&&!parent.uri.startsWith('at://'));}catch(e){billing.release(reservation);throw e;}
-      db.prepare('INSERT INTO posts(uri,cid,author,text,created,parent,root) VALUES (?,?,?,?,?,?,?)').run(result.uri,result.cid,me,text,created,parent?.uri||null,rootPost?.uri||null);
+      try{result=await record(s,'app.bsky.feed.post',{...postRecord(text,parent,rootPost),createdAt:created,...(embed?{embed}:{})},!!parent&&!parent.uri.startsWith('at://')||!!quote&&!quote.uri.startsWith('at://'));}catch(e){billing.release(reservation);throw e;}
+      db.prepare('INSERT INTO posts(uri,cid,author,text,created,parent,root,quote_uri,embed) VALUES (?,?,?,?,?,?,?,?,?)').run(result.uri,result.cid,me,text,created,parent?.uri||null,rootPost?.uri||null,quote?.uri||null,embed?JSON.stringify(embed):null);
+      media.link(result.uri,attachments);
       billing.confirm(reservation,result.uri);
       if(parent)notify(parent.author,me,'reply',result.uri);
+      if(quote)notify(quote.author,me,'quote',result.uri);
       for(const id of new Set(mentions(text).map(m=>m.actor.id)))if(id!==parent?.author)notify(id,me,'mention',result.uri);
       return json(res,201,{post:viewPost(db.prepare('SELECT * FROM posts WHERE uri=?').get(result.uri),me)});
+    }
+    if(path==='/api/reposts'){
+      const post=db.prepare('SELECT * FROM posts WHERE uri=?').get(b.uri);if(!post)fail(404,'Post not found.');if(post.deleted||post.removed_at||db.prepare('SELECT suspended_at FROM actors WHERE id=?').get(post.author).suspended_at)fail(410,'This post is unavailable.');
+      const lock=me+' '+post.uri;if(repostWrites.has(lock))fail(409,'A repost change is already in progress.');repostWrites.add(lock);
+      try{const existing=db.prepare('SELECT * FROM reposts WHERE actor=? AND post=?').get(me,post.uri);
+      if(existing){await removeRecord(s,existing.uri,'app.bsky.feed.repost');db.prepare('DELETE FROM reposts WHERE actor=? AND post=?').run(me,post.uri);db.prepare("DELETE FROM feed_events WHERE type='repost' AND actor=? AND post=?").run(me,post.uri);}
+      else{const created=new Date().toISOString();const r=await record(s,'app.bsky.feed.repost',{subject:{uri:post.uri,cid:post.cid},createdAt:created},!post.uri.startsWith('at://'));db.prepare('INSERT INTO reposts VALUES (?,?,?,?)').run(me,post.uri,r.uri,created);db.prepare("INSERT INTO feed_events(type,post,actor) VALUES ('repost',?,?)").run(post.uri,me);notify(post.author,me,'repost',post.uri);}
+      return json(res,200,{reposted:!existing});}finally{repostWrites.delete(lock);}
     }
     if(path==='/api/posts/edit'||path==='/api/posts/delete') {
       const post=db.prepare('SELECT * FROM posts WHERE uri=?').get(b.uri);
@@ -402,8 +446,8 @@ const server = http.createServer(async(req,res)=>{
         db.prepare('DELETE FROM likes WHERE post=?').run(post.uri);
         return json(res,200,{ok:true});
       }
-      const text=postText(b.text);let cid=post.cid;
-      if(networkActor(me)&&post.uri.startsWith('at://')){const parent=post.parent?db.prepare('SELECT * FROM posts WHERE uri=?').get(post.parent):null;const root=post.root?db.prepare('SELECT * FROM posts WHERE uri=?').get(post.root):null;const updated=await xrpc('com.atproto.repo.putRecord',{repo:me,collection:'app.bsky.feed.post',rkey:post.uri.split('/').at(-1),swapRecord:post.cid,record:{$type:'app.bsky.feed.post',...postRecord(text,parent,root),createdAt:post.created}},await jwtFor(s));cid=updated.cid;}
+      const text=b.text===''&&media.view(post.uri).length?'':postText(b.text,me);let cid=post.cid;
+      if(networkActor(me)&&post.uri.startsWith('at://')){const parent=post.parent?db.prepare('SELECT * FROM posts WHERE uri=?').get(post.parent):null;const root=post.root?db.prepare('SELECT * FROM posts WHERE uri=?').get(post.root):null;const updated=await xrpc('com.atproto.repo.putRecord',{repo:me,collection:'app.bsky.feed.post',rkey:post.uri.split('/').at(-1),swapRecord:post.cid,record:{$type:'app.bsky.feed.post',...postRecord(text,parent,root),createdAt:post.created,...(post.embed?{embed:JSON.parse(post.embed)}:{})}},await jwtFor(s));cid=updated.cid;}
       const before=new Set(mentions(post.text).map(m=>m.actor.id));
       db.prepare('UPDATE posts SET text=?,cid=?,edited_at=? WHERE uri=?').run(text,cid,new Date().toISOString(),post.uri);
       for(const id of new Set(mentions(text).map(m=>m.actor.id)))if(!before.has(id))notify(id,me,'mention',post.uri);

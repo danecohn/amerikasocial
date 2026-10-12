@@ -48,11 +48,13 @@ test('Stripe checkout ownership, signed webhooks, paid entitlement, unlimited po
     assert.equal((await send('checkout.session.completed',{mode:'subscription',payment_status:'unpaid',subscription:'sub_test'})).status,200);assert.equal((await request(app.base,'/api/billing',null,user.token)).data.plus,false);
     assert.equal((await send('checkout.session.completed',{mode:'subscription',payment_status:'paid',subscription:'sub_test'},'evt_paid')).status,200);assert.equal((await send('checkout.session.completed',{mode:'subscription',payment_status:'paid',subscription:'sub_test'},'evt_paid')).status,200);
     assert.equal((await request(app.base,'/api/billing',null,user.token)).data.plus,true);assert.equal((await request(app.base,'/api/me',null,user.token)).data.actor.verified,true);
+    assert.equal((await request(app.base,'/api/posts',{text:'x'.repeat(833)},user.token)).status,201);assert.equal((await request(app.base,'/api/posts',{text:'x'.repeat(834)},user.token)).status,400);
     for(let i=0;i<6;i++)assert.equal((await request(app.base,'/api/posts',{text:'Plus original '+i},user.token)).status,201);
     assert.equal((await request(app.base,'/api/billing/checkout',{},user.token)).status,409);
     assert.equal((await request(app.base,'/api/billing/portal',{},other.token)).status,404);assert.equal((await request(app.base,'/api/billing/portal',{},user.token)).data.url,'https://billing.stripe.com/test-portal');
     subscription.cancel_at_period_end=true;await send('customer.subscription.updated',subscription);assert.equal((await request(app.base,'/api/billing',null,user.token)).data.plus,true,'End-of-period cancellation retains paid access');
     subscription.status='past_due';subscription.latest_invoice.status='open';await send('invoice.payment_failed',{parent:{subscription_details:{subscription:'sub_test'}}});assert.equal((await request(app.base,'/api/billing',null,user.token)).data.plus,false);assert.equal((await request(app.base,'/api/posts',{text:'Unpaid bypass'},user.token)).status,429);
+    assert.equal((await request(app.base,'/api/posts',{text:'x'.repeat(301)},user.token)).status,400,'Expired entitlement restores the free character limit');
     subscription.status='canceled';await send('customer.subscription.deleted',subscription);assert.equal((await request(app.base,'/api/me',null,user.token)).data.actor.verified,false);
     // A delayed old event fetches current canceled state and cannot reactivate Plus.
     await send('customer.subscription.updated',{id:'sub_test',status:'active'});assert.equal((await request(app.base,'/api/billing',null,user.token)).data.plus,false);

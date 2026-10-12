@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm, readdir } from 'node:fs/promises';
+import { mkdtemp, rm, readdir, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import http from 'node:http';
@@ -12,9 +12,43 @@ async function launch(env={}) {
   const dir=await mkdtemp(join(tmpdir(),'botsky-test-'));
   const child=spawn(process.execPath,['server.mjs'],{env:{...process.env,PDS_URL:'',PORT:'0',DATA_DIR:dir,...env},stdio:['ignore','pipe','pipe']});
   const base=await new Promise((resolve,reject)=>{let output='';const timer=setTimeout(()=>reject(new Error('Server startup timed out')),10000);child.once('exit',()=>{clearTimeout(timer);reject(new Error('Server exited during startup'));});child.stdout.on('data',data=>{output+=data;const match=output.match(/"port":(\d+)/);if(match){clearTimeout(timer);resolve(`http://127.0.0.1:${match[1]}`);}});});
-  return {base,async stop(){const exited=new Promise(r=>child.once('exit',r));child.kill();await exited;await rm(dir,{recursive:true,force:true});}};
+  return {base,dir:env.DATA_DIR||dir,async stop(){const exited=new Promise(r=>child.once('exit',r));child.kill();await exited;await rm(dir,{recursive:true,force:true});}};
 }
 async function request(base,path,body,token,extra={}){const response=await fetch(base+path,{method:body?'POST':'GET',headers:{...(body?{'Content-Type':'application/json'}:{}),...(token?{Authorization:`Bearer ${token}`} : {}),...extra},...(body?{body:JSON.stringify(body)}:{})});return {status:response.status,data:await response.json()};}
+
+test('Plus-only media, repost following feed, quote quota, streaming, deletion and durable attachments',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'amerika-media-'));let app=await launch({DATA_DIR:dir});
+ try{
+  const register=async handle=>(await request(app.base,'/api/register',{handle,name:handle,kind:'human',password:'media-test-password',americanConfirmed:true,rulesAccepted:true})).data;
+  const owner=await register('media.demo'),viewer=await register('viewer.demo'),observer=await register('observer.demo');
+  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jC6sAAAAASUVORK5CYII=','base64');const video=await readFile(new URL('./fixtures/red.mp4',import.meta.url));
+  const upload=async(bytes,mime,token)=>{const r=await fetch(app.base+'/api/media/upload',{method:'POST',headers:{'Content-Type':mime,...(token?{Authorization:'Bearer '+token}:{})},body:bytes});return {status:r.status,data:await r.json()};};
+  assert.equal((await upload(png,'image/png')).status,401);assert.equal((await upload(png,'image/png',owner.token)).status,403);
+  assert.equal((await request(app.base,'/api/posts',{text:'x'.repeat(301)},owner.token)).status,400);
+  const db=new DatabaseSync(join(dir,'botsky.sqlite'));db.prepare('INSERT INTO billing_subscriptions VALUES (?,?,?,?,?,?,?)').run('sub_media',owner.actor.id,'cus_media','active',Math.floor(Date.now()/1000)+3600,0,new Date().toISOString());
+  db.close();
+  assert.equal((await upload(Buffer.from('<svg/>'),'image/png',owner.token)).status,400);
+  const image=await upload(png,'image/png',owner.token),clip=await upload(video,'video/mp4',owner.token);assert.equal(image.status,201);assert.equal(clip.status,201);
+  assert.equal((await fetch(app.base+'/api/media?id='+image.data.id)).status,404,'Unattached files are private');
+  assert.equal((await request(app.base,'/api/posts',{text:'Stolen',media:[{id:image.data.id,alt:''}]},viewer.token)).status,403);
+  const imagePost=await request(app.base,'/api/posts',{text:'x'.repeat(833),media:[{id:image.data.id,alt:'A white pixel'}]},owner.token);assert.equal(imagePost.status,201);assert.equal(imagePost.data.post.text.length,833);assert.equal(imagePost.data.post.media[0].alt,'A white pixel');
+  assert.equal((await request(app.base,'/api/posts',{text:'x'.repeat(834)},owner.token)).status,400);
+  const videoPost=await request(app.base,'/api/posts',{text:'',media:[{id:clip.data.id,alt:'One second of red'}]},owner.token);assert.equal(videoPost.status,201);
+  assert.equal((await request(app.base,'/api/posts',{text:'Mixed',media:[{id:image.data.id,alt:''},{id:clip.data.id,alt:''}]},owner.token)).status,400);
+  const stream=await fetch(app.base+videoPost.data.post.media[0].url,{headers:{Range:'bytes=0-19'}});assert.equal(stream.status,206);assert.equal((await stream.arrayBuffer()).byteLength,20);
+  assert.equal((await fetch(app.base+videoPost.data.post.media[0].url,{headers:{Range:'bytes=99999999-'}})).status,416);
+  assert.equal((await request(app.base,'/api/reposts',{uri:imagePost.data.post.uri},viewer.token)).data.reposted,true);
+  assert.equal((await request(app.base,'/api/billing',null,viewer.token)).data.originalPostsRemaining,3);
+  await request(app.base,'/api/follows',{subject:viewer.actor.id},observer.token);
+  const following=(await request(app.base,'/api/feed?following=1',null,observer.token)).data.posts;assert.equal(following.length,1);assert.equal(following[0].repostBy.id,viewer.actor.id);assert.equal(following[0].author.id,owner.actor.id);
+  const quoted=await request(app.base,'/api/posts',{text:'A quote',quote:imagePost.data.post.uri},viewer.token);assert.equal(quoted.status,201);assert.equal(quoted.data.post.quote.uri,imagePost.data.post.uri);assert.equal((await request(app.base,'/api/billing',null,viewer.token)).data.originalPostsRemaining,2);
+  assert.equal((await request(app.base,'/api/posts',{text:'Reply + quote',parent:imagePost.data.post.uri,quote:imagePost.data.post.uri},viewer.token)).status,400);
+  const alerts=(await request(app.base,'/api/notifications',null,owner.token)).data.notifications;assert.ok(alerts.some(n=>n.type==='repost'));assert.ok(alerts.some(n=>n.type==='quote'));
+  await app.stop();app=await launch({DATA_DIR:dir});assert.equal((await fetch(app.base+videoPost.data.post.media[0].url)).status,200);assert.equal((await request(app.base,'/api/thread?uri='+encodeURIComponent(quoted.data.post.uri))).data.post.quote.media.length,1);
+  assert.equal((await request(app.base,'/api/reposts',{uri:imagePost.data.post.uri},viewer.token)).data.reposted,false);assert.equal((await request(app.base,'/api/feed?following=1',null,observer.token)).data.posts.length,1,'Only the quote remains');
+  await request(app.base,'/api/posts/delete',{uri:imagePost.data.post.uri},owner.token);assert.equal((await fetch(app.base+imagePost.data.post.media[0].url)).status,404);const tombstone=(await request(app.base,'/api/thread?uri='+encodeURIComponent(quoted.data.post.uri))).data.post.quote;assert.equal(tombstone.deleted,1);assert.equal(tombstone.media.length,0);assert.equal((await request(app.base,'/api/reposts',{uri:imagePost.data.post.uri},viewer.token)).status,410);
+ }finally{await app.stop();await rm(dir,{recursive:true,force:true});}
+});
 
 test('optional location status is session-only, persists without coordinates, and propagates to linked agents',async()=>{
  const app=await launch();
@@ -39,16 +73,19 @@ test('optional location status is session-only, persists without coordinates, an
  }finally{await app.stop();}
 });
 
-test('human login cannot bypass CAPTCHA by claiming to be an agent; enrolled agents still authenticate',async()=>{
- const app=await launch({TURNSTILE_SITE_KEY:'public-fixture-key',TURNSTILE_SECRET_KEY:'private-fixture-key',PUBLIC_ORIGIN:'https://www.amerika.social'});
+test('human registration and login cannot bypass CAPTCHA; enrolled agents still authenticate',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'amerika-captcha-'));let app=await launch({DATA_DIR:dir});
  try{
-  const config=await request(app.base,'/api/config');assert.equal(config.data.captcha.enabled,true);assert.equal(JSON.stringify(config.data).includes('private-fixture-key'),false);
   const owner=await request(app.base,'/api/register',{handle:'human.demo',name:'Human',kind:'human',password:'password-for-test',americanConfirmed:true,rulesAccepted:true});assert.equal(owner.status,200);
+  const created=await request(app.base,'/api/agents',{handle:'agent.demo',name:'Agent',password:'password-for-test',americanConfirmed:true,rulesAccepted:true},owner.data.token);assert.equal(created.status,201);
+  await app.stop();app=await launch({DATA_DIR:dir,TURNSTILE_SITE_KEY:'public-fixture-key',TURNSTILE_SECRET_KEY:'private-fixture-key',PUBLIC_ORIGIN:'https://www.amerika.social'});
+  const config=await request(app.base,'/api/config');assert.equal(config.data.captcha.enabled,true);assert.equal(JSON.stringify(config.data).includes('private-fixture-key'),false);
+  const registration=await request(app.base,'/api/register',{handle:'blocked.demo',name:'Blocked',kind:'human',password:'password-for-test',americanConfirmed:true,rulesAccepted:true});assert.equal(registration.status,400);assert.match(registration.data.error,/human verification/);
   const human=await request(app.base,'/api/login',{handle:'human.demo',password:'password-for-test',kind:'agent'});assert.equal(human.status,400);assert.match(human.data.error,/human verification/);
   const unknown=await request(app.base,'/api/login',{handle:'unknown.demo',password:'password-for-test',kind:'agent'});assert.equal(unknown.status,400);
-  const created=await request(app.base,'/api/agents',{handle:'agent.demo',name:'Agent',password:'password-for-test',americanConfirmed:true,rulesAccepted:true},owner.data.token);assert.equal(created.status,201);
   const agent=await request(app.base,'/api/login',{handle:'agent.demo',password:'password-for-test'});assert.equal(agent.status,200);assert.equal(agent.data.actor.kind,'agent');
- }finally{await app.stop();}
+  const moreAgent=await request(app.base,'/api/agents',{handle:'second-agent.demo',name:'Agent',password:'password-for-test',americanConfirmed:true,rulesAccepted:true},owner.data.token);assert.equal(moreAgent.status,201);
+ }finally{await app.stop();await rm(dir,{recursive:true,force:true});}
 });
 
 test('encrypted PDS account sessions and agent delegation survive process restart',async()=>{
@@ -75,7 +112,7 @@ test('PDS connection backs up and preserves legacy accounts while enrolling new 
     assert.equal((await request(app.base,'/api/register',{handle:'ant',password:'long-new-password',name:'Duplicate',kind:'human',email:'duplicate@example.com',rulesAccepted:true,americanConfirmed:true})).status,409);
     const fresh=await request(app.base,'/api/register',{handle:'newvoice',password:'long-new-password',name:'New voice',kind:'human',email:'newvoice@example.com',rulesAccepted:true,americanConfirmed:true});assert.equal(fresh.status,200);assert.equal(fresh.data.actor.networkIdentity,true);assert.equal(fresh.data.actor.handle,'newvoice.pds.amerika.example');
     const invite=calls.find(c=>c.path.endsWith('createInviteCode'));assert.equal(invite.auth,'Basic '+Buffer.from('admin:test-admin-password').toString('base64'));assert.equal(invite.body.useCount,1);assert.equal(calls.find(c=>c.path.endsWith('createAccount')).body.inviteCode,'single-use-invite');
-    const newPost=await request(app.base,'/api/posts',{text:'Actual AT Protocol record'},fresh.data.token);assert.equal(newPost.status,201);assert.ok(newPost.data.post.uri.startsWith('at://'));
+    assert.equal((await request(app.base,'/api/profile?handle=newvoice')).data.actor.id,fresh.data.actor.id);const newPost=await request(app.base,'/api/posts',{text:'Actual AT Protocol record @newvoice'},fresh.data.token);assert.equal(newPost.status,201);assert.ok(newPost.data.post.uri.startsWith('at://'));
     const writes=calls.filter(c=>c.path.endsWith('createRecord')).length;
     assert.equal((await request(app.base,'/api/follows',{subject:'preview:ant'},fresh.data.token)).status,200);
     assert.equal((await request(app.base,'/api/likes',{uri:oldPost.data.post.uri},fresh.data.token)).status,200);

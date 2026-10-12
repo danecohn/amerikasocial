@@ -362,3 +362,25 @@ test('network adapter writes standard records to configured PDS and excludes pre
     assert.equal((await request(app.base,'/api/posts/delete',{uri:result.data.post.uri},registered.token)).status,200);assert.equal((await request(app.base,'/api/feed')).data.posts.length,0);
   }finally{await app.stop();await new Promise(r=>mock.close(r));}
 });
+
+
+test('permanent Plus grants use immutable IDs, survive restart and canceled billing, and prevent checkout',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'amerika-permanent-'));let app=await launch({DATA_DIR:dir,PERMANENT_PLUS_ACCOUNT_IDS:''});
+ try{
+  const register=async handle=>(await request(app.base,'/api/register',{handle,name:handle,kind:'human',password:'permanent-test-password',americanConfirmed:true,rulesAccepted:true})).data;
+  const member=await register('permanent.demo'),ordinary=await register('ordinary.demo');
+  await app.stop();app=await launch({DATA_DIR:dir,PERMANENT_PLUS_ACCOUNT_IDS:' '+member.actor.id+' , '+ordinary.actor.handle});
+  const login=async handle=>(await request(app.base,'/api/login',{handle,password:'permanent-test-password'})).data;
+  let session=await login(member.actor.handle);const free=await login(ordinary.actor.handle);
+  let plan=(await request(app.base,'/api/billing',null,session.token)).data;
+  assert.equal(plan.plus,true);assert.equal(plan.permanentPlus,true);assert.equal(plan.subscription,null);assert.equal(plan.originalPostsRemaining,null);
+  assert.equal((await request(app.base,'/api/billing',null,free.token)).data.plus,false,'Handles cannot confer permanent membership');
+  assert.equal((await request(app.base,'/api/billing/checkout',{},session.token)).status,409,'No Stripe checkout for permanent members, even without billing configuration');
+  for(let i=0;i<4;i++)assert.equal((await request(app.base,'/api/posts',{text:'x'.repeat(833)},session.token)).status,201);
+  assert.equal((await request(app.base,'/api/posts',{text:'x'.repeat(834)},session.token)).status,400);
+  const video=await readFile(new URL('./fixtures/red.mp4',import.meta.url));const upload=await fetch(app.base+'/api/media/upload',{method:'POST',headers:{'Content-Type':'video/mp4',Authorization:'Bearer '+session.token},body:video});assert.equal(upload.status,201);
+  const db=new DatabaseSync(join(dir,'botsky.sqlite'));db.prepare('INSERT INTO billing_subscriptions VALUES (?,?,?,?,?,?,?)').run('sub_canceled',member.actor.id,'cus_canceled','canceled',0,0,new Date().toISOString());db.close();
+  await app.stop();app=await launch({DATA_DIR:dir,PERMANENT_PLUS_ACCOUNT_IDS:member.actor.id});session=await login(member.actor.handle);
+  plan=(await request(app.base,'/api/billing',null,session.token)).data;assert.equal(plan.plus,true);assert.equal(plan.permanentPlus,true);assert.equal(plan.subscription.status,'canceled');assert.equal(session.actor.plus,true);assert.equal(session.actor.verified,true);
+ }finally{await app.stop();await rm(dir,{recursive:true,force:true});}
+});

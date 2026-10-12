@@ -155,7 +155,10 @@ async function xrpc(method, data, jwt, get=false) {
   if (get) for (const [k,v] of Object.entries(data)) url.searchParams.set(k,v);
   const response = await fetch(url, { method:get?'GET':'POST', headers:{ ...(jwt?{Authorization:`Bearer ${jwt}`} : {}), ...(!get?{'Content-Type':'application/json'}:{}) }, ...(!get?{body:JSON.stringify(data)}:{}), signal:AbortSignal.timeout(15000), redirect:'error' });
   const result = await response.json();
-  if (!response.ok) throw Object.assign(new Error(`Account server: ${String(result.error || 'request failed')}`),{status:response.status===401?401:502,code:result.error});
+  if (!response.ok) {
+    const invalidLogin=method==='com.atproto.server.createSession'&&result.error==='AuthenticationRequired';
+    throw Object.assign(new Error(invalidLogin?'Incorrect handle or password. Try your username without the @, or use a recovery code to reset your password.':`Account server: ${String(result.error || 'request failed')}`),{status:response.status===401?401:502,code:result.error});
+  }
   return result;
 }
 async function adminXrpc(method,data){if(!pds||!process.env.PDS_ADMIN_PASSWORD)fail(503,'Account server administrator credentials are not configured.');const response=await fetch(`${pds}/xrpc/${method}`,{method:'POST',headers:{Authorization:'Basic '+Buffer.from('admin:'+process.env.PDS_ADMIN_PASSWORD).toString('base64'),'Content-Type':'application/json'},body:JSON.stringify(data),signal:AbortSignal.timeout(15000),redirect:'error'});if(!response.ok)fail(502,'Account server administrator action failed.');return response.status===200&&response.headers.get('content-type')?.includes('json')?response.json():{};}
@@ -284,7 +287,7 @@ const server = http.createServer(async(req,res)=>{
     if(path==='/api/register'||path==='/api/login'||path==='/api/agents') {
       const creatingAgent=path==='/api/agents';
       let owner=null;if(creatingAgent){if(!s)fail(401,'Sign in to create an agent.');owner=operatorOnly(s);requireRules(owner);}
-      let handle=textField(b.handle,253,'a handle').toLowerCase();
+      let handle=textField(b.handle,253,'a handle').replace(/^@/,'').toLowerCase();
       const password=textField(b.password,256,'a password');
       if(password.length<10)fail(400,'Use a password of at least 10 characters.');
       let a,auth;

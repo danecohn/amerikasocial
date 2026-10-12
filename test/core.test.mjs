@@ -16,6 +16,29 @@ async function launch(env={}) {
 }
 async function request(base,path,body,token,extra={}){const response=await fetch(base+path,{method:body?'POST':'GET',headers:{...(body?{'Content-Type':'application/json'}:{}),...(token?{Authorization:`Bearer ${token}`} : {}),...extra},...(body?{body:JSON.stringify(body)}:{})});return {status:response.status,data:await response.json()};}
 
+test('optional location status is session-only, persists without coordinates, and propagates to linked agents',async()=>{
+ const app=await launch();
+ try{
+  const owner=(await request(app.base,'/api/register',{handle:'location.demo',name:'Location',kind:'human',password:'location-password',americanConfirmed:true,rulesAccepted:true,americanStatus:'verified'})).data;
+  assert.equal(owner.actor.americanStatus,'self-declared');
+  const other=(await request(app.base,'/api/register',{handle:'other.demo',name:'Other',kind:'human',password:'location-password',americanConfirmed:true,rulesAccepted:true})).data;
+  const agent=(await request(app.base,'/api/agents',{handle:'location-agent.demo',name:'Agent',password:'location-password',americanConfirmed:true,rulesAccepted:true},owner.token)).data.actor;
+  const valid={consent:true,latitude:33.45,longitude:-112.07,accuracy:30,timestamp:Date.now(),actor:other.actor.id};
+  assert.equal((await request(app.base,'/api/location/verify',valid)).status,401);
+  assert.equal((await request(app.base,'/api/location/verify',{...valid,consent:false},owner.token)).status,400);
+  assert.equal((await request(app.base,'/api/location/verify',{...valid,latitude:43.65,longitude:-79.38},owner.token)).status,400);
+  const verified=await request(app.base,'/api/location/verify',valid,owner.token);assert.equal(verified.status,200);assert.equal(verified.data.actor.americanStatus,'verified');assert.equal(verified.data.actor.plus,false);
+  assert.equal((await request(app.base,'/api/me',null,other.token)).data.actor.americanStatus,'self-declared');
+  const profile=(await request(app.base,'/api/profile?id='+encodeURIComponent(agent.id))).data.actor;assert.equal(profile.americanStatus,'verified');assert.equal(profile.americanVerification.operator,true);assert.equal(JSON.stringify(profile).includes('latitude'),false);
+  const agentAuth=(await request(app.base,'/api/login',{handle:agent.handle,password:'location-password'})).data;
+  assert.equal((await request(app.base,'/api/location/verify',valid,agentAuth.token)).status,403);
+  const key=(await request(app.base,'/api/agent-keys',{actor:agent.id,name:'Location test',scopes:['profile'],days:1},owner.token)).data.token;
+  assert.equal((await request(app.base,'/api/location/verify',valid,key)).status,403);
+  await request(app.base,'/api/location/remove',{},owner.token);
+  assert.equal((await request(app.base,'/api/profile?id='+encodeURIComponent(agent.id))).data.actor.americanStatus,'self-declared');
+ }finally{await app.stop();}
+});
+
 test('human login cannot bypass CAPTCHA by claiming to be an agent; enrolled agents still authenticate',async()=>{
  const app=await launch({TURNSTILE_SITE_KEY:'public-fixture-key',TURNSTILE_SECRET_KEY:'private-fixture-key',PUBLIC_ORIGIN:'https://www.amerika.social'});
  try{

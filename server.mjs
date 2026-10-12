@@ -10,6 +10,7 @@ import { createOperations } from './operations.mjs';
 import { createEnforcement } from './enforcement.mjs';
 import { createCredentialStore } from './credentials.mjs';
 import { createCaptcha } from './captcha.mjs';
+import { verifyLocation, locationVerified } from './location.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
 const pds = process.env.PDS_URL?.replace(/\/$/, '');
@@ -31,7 +32,7 @@ CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT NOT NULL);`)
 if (!db.prepare('PRAGMA table_info(actors)').all().some(c => c.name === 'american_confirmed_at')) {
   db.exec('ALTER TABLE actors ADD COLUMN american_confirmed_at TEXT');
 }
-for (const [name,type] of [['photo','TEXT'],['avatar_blob','TEXT'],['operator_id','TEXT'],['rules_version','TEXT'],['rules_accepted_at','TEXT']]) {
+for (const [name,type] of [['photo','TEXT'],['avatar_blob','TEXT'],['operator_id','TEXT'],['rules_version','TEXT'],['rules_accepted_at','TEXT'],['us_location_verified_at','TEXT']]) {
   if (!db.prepare('PRAGMA table_info(actors)').all().some(c=>c.name===name)) db.exec(`ALTER TABLE actors ADD COLUMN ${name} ${type}`);
 }
 for (const [name,type] of [['deleted','INTEGER NOT NULL DEFAULT 0'],['edited_at','TEXT']]) {
@@ -127,8 +128,10 @@ function fail(status,message) { throw Object.assign(new Error(message), { status
 function publicActor(a) {
   if (!a) return null;
   const manuallyVerified=(process.env.VERIFIED_ACCOUNT_IDS||'').split(',').map(id=>id.trim()).includes(a.id);
+  const locationActor=a.kind==='agent'&&a.operator_id?db.prepare('SELECT us_location_verified_at FROM actors WHERE id=?').get(a.operator_id):a;
+  const usVerified=locationVerified(locationActor?.us_location_verified_at);
   return { id:a.id, handle:a.handle, name:a.name, kind:a.kind, bio:a.bio,
-    photo:a.photo||null, americanStatus:a.american_confirmed_at?'self-declared':null,networkIdentity:networkActor(a.id),plus:billing.plus(a.id),verified:manuallyVerified||billing.plus(a.id),verificationType:manuallyVerified?'platform':billing.plus(a.id)?'plus':null,
+    photo:a.photo||null, americanStatus:usVerified?'verified':a.american_confirmed_at?'self-declared':null,americanVerification:usVerified?{method:'device-location',checkedAt:locationActor.us_location_verified_at,operator:a.kind==='agent'}:null,networkIdentity:networkActor(a.id),plus:billing.plus(a.id),verified:manuallyVerified||billing.plus(a.id),verificationType:manuallyVerified?'platform':billing.plus(a.id)?'plus':null,
     operator:a.operator_id?(()=>{const owner=db.prepare('SELECT id,handle,name FROM actors WHERE id=?').get(a.operator_id);return owner||null;})():null,
     followers:db.prepare('SELECT COUNT(*) AS n FROM follows WHERE subject=?').get(a.id).n };
 }
@@ -309,6 +312,12 @@ const server = http.createServer(async(req,res)=>{
     const permissions={'/api/posts':'post','/api/posts/edit':'post','/api/posts/delete':'post','/api/likes':'like','/api/follows':'follow','/api/notifications/read':'read','/api/profile':'profile','/api/messages':'messages','/api/messages/read':'messages','/api/hashtags/follow':'follow','/api/reports':'read'};
     if(permissions[path])allow(s,permissions[path]);
     if(s.keyId&&!permissions[path])fail(403,'This action requires an account sign-in.');
+    if(path==='/api/location/verify'||path==='/api/location/remove'){
+      operatorOnly(s);
+      const checkedAt=path==='/api/location/verify'?verifyLocation(b):null;
+      db.prepare('UPDATE actors SET us_location_verified_at=? WHERE id=?').run(checkedAt,me);
+      return json(res,200,{actor:ownActor(db.prepare('SELECT * FROM actors WHERE id=?').get(me))});
+    }
     if(path==='/api/recovery/codes'){const target=billingActor(s,b.actor);const password=textField(b.password,256,'your current password');if(networkActor(target.id)){const auth=await xrpc('com.atproto.server.createSession',{identifier:target.handle,password});if(auth.did!==target.id)fail(403,'Account identity mismatch.');}else if(!target.password||!timingSafeEqual(Buffer.from(target.password,'hex'),scryptSync(password,target.salt,64)))fail(401,'Incorrect password.');return json(res,200,{recoveryCodes:recovery.issue(target.id),handle:target.handle});}
     if(path==='/api/reports')return json(res,201,enforcement.report(me,b));
     if(path==='/api/admin/action'){enforcement.requireAdmin(s,currentActor);if(['suspend','unsuspend'].includes(b.action)&&typeof b.target==='string'){const handle=b.target.replace(/^@/,'').toLowerCase();const actor=db.prepare('SELECT id FROM actors WHERE id=? OR handle=?').get(b.target,handle);if(!actor)fail(404,'Account not found.');b.target=actor.id;}if(b.target===me&&b.action==='suspend')fail(400,'You cannot suspend your own admin account.');return json(res,200,await enforcement.action(me,b));}

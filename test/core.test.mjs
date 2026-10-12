@@ -384,3 +384,27 @@ test('permanent Plus grants use immutable IDs, survive restart and canceled bill
   plan=(await request(app.base,'/api/billing',null,session.token)).data;assert.equal(plan.plus,true);assert.equal(plan.permanentPlus,true);assert.equal(plan.subscription.status,'canceled');assert.equal(session.actor.plus,true);assert.equal(session.actor.verified,true);
  }finally{await app.stop();await rm(dir,{recursive:true,force:true});}
 });
+
+
+test('linked bots inherit operator Plus, enforce expiry and unlinking, and keep independent access',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'amerika-inheritance-'));let app=await launch({DATA_DIR:dir,PERMANENT_PLUS_ACCOUNT_IDS:''});
+ try{
+  const owner=(await request(app.base,'/api/register',{handle:'inherit-owner.demo',name:'Owner',kind:'human',password:'inherit-test-password',americanConfirmed:true,rulesAccepted:true})).data;
+  const agent=(await request(app.base,'/api/agents',{handle:'inherit-bot.demo',name:'Bot',password:'inherit-test-password',americanConfirmed:true,rulesAccepted:true},owner.token)).data.actor;
+  const key=(await request(app.base,'/api/agent-keys',{actor:agent.id,name:'Posting',scopes:['post'],days:1},owner.token)).data.token;
+  const db=new DatabaseSync(join(dir,'botsky.sqlite'));
+  const plan=async()=> (await request(app.base,'/api/billing?actor='+encodeURIComponent(agent.id),null,owner.token)).data;
+  assert.equal((await plan()).plus,false);
+  db.prepare('INSERT INTO billing_subscriptions VALUES (?,?,?,?,?,?,?)').run('sub_owner',owner.actor.id,'cus_owner','active',Math.floor(Date.now()/1000)+3600,0,new Date().toISOString());
+  assert.equal((await plan()).inheritedPlus,true);assert.equal((await plan()).permanentPlus,false);
+  assert.equal((await request(app.base,'/api/billing/checkout',{actor:agent.id},owner.token)).status,409);
+  for(let i=0;i<4;i++)assert.equal((await request(app.base,'/api/posts',{text:'x'.repeat(833)},key)).status,201);
+  const video=await readFile(new URL('./fixtures/red.mp4',import.meta.url));const upload=await fetch(app.base+'/api/media/upload',{method:'POST',headers:{'Content-Type':'video/mp4',Authorization:'Bearer '+key},body:video});assert.equal(upload.status,201);
+  db.prepare('UPDATE billing_subscriptions SET paid_until=0 WHERE id=?').run('sub_owner');assert.equal((await plan()).plus,false);assert.equal((await request(app.base,'/api/posts',{text:'x'.repeat(833)},key)).status,400);
+  db.close();await app.stop();app=await launch({DATA_DIR:dir,PERMANENT_PLUS_ACCOUNT_IDS:owner.actor.id});
+  const ownerLogin=(await request(app.base,'/api/login',{handle:owner.actor.handle,password:'inherit-test-password'})).data;
+  const permanentPlan=(await request(app.base,'/api/billing?actor='+encodeURIComponent(agent.id),null,ownerLogin.token)).data;assert.equal(permanentPlan.plus,true);assert.equal(permanentPlan.permanentPlus,true);assert.equal(permanentPlan.inheritedPlus,true);
+  const edit=new DatabaseSync(join(dir,'botsky.sqlite'));edit.prepare('UPDATE actors SET operator_id=NULL WHERE id=?').run(agent.id);assert.equal((await request(app.base,'/api/me',null,key)).data.actor.plus,false);
+  edit.prepare('INSERT INTO billing_subscriptions VALUES (?,?,?,?,?,?,?)').run('sub_bot',agent.id,'cus_bot','active',Math.floor(Date.now()/1000)+3600,0,new Date().toISOString());assert.equal((await request(app.base,'/api/me',null,key)).data.actor.plus,true);edit.close();
+ }finally{await app.stop();await rm(dir,{recursive:true,force:true});}
+});

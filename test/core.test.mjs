@@ -21,7 +21,7 @@ test('Plus media, repost following feed, quote quota, streaming, deletion and du
  try{
   const register=async handle=>(await request(app.base,'/api/register',{handle,name:handle,kind:'human',password:'media-test-password',americanConfirmed:true,rulesAccepted:true})).data;
   const owner=await register('media.demo'),viewer=await register('viewer.demo'),observer=await register('observer.demo');
-  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jC6sAAAAASUVORK5CYII=','base64');const video=await readFile(new URL('./fixtures/red.mp4',import.meta.url));
+  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADElEQVQImWP4//8/AAX+Av5Y8msOAAAAAElFTkSuQmCC','base64');const video=await readFile(new URL('./fixtures/red.mp4',import.meta.url));
   const upload=async(bytes,mime,token)=>{const r=await fetch(app.base+'/api/media/upload',{method:'POST',headers:{'Content-Type':mime,...(token?{Authorization:'Bearer '+token}:{})},body:bytes});return {status:r.status,data:await r.json()};};
   assert.equal((await upload(png,'image/png')).status,401);assert.equal((await upload(png,'image/png',owner.token)).status,403);
   assert.equal((await request(app.base,'/api/posts',{text:'x'.repeat(301)},owner.token)).status,400);
@@ -29,6 +29,7 @@ test('Plus media, repost following feed, quote quota, streaming, deletion and du
   db.close();
   assert.equal((await upload(Buffer.from('<svg/>'),'image/png',owner.token)).status,400);
   const image=await upload(png,'image/png',owner.token),clip=await upload(video,'video/mp4',owner.token);assert.equal(image.status,201);assert.equal(clip.status,201);
+  const iphonePhoto=await upload(await readFile(new URL('./fixtures/iphone.heic',import.meta.url)),'image/heic',owner.token);assert.equal(iphonePhoto.status,201);assert.equal(iphonePhoto.data.mime,'image/webp');assert.ok(iphonePhoto.data.preview.startsWith('data:image/webp;base64,'));assert.equal((await upload(Buffer.from('bad HEIC'),'image/heic',owner.token)).status,400);
   if(process.env.FFMPEG_PATH){const iphoneUpload=await upload(await readFile(new URL('./fixtures/iphone.mov',import.meta.url)),'video/quicktime',owner.token);assert.equal(iphoneUpload.status,201);assert.equal(iphoneUpload.data.mime,'video/mp4');}
   assert.equal((await fetch(app.base+'/api/media?id='+image.data.id)).status,404,'Unattached files are private');
   assert.equal((await request(app.base,'/api/posts',{text:'Stolen',media:[{id:image.data.id,alt:''}]},viewer.token)).status,403);
@@ -57,7 +58,7 @@ test('current location verification unlocks photos, never videos, and expiry or 
   const owner=(await request(app.base,'/api/register',{handle:'photo-owner.demo',name:'Photo owner',kind:'human',password:'photo-test-password',americanConfirmed:true,rulesAccepted:true})).data;
   const agent=(await request(app.base,'/api/agents',{handle:'photo-agent.demo',name:'Photo agent',password:'photo-test-password',americanConfirmed:true,rulesAccepted:true},owner.token)).data.actor;
   const agentKey=(await request(app.base,'/api/agent-keys',{actor:agent.id,name:'Photos',scopes:['post'],days:1},owner.token)).data.token;
-  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jC6sAAAAASUVORK5CYII=','base64');const video=await readFile(new URL('./fixtures/red.mp4',import.meta.url));
+  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAADElEQVQImWP4//8/AAX+Av5Y8msOAAAAAElFTkSuQmCC','base64');const video=await readFile(new URL('./fixtures/red.mp4',import.meta.url));
   const upload=async(bytes,mime,token=owner.token)=>{const r=await fetch(app.base+'/api/media/upload',{method:'POST',headers:{'Content-Type':mime,Authorization:'Bearer '+token},body:bytes});return {status:r.status,data:await r.json()};};
   const editDb=fn=>{const db=new DatabaseSync(join(app.dir,'botsky.sqlite'));try{fn(db);}finally{db.close();}};
   assert.equal((await upload(png,'image/png')).status,403);

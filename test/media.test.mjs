@@ -21,3 +21,14 @@ test('video accepts the 250 MB limit and converts real iPhone HEVC MOV for porta
  const converted=await normalizeVideo(iphone,'video/quicktime');assert.equal(validateMedia(converted,'video/mp4').h264,true);assert.equal(converted.toString('ascii',4,8),'ftyp');
  await assert.rejects(normalizeVideo(Buffer.from('not a movie'),'video/quicktime'),e=>e.status===400);
 });
+
+
+test('photo uploads accept 250 MB sources and convert HEIC and large PNG into display images',async()=>{
+ const {normalizePhoto,validatePhotoUpload}=await import('../photo.mjs');const sharp=(await import('sharp')).default;
+ assert.throws(()=>validatePhotoUpload(Buffer.alloc(250000001),'image/jpeg'),e=>e.status===413);
+ const iphone=await readFile(new URL('./fixtures/iphone.heic',import.meta.url));const converted=await normalizePhoto(iphone,'image/heic');validateMedia(converted,'image/webp');const metadata=await sharp(converted).metadata();assert.equal(metadata.width,64);assert.equal(metadata.height,48);
+ const png=await sharp({create:{width:10,height:5,channels:3,background:'red'}}).png().toBuffer();const large=Buffer.concat([png,Buffer.alloc(21000000)]);validatePhotoUpload(large,'image/png');const resized=await normalizePhoto(large,'image/png');assert.ok(resized.length<1000000);assert.equal((await sharp(resized).metadata()).format,'webp');
+ await assert.rejects(normalizePhoto(Buffer.from('<svg/>'),'image/heic'),e=>e.status===400);
+ await assert.rejects(normalizePhoto(iphone,'image/png'),e=>e.status===400);
+ const bomb=await sharp({create:{width:1,height:1,channels:3,background:'white'}}).png().toBuffer();bomb.writeUInt32BE(100000,16);bomb.writeUInt32BE(100000,20);await assert.rejects(normalizePhoto(bomb,'image/png'),e=>e.status===400);
+});

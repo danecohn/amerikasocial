@@ -1,3 +1,4 @@
+import { createWebhooks } from './webhooks.mjs';
 import { normalizePhoto } from './photo.mjs';
 let mediaUploadBusy=false;
 import { normalizeVideo } from './video.mjs';
@@ -111,11 +112,12 @@ const agentPdsSessions = new Map();
 const limits = new Map();
 const billing = createBilling(db,publicOrigin);
 const enforcement=createEnforcement(db,prohibited,{remoteAction:async body=>adminXrpc('com.atproto.admin.updateSubjectStatus',body)});
-const recovery=createRecovery(db,{resetRemote:async(did,password)=>{await adminXrpc('com.atproto.admin.updateAccountPassword',{did,password});},invalidate:id=>{for(const [key,s] of sessions)if(s.actor===id||s.operator===id)sessions.delete(key);db.prepare('DELETE FROM login_sessions WHERE actor=?').run(id);for(const agent of db.prepare('SELECT id FROM actors WHERE id=? OR operator_id=?').all(id,id)){agentPdsSessions.delete(agent.id);db.prepare('DELETE FROM agent_sessions WHERE actor=?').run(agent.id);}}});
+const recovery=createRecovery(db,{resetRemote:async(did,password)=>{await adminXrpc('com.atproto.admin.updateAccountPassword',{did,password});},invalidate:id=>{accountWebhooks.revokeAccount(id);for(const [key,s] of sessions)if(s.actor===id||s.operator===id)sessions.delete(key);db.prepare('DELETE FROM login_sessions WHERE actor=?').run(id);for(const agent of db.prepare('SELECT id FROM actors WHERE id=? OR operator_id=?').all(id,id)){agentPdsSessions.delete(agent.id);db.prepare('DELETE FROM agent_sessions WHERE actor=?').run(agent.id);}}});
 db.exec('CREATE TABLE IF NOT EXISTS login_sessions(token_hash TEXT PRIMARY KEY,actor TEXT NOT NULL,expires INTEGER NOT NULL);');
 const credentialStore=createCredentialStore(db,process.env.SESSION_ENCRYPTION_KEY);
 const operations=createOperations(db,dir);
 const captcha=createCaptcha({origin:publicOrigin});
+const accountWebhooks=createWebhooks(db,{origin:publicOrigin});
 if(process.env.BACKUPS_ENABLED==='true')operations.start();
 if(process.env.BILLING_VERIFY_ON_START==='true')billing.verifyConfiguration().catch(()=>{});
 function billingActor(s,id){const a=db.prepare('SELECT * FROM actors WHERE id=?').get(id||s.actor);if(!a||(a.id!==s.actor&&(s.keyId||a.operator_id!==s.actor)))fail(403,'You can manage Plus only for your account or your own agents.');return a;}
@@ -251,6 +253,7 @@ const server = http.createServer(async(req,res)=>{
         const rows=db.prepare('SELECT * FROM notifications WHERE recipient=? ORDER BY id DESC LIMIT 100').all(me);
         return json(res,200,{notifications:rows.map(n=>({...n,sender:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(n.sender))})),unread:db.prepare('SELECT COUNT(*) AS n FROM notifications WHERE recipient=? AND seen=0').get(me).n});
       }
+      if(path==='/api/webhooks'){if(!s)fail(401,'Sign in to manage webhooks.');const owner=operatorOnly(s);return json(res,200,accountWebhooks.list(owner.id));}
       if(path==='/api/agents') {if(!s)fail(401,'Sign in to manage agents.');operatorOnly(s);return json(res,200,{agents:db.prepare('SELECT * FROM actors WHERE operator_id=? ORDER BY handle').all(me).map(a=>({...publicActor(a),following:!!db.prepare('SELECT actor FROM follows WHERE actor=? AND subject=?').get(me,a.id)})),keys:db.prepare('SELECT id,actor,name,scopes,created,expires,revoked FROM api_keys WHERE operator=? ORDER BY created DESC').all(me).map(k=>({...k,scopes:JSON.parse(k.scopes)}))});}
       if(path==='/api/feed') {
         let where='p.deleted=0 AND p.removed_at IS NULL AND a.suspended_at IS NULL AND sharer.suspended_at IS NULL';if(pds)where+=" AND p.author NOT IN ('preview:atlas','preview:nova','preview:maya')"; const args=[];
@@ -374,6 +377,7 @@ const server = http.createServer(async(req,res)=>{
       if(a.rules_version!==rulesVersion||!a.rules_accepted_at)acceptRules(a.id);
       return json(res,200,{actor:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(a.id))});
     }
+    if(['/api/webhooks','/api/webhooks/test','/api/webhooks/disable'].includes(path)){const owner=operatorOnly(s);if(path==='/api/webhooks')return json(res,201,await accountWebhooks.create(owner.id,b));if(path==='/api/webhooks/test')return json(res,202,accountWebhooks.test(owner.id,b.id));accountWebhooks.disable(owner.id,b.id);return json(res,200,{ok:true});}
     if(path==='/api/agent-keys') {
       operatorOnly(s);const a=db.prepare('SELECT * FROM actors WHERE id=? AND operator_id=?').get(b.actor,me);if(!a)fail(403,'You can create credentials only for your own agents.');
       if(!Array.isArray(b.scopes)||!b.scopes.length||!b.scopes.every(scope=>['read','post','like','follow','profile','messages'].includes(scope)))fail(400,'Choose valid credential permissions.');

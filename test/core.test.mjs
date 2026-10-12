@@ -412,3 +412,30 @@ test('linked bots inherit operator Plus, enforce expiry and unlinking, and keep 
   edit.prepare('INSERT INTO billing_subscriptions VALUES (?,?,?,?,?,?,?)').run('sub_bot',agent.id,'cus_bot','active',Math.floor(Date.now()/1000)+3600,0,new Date().toISOString());assert.equal((await request(app.base,'/api/me',null,key)).data.actor.plus,true);edit.close();
  }finally{await app.stop();await rm(dir,{recursive:true,force:true});}
 });
+
+
+test('account webhooks enforce ownership, sign notifications, retry durably, protect DM text and disable delivery',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'amerika-webhooks-'));const received=[];let failFirst=true;
+ const receiver=http.createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;received.push({raw,headers:req.headers,body:JSON.parse(raw)});res.statusCode=failFirst?500:204;failFirst=false;res.end();});await new Promise(r=>receiver.listen(0,'127.0.0.1',r));
+ const env={DATA_DIR:dir,SESSION_ENCRYPTION_KEY:'bc'.repeat(32),ALLOW_TEST_WEBHOOKS:'1'};let app=await launch(env);const url='http://127.0.0.1:'+receiver.address().port+'/events';
+ const wait=async(fn)=>{for(let i=0;i<100;i++){if(fn())return;await new Promise(r=>setTimeout(r,100));}throw Error('Webhook delivery timed out');};
+ try{
+  const register=async handle=>(await request(app.base,'/api/register',{handle,name:handle,kind:'human',password:'webhook-test-password',americanConfirmed:true,rulesAccepted:true})).data;
+  const owner=await register('hooks.demo'),other=await register('sender.demo');const bot=(await request(app.base,'/api/agents',{handle:'hookbot.demo',name:'Bot',password:'webhook-test-password',americanConfirmed:true,rulesAccepted:true},owner.token)).data.actor;
+  const key=(await request(app.base,'/api/agent-keys',{actor:bot.id,name:'Bot',scopes:['post','messages'],days:1},owner.token)).data.token;
+  assert.equal((await request(app.base,'/api/webhooks',{actor:bot.id,url,events:['reply']},other.token)).status,403);assert.equal((await request(app.base,'/api/webhooks',null,key)).status,403);
+  const created=(await request(app.base,'/api/webhooks',{actor:bot.id,url,events:['reply','message']},owner.token));assert.equal(created.status,201);const hook=created.data;
+  const listed=(await request(app.base,'/api/webhooks',null,owner.token)).data;assert.equal(JSON.stringify(listed).includes(hook.secret),false);assert.equal((await request(app.base,'/api/webhooks/test',{id:hook.id},other.token)).status,404);
+  const root=(await request(app.base,'/api/posts',{text:'Bot root'},key)).data.post;await request(app.base,'/api/posts',{text:'Reply for the bot',parent:root.uri},other.token);await wait(()=>received.length===1);
+  assert.equal(received[0].body.type,'notification.reply');assert.equal(received[0].body.account.id,bot.id);assert.equal(received[0].body.data.post.text,'Reply for the bot');
+  const {createHmac}=await import('node:crypto');assert.equal(received[0].headers['amerika-webhook-signature'],'v1='+createHmac('sha256',hook.secret).update(received[0].headers['amerika-webhook-timestamp']+'.'+received[0].raw).digest('hex'));
+  await new Promise(r=>setTimeout(r,100));await app.stop();const db=new DatabaseSync(join(dir,'botsky.sqlite'));assert.equal(db.prepare('SELECT status FROM webhook_deliveries').get().status,'pending');assert.equal(db.prepare('SELECT secret FROM webhooks').get().secret.includes(hook.secret),false);db.prepare('UPDATE webhook_deliveries SET next_at=0').run();db.close();app=await launch(env);
+  await wait(()=>received.length===2);assert.equal(received[1].raw,received[0].raw);assert.equal(received[1].headers['amerika-webhook-id'],received[0].headers['amerika-webhook-id']);
+  await request(app.base,'/api/messages',{recipient:bot.id,text:'Private text excluded'},other.token);await wait(()=>received.length===3);assert.equal(received[2].body.type,'notification.message');assert.equal(received[2].body.data.message.text,undefined);assert.equal(received[2].raw.includes('Private text excluded'),false);
+  const humanHook=(await request(app.base,'/api/webhooks',{actor:owner.actor.id,url,events:['message'],includeMessages:true},owner.token)).data;await request(app.base,'/api/messages',{recipient:owner.actor.id,text:'Explicitly included'},other.token);await wait(()=>received.length===4);assert.equal(received[3].body.data.message.text,'Explicitly included');
+  assert.equal((await request(app.base,'/api/webhooks/test',{id:humanHook.id},owner.token)).status,202);await wait(()=>received.length===5);assert.equal(received[4].body.type,'webhook.test');
+  await request(app.base,'/api/webhooks/disable',{id:hook.id},owner.token);await request(app.base,'/api/messages',{recipient:bot.id,text:'No callback after disable'},other.token);await new Promise(r=>setTimeout(r,1200));assert.equal(received.length,5);
+  const deliveries=(await request(app.base,'/api/webhooks',null,owner.token)).data.webhooks;assert.equal(deliveries.find(w=>w.id===hook.id).enabled,false);
+  await request(app.base,'/api/webhooks',{actor:bot.id,url,events:['message'],includeMessages:true},owner.token);const unlink=new DatabaseSync(join(dir,'botsky.sqlite'));unlink.prepare('UPDATE actors SET operator_id=NULL WHERE id=?').run(bot.id);unlink.close();await request(app.base,'/api/messages',{recipient:bot.id,text:'Must not reach the old operator'},other.token);await new Promise(r=>setTimeout(r,1200));assert.equal(received.length,5);
+ }finally{await app.stop();await new Promise(r=>receiver.close(r));await rm(dir,{recursive:true,force:true});}
+});

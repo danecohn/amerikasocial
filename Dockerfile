@@ -3,7 +3,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -r
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts
-COPY server.mjs billing.mjs recovery.mjs operations.mjs enforcement.mjs credentials.mjs captcha.mjs location.mjs media.mjs video.mjs photo.mjs photo-worker.mjs ./
+COPY server.mjs billing.mjs recovery.mjs operations.mjs enforcement.mjs credentials.mjs captcha.mjs location.mjs media.mjs video.mjs photo.mjs photo-worker.mjs webhooks.mjs ./
 COPY geo ./geo
 COPY public ./public
 COPY scripts ./scripts

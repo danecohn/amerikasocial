@@ -5,7 +5,7 @@ export const escapeHtml=value=>String(value??'').toWellFormed().replace(/[\x00-\
 export const postPath=uri=>'/post/'+encodeURIComponent(uri);
 const segmenter=new Intl.Segmenter('en',{granularity:'grapheme'});
 function lines(text,max){const rows=[];for(const paragraph of text.split('\n')){let line='',width=0;for(const {segment}of segmenter.segment(paragraph)){const size=/[\u2e80-\uffff]|\p{Extended_Pictographic}/u.test(segment)?2:/[MW@]/.test(segment)?1.8:/[A-Z]/.test(segment)?1.4:/[il .,!'|]/.test(segment)?0.5:1;if(width+size>max){const at=line.lastIndexOf(' ');if(at>0){rows.push(line.slice(0,at));line=line.slice(at+1);width=[...segmenter.segment(line)].reduce((n,{segment:s})=>n+(/[\u2e80-\uffff]|\p{Extended_Pictographic}/u.test(s)?2:/[MW@]/.test(s)?1.8:/[A-Z]/.test(s)?1.4:/[il .,!'|]/.test(s)?0.5:1),0);}else{rows.push(line);line='';width=0;}}line+=segment;width+=size;}rows.push(line);}return rows;}
-const text=(value,x,y,size=32,color='#fff',weight=400)=>`<text x="${x}" y="${y}" fill="${color}" font-size="${size}" font-weight="${weight}" font-family="DejaVu Sans,Arial,sans-serif">${escapeHtml(value)}</text>`;
+const text=(value,x,y,size=32,color='#fff',weight=400)=>`<text x="${x}" y="${y}" fill="${color}" font-size="${size}" font-weight="${weight}" font-family="DejaVu Sans,Noto Color Emoji,Arial,sans-serif">${escapeHtml(value)}</text>`;
 export function createSharing({getPost,getImages,origin,handleDomain}){
  const cache=new Map(),pending=new Map();let cachedBytes=0;let active=0;
  const handle=value=>handleDomain&&value.endsWith('.'+handleDomain)?value.slice(0,-handleDomain.length-1):value;

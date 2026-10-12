@@ -1,3 +1,4 @@
+import { serveMcp } from './mcp.mjs';
 import { createWebhooks } from './webhooks.mjs';
 import { normalizePhoto } from './photo.mjs';
 let mediaUploadBusy=false;
@@ -106,13 +107,13 @@ const rulesVersion = '2026-10-11-v1';
 const prohibited = ['Crypto miners','Phishing','Card fraud & testing','Spam','Pirated content','Anything illegal'];
 function requireRules(actor) {if(!actor||actor.rules_version!==rulesVersion||!actor.rules_accepted_at)fail(403,'Sign in and agree to the current Community Rules before continuing.');}
 function acceptRules(actor) {db.prepare('UPDATE actors SET rules_version=?,rules_accepted_at=? WHERE id=?').run(rulesVersion,new Date().toISOString(),actor);}
-function ownActor(a) {return {...publicActor(a),rulesAccepted:a.rules_version===rulesVersion&&!!a.rules_accepted_at,admin:enforcement.isAdmin({actor:a.id},a)};}
+function ownActor(a) {return {...publicActor(a),...(a.kind==='agent'?{personality:a.agent_instructions}:{}),rulesAccepted:a.rules_version===rulesVersion&&!!a.rules_accepted_at,admin:enforcement.isAdmin({actor:a.id},a)};}
 // Cache delegation credentials; encrypted persistent copies survive restarts.
 const agentPdsSessions = new Map();
 const limits = new Map();
 const billing = createBilling(db,publicOrigin);
 const enforcement=createEnforcement(db,prohibited,{remoteAction:async body=>adminXrpc('com.atproto.admin.updateSubjectStatus',body)});
-const recovery=createRecovery(db,{resetRemote:async(did,password)=>{await adminXrpc('com.atproto.admin.updateAccountPassword',{did,password});},invalidate:id=>{accountWebhooks.revokeAccount(id);for(const [key,s] of sessions)if(s.actor===id||s.operator===id)sessions.delete(key);db.prepare('DELETE FROM login_sessions WHERE actor=?').run(id);for(const agent of db.prepare('SELECT id FROM actors WHERE id=? OR operator_id=?').all(id,id)){agentPdsSessions.delete(agent.id);db.prepare('DELETE FROM agent_sessions WHERE actor=?').run(agent.id);}}});
+const recovery=createRecovery(db,{resetRemote:async(did,password)=>{await adminXrpc('com.atproto.admin.updateAccountPassword',{did,password});},invalidate:id=>{accountWebhooks.revokeAccount(id);db.prepare('UPDATE account_mcp_keys SET revoked=? WHERE owner=? AND revoked IS NULL').run(new Date().toISOString(),id);for(const [key,s] of sessions)if(s.actor===id||s.operator===id)sessions.delete(key);db.prepare('DELETE FROM login_sessions WHERE actor=?').run(id);for(const agent of db.prepare('SELECT id FROM actors WHERE id=? OR operator_id=?').all(id,id)){agentPdsSessions.delete(agent.id);db.prepare('DELETE FROM agent_sessions WHERE actor=?').run(agent.id);}}});
 db.exec('CREATE TABLE IF NOT EXISTS login_sessions(token_hash TEXT PRIMARY KEY,actor TEXT NOT NULL,expires INTEGER NOT NULL);');
 const credentialStore=createCredentialStore(db,process.env.SESSION_ENCRYPTION_KEY);
 const operations=createOperations(db,dir);
@@ -121,14 +122,16 @@ const accountWebhooks=createWebhooks(db,{origin:publicOrigin});
 if(process.env.BACKUPS_ENABLED==='true')operations.start();
 if(process.env.BILLING_VERIFY_ON_START==='true')billing.verifyConfiguration().catch(()=>{});
 function billingActor(s,id){const a=db.prepare('SELECT * FROM actors WHERE id=?').get(id||s.actor);if(!a||(a.id!==s.actor&&(s.keyId||a.operator_id!==s.actor)))fail(403,'You can manage Plus only for your account or your own agents.');return a;}
+db.exec('CREATE TABLE IF NOT EXISTS account_mcp_keys(id TEXT PRIMARY KEY,token_hash TEXT UNIQUE,owner TEXT REFERENCES actors(id),name TEXT,created TEXT,expires TEXT,revoked TEXT)');
+if(!db.prepare('PRAGMA table_info(actors)').all().some(c=>c.name==='agent_instructions'))db.exec("ALTER TABLE actors ADD COLUMN agent_instructions TEXT NOT NULL DEFAULT ''");
 const hash = token => createHash('sha256').update(token).digest('hex');
 function session(token) {
   const s = token && sessions.get(hash(token));
   if (s && s.expires > Date.now()) return s;
   if(token){const saved=credentialStore.login(hash(token));if(saved){saved.tokenHash=hash(token);sessions.set(hash(token),saved);return saved;}}
   if(token?.startsWith('as_agent_')) {
-    const key=db.prepare('SELECT * FROM api_keys WHERE token_hash=? AND revoked IS NULL AND expires>?').get(hash(token),new Date().toISOString());
-    if(key)return {actor:key.actor,operator:key.operator,keyId:key.id,scopes:JSON.parse(key.scopes),...(agentPdsSessions.get(key.actor)||credentialStore.agent(key.actor)||{}),expires:Date.parse(key.expires)};
+    const key=db.prepare('SELECT k.* FROM api_keys k JOIN actors a ON a.id=k.actor JOIN actors o ON o.id=k.operator WHERE k.token_hash=? AND k.revoked IS NULL AND (k.expires IS NULL OR k.expires>?) AND a.operator_id=k.operator AND a.suspended_at IS NULL AND o.suspended_at IS NULL').get(hash(token),new Date().toISOString());
+    if(key)return {actor:key.actor,operator:key.operator,keyId:key.id,scopes:JSON.parse(key.scopes),...(agentPdsSessions.get(key.actor)||credentialStore.agent(key.actor)||{}),expires:key.expires?Date.parse(key.expires):Number.MAX_SAFE_INTEGER};
   }
   return null;
 }
@@ -154,6 +157,32 @@ function publicActor(a) {
     photo:a.photo||null, americanStatus:usVerified?'verified':a.american_confirmed_at?'self-declared':null,americanVerification:usVerified?{method:'device-location',checkedAt:locationActor.us_location_verified_at,operator:a.kind==='agent'}:null,networkIdentity:networkActor(a.id),plus:billing.plus(a.id),verified:manuallyVerified||billing.plus(a.id),verificationType:manuallyVerified?'platform':billing.plus(a.id)?'plus':null,
     operator:a.operator_id?(()=>{const owner=db.prepare('SELECT id,handle,name FROM actors WHERE id=?').get(a.operator_id);return owner||null;})():null,
     followers:db.prepare('SELECT COUNT(*) AS n FROM follows WHERE subject=?').get(a.id).n };
+}
+function relationship(id,me) {
+ const following=!!(me&&db.prepare('SELECT 1 FROM follows WHERE actor=? AND subject=?').get(me,id));
+ const followsYou=!!(me&&db.prepare('SELECT 1 FROM follows WHERE actor=? AND subject=?').get(id,me));
+ return {following,followsYou,friendship:following&&followsYou?'mutual':following||followsYou?'one-way':'none'};
+}
+function mcpUrl(id){return `${publicOrigin||'http://localhost:'+server.address().port}/mcp/${id}`;}
+async function mcpRequest(name,args,auth){
+ let actor=auth.actor,scopes=auth.scopes;
+ if(auth.kind==='operator'&&args.botId){const bot=db.prepare('SELECT * FROM actors WHERE id=? AND operator_id=? AND kind=?').get(args.botId,auth.actor,'agent');if(!bot)fail(403,'Choose a bot you currently own.');enforcement.requireActive(bot);requireRules(bot);actor=bot.id;scopes=['read','post','like','follow','profile','messages'];}
+ if(auth.kind==='operator'&&name==='list_bots')return {bots:db.prepare("SELECT * FROM actors WHERE operator_id=? AND kind='agent'").all(auth.actor).map(a=>({...publicActor(a),personality:a.agent_instructions}))};
+ if(name==='bot_personality'){const a=db.prepare('SELECT * FROM actors WHERE id=?').get(actor);if(a.kind!=='agent')fail(403,'Select a bot.');return {personality:a.agent_instructions||'',handle:a.handle};}
+ const q=new URLSearchParams();let path,body;
+ switch(name){
+ case 'my_account':path='me';break;
+ case 'read_feed':if(args.friends)q.set('following','1');if(args.query)q.set('q',args.query);path='feed?'+q;break;
+ case 'read_posts':path='feed?author='+encodeURIComponent(actor);break;
+ case 'read_thread':path='thread?uri='+encodeURIComponent(args.uri);break;
+ case 'read_notifications':path='notifications';break;
+ case 'read_messages':path='messages'+(args.peer?'?peer='+encodeURIComponent(args.peer):'');break;
+ default:{const routes={publish_post:'posts',edit_post:'posts/edit',delete_post:'posts/delete',repost:'reposts',like_post:'likes',add_friend:'follows',update_profile:'profile',send_message:'messages'};path=routes[name];if(!path)fail(400,'Unknown tool.');if(auth.kind==='operator'&&actor===auth.actor&&!['like_post','repost'].includes(name))fail(403,'Only humans can publish or change their human account. Select a bot.');body={...args};delete body.botId;}
+ }
+ if(auth.kind==='operator'&&actor===auth.actor&&['like_post','repost'].includes(name))scopes=['read','like','post'];
+ const delegation=actor!==auth.actor?agentPdsSessions.get(actor)||credentialStore.agent(actor)||{}:auth.delegation||{};
+ const internal=randomBytes(32).toString('base64url');sessions.set(hash(internal),{actor,operator:auth.kind==='operator'?auth.actor:auth.operator,keyId:'mcp',scopes,expires:Date.now()+180000,...delegation});
+ try{const response=await fetch(`http://127.0.0.1:${server.address().port}/api/${path}`,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+internal,...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(170000),redirect:'error'});const result=await response.json();if(!response.ok)fail(response.status,result.error||'Action failed.');return result;}finally{sessions.delete(hash(internal));}
 }
 async function xrpc(method, data, jwt, get=false) {
   const url = new URL(`${pds}/xrpc/${method}`);
@@ -216,6 +245,14 @@ const server = http.createServer(async(req,res)=>{
   try {
     const url=new URL(req.url,'http://localhost');
     const path=url.pathname;
+    if(path.startsWith('/mcp/')){
+      const credential=req.headers.authorization?.replace(/^Bearer /,'');const id=path.slice(5);let auth;
+      const bot=session(credential);
+      if(bot?.keyId===id){const a=db.prepare('SELECT * FROM actors WHERE id=?').get(bot.actor);requireRules(a);requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(bot.operator));auth={kind:'bot',actor:bot.actor,operator:bot.operator,scopes:bot.scopes,personality:a.agent_instructions,delegation:bot};}
+      else if(credential?.startsWith('as_operator_')){const key=db.prepare('SELECT * FROM account_mcp_keys WHERE id=? AND token_hash=? AND revoked IS NULL AND (expires IS NULL OR expires>?)').get(id,hash(credential),new Date().toISOString());if(key){const owner=db.prepare('SELECT * FROM actors WHERE id=?').get(key.owner);enforcement.requireActive(owner);requireRules(owner);const login=db.prepare('SELECT token_hash FROM login_sessions WHERE actor=? AND expires>? ORDER BY expires DESC LIMIT 1').get(key.owner,Date.now());const saved=login&&(sessions.get(login.token_hash)||credentialStore.login(login.token_hash));auth={kind:'operator',actor:key.owner,scopes:['read'],delegation:agentPdsSessions.get(key.owner)||credentialStore.agent(key.owner)||saved||{}};}}
+      if(auth){const bucket='mcp:'+id;const l=limits.get(bucket)||{n:0,until:Date.now()+60000};if(l.until<Date.now()){l.n=0;l.until=Date.now()+60000;}limits.set(bucket,l);if(++l.n>120)fail(429,'Too many MCP requests. Retry shortly.');}
+      return serveMcp(req,res,{auth,readBody:body,request:mcpRequest,origin:publicOrigin||`http://${req.headers.host}`});
+    }
     if (!path.startsWith('/api/')) {
       if(req.method!=='GET') fail(405,'Method not allowed.');
       const files={'/':['index.html','text/html'],'/app.js':['app.js','text/javascript'],'/style.css':['style.css','text/css'],'/agent.md':['agent.md','text/plain'],'/logo.svg':['logo.svg','image/svg+xml'],'/manifest.webmanifest':['manifest.webmanifest','application/manifest+json'],'/icon-32.png':['icon-32.png','image/png'],'/icon-180.png':['icon-180.png','image/png'],'/icon-192.png':['icon-192.png','image/png'],'/icon-512.png':['icon-512.png','image/png'],'/icon-maskable-512.png':['icon-maskable-512.png','image/png']};
@@ -241,20 +278,22 @@ const server = http.createServer(async(req,res)=>{
       }
       if(path==='/api/config') return json(res,200,{name:'Amerika Social',tagline:"Why Can't We Be Friends?",americanConfirmationRequired:true,rules:{version:rulesVersion,prohibited},feedOrder:'newest-first',mode:pds?'atproto':'preview',pds:pds||null,handleDomain,managedInvites:!!process.env.PDS_ADMIN_PASSWORD,legacyAccounts:process.env.ALLOW_LEGACY_ACCOUNTS==='true',captcha:{enabled:captcha.required,siteKey:captcha.siteKey}});
       if(path==='/api/me') {const a=me&&db.prepare('SELECT * FROM actors WHERE id=?').get(me);return json(res,200,{actor:a?ownActor(a):null});}
-      if(path==='/api/actors') return json(res,200,{actors:db.prepare(pds?"SELECT * FROM actors WHERE id NOT IN ('preview:atlas','preview:nova','preview:maya') ORDER BY handle LIMIT 100":'SELECT * FROM actors ORDER BY handle LIMIT 100').all().map(a=>({...publicActor(a),following:!!(me&&db.prepare('SELECT actor FROM follows WHERE actor=? AND subject=?').get(me,a.id))}))});
+      if(path==='/api/actors') return json(res,200,{actors:db.prepare(pds?"SELECT * FROM actors WHERE id NOT IN ('preview:atlas','preview:nova','preview:maya') ORDER BY handle LIMIT 100":'SELECT * FROM actors ORDER BY handle LIMIT 100').all().map(a=>({...publicActor(a),...relationship(a.id,me)}))});
       if(path==='/api/profile') {
         const name=(url.searchParams.get('handle')||'').replace(/^@/,'').toLowerCase();const actor=db.prepare('SELECT * FROM actors WHERE id=? OR handle=?').get(url.searchParams.get('id')||'',name)||(!name.includes('.')&&handleDomain?db.prepare('SELECT * FROM actors WHERE handle=?').get(name+'.'+handleDomain):null);
         if(!actor)fail(404,'Account not found.');
-        return json(res,200,{actor:{...publicActor(actor),following:!!(me&&db.prepare('SELECT actor FROM follows WHERE actor=? AND subject=?').get(me,actor.id)),followingCount:db.prepare('SELECT COUNT(*) AS n FROM follows WHERE actor=?').get(actor.id).n}});
+        return json(res,200,{actor:{...publicActor(actor),...relationship(actor.id,me),mutualCount:db.prepare('SELECT COUNT(*) AS n FROM follows f JOIN follows r ON r.actor=f.subject AND r.subject=f.actor WHERE f.actor=?').get(actor.id).n,followingCount:db.prepare('SELECT COUNT(*) AS n FROM follows WHERE actor=?').get(actor.id).n}});
       }
       if(path==='/api/notifications') {
         if(!s)fail(401,'Sign in to see your notifications.');
         allow(s,'read');
         const rows=db.prepare('SELECT * FROM notifications WHERE recipient=? ORDER BY id DESC LIMIT 100').all(me);
-        return json(res,200,{notifications:rows.map(n=>({...n,sender:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(n.sender))})),unread:db.prepare('SELECT COUNT(*) AS n FROM notifications WHERE recipient=? AND seen=0').get(me).n});
+        return json(res,200,{notifications:rows.map(n=>({...n,postDetails:n.post?(()=>{const p=db.prepare('SELECT * FROM posts WHERE uri=?').get(n.post);return p?viewPost(p,me):null;})():null,sender:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(n.sender))})),unread:db.prepare('SELECT COUNT(*) AS n FROM notifications WHERE recipient=? AND seen=0').get(me).n});
       }
+      if(path==='/api/account-mcp'){if(!s)fail(401,'Sign in to manage account MCP.');operatorOnly(s);return json(res,200,{keys:db.prepare('SELECT id,name,created,expires,revoked FROM account_mcp_keys WHERE owner=? ORDER BY created DESC').all(me).map(k=>({...k,mcpUrl:mcpUrl(k.id)}))});}
+      if(path==='/api/friends'){if(!s)fail(401,'Sign in to see friends.');allow(s,'read');return json(res,200,{friends:db.prepare('SELECT DISTINCT a.* FROM actors a JOIN follows f ON (f.actor=a.id AND f.subject=?) OR (f.subject=a.id AND f.actor=?) WHERE a.suspended_at IS NULL').all(me,me).map(a=>({...publicActor(a),...relationship(a.id,me)}))});}
       if(path==='/api/webhooks'){if(!s)fail(401,'Sign in to manage webhooks.');const owner=operatorOnly(s);return json(res,200,accountWebhooks.list(owner.id));}
-      if(path==='/api/agents') {if(!s)fail(401,'Sign in to manage agents.');operatorOnly(s);return json(res,200,{agents:db.prepare('SELECT * FROM actors WHERE operator_id=? ORDER BY handle').all(me).map(a=>({...publicActor(a),following:!!db.prepare('SELECT actor FROM follows WHERE actor=? AND subject=?').get(me,a.id)})),keys:db.prepare('SELECT id,actor,name,scopes,created,expires,revoked FROM api_keys WHERE operator=? ORDER BY created DESC').all(me).map(k=>({...k,scopes:JSON.parse(k.scopes)}))});}
+      if(path==='/api/agents') {if(!s)fail(401,'Sign in to manage agents.');operatorOnly(s);return json(res,200,{agents:db.prepare('SELECT * FROM actors WHERE operator_id=? ORDER BY handle').all(me).map(a=>({...publicActor(a),...relationship(a.id,me),personality:a.agent_instructions})),keys:db.prepare('SELECT id,actor,name,scopes,created,expires,revoked FROM api_keys WHERE operator=? ORDER BY created DESC').all(me).map(k=>({...k,mcpUrl:mcpUrl(k.id),scopes:JSON.parse(k.scopes)}))});}
       if(path==='/api/feed') {
         let where='p.deleted=0 AND p.removed_at IS NULL AND a.suspended_at IS NULL AND sharer.suspended_at IS NULL';if(pds)where+=" AND p.author NOT IN ('preview:atlas','preview:nova','preview:maya')"; const args=[];
         const kind=url.searchParams.get('kind');
@@ -271,7 +310,7 @@ const server = http.createServer(async(req,res)=>{
         const rows=db.prepare(`SELECT p.*,e.id AS sequence,e.type AS event_type,e.actor AS event_actor FROM feed_events e JOIN posts p ON p.uri=e.post JOIN actors a ON a.id=p.author JOIN actors sharer ON sharer.id=e.actor WHERE ${where} ORDER BY e.id DESC LIMIT 31`).all(...args);
         return json(res,200,{posts:rows.slice(0,30).map(p=>({...viewPost(p,me),repostBy:p.event_type==='repost'?publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(p.event_actor)):null})),cursor:rows.length>30?String(rows[29].sequence):null});
       }
-      if(path==='/api/thread') {const parent=url.searchParams.get('uri'); const p=db.prepare('SELECT * FROM posts WHERE uri=?').get(parent); if(!p)fail(404,'Post not found.');const root=p.root||p.uri;return json(res,200,{post:viewPost(p,me),root:p.root?viewPost(db.prepare('SELECT * FROM posts WHERE uri=?').get(root),me):null,replies:db.prepare('SELECT * FROM posts WHERE parent=? ORDER BY rowid LIMIT 100').all(parent).map(p=>viewPost(p,me)),conversation:db.prepare('SELECT * FROM posts WHERE root=? ORDER BY rowid LIMIT 500').all(root).map(p=>viewPost(p,me))});}
+      if(path==='/api/thread') {const parent=url.searchParams.get('uri'); const p=db.prepare('SELECT * FROM posts WHERE uri=?').get(parent); if(!p)fail(404,'Post not found.');const root=p.root||p.uri;return json(res,200,{post:viewPost(p,me),root:p.root?viewPost(db.prepare('SELECT * FROM posts WHERE uri=?').get(root),me):null,replies:db.prepare('SELECT * FROM posts WHERE parent=? ORDER BY rowid LIMIT 100').all(parent).map(p=>viewPost(p,me)),totalReplies:db.prepare('SELECT COUNT(*) AS n FROM posts WHERE root=?').get(root).n,conversation:db.prepare('SELECT * FROM posts WHERE root=? ORDER BY rowid LIMIT 500').all(root).map(p=>viewPost(p,me))});}
       fail(404,'Not found.');
     }
     if(req.method!=='POST') fail(405,'Method not allowed.');
@@ -378,13 +417,16 @@ const server = http.createServer(async(req,res)=>{
       return json(res,200,{actor:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(a.id))});
     }
     if(['/api/webhooks','/api/webhooks/test','/api/webhooks/disable'].includes(path)){const owner=operatorOnly(s);if(path==='/api/webhooks')return json(res,201,await accountWebhooks.create(owner.id,b));if(path==='/api/webhooks/test')return json(res,202,accountWebhooks.test(owner.id,b.id));accountWebhooks.disable(owner.id,b.id);return json(res,200,{ok:true});}
+    if(path==='/api/agents/personality'){operatorOnly(s);if(typeof b.personality!=='string'||b.personality.length>12000)fail(400,'Keep the personality under 12,000 characters.');const a=db.prepare("SELECT id FROM actors WHERE id=? AND operator_id=? AND kind='agent'").get(b.actor,me);if(!a)fail(403,'Choose a bot you own.');db.prepare('UPDATE actors SET agent_instructions=? WHERE id=?').run(b.personality,a.id);return json(res,200,{ok:true});}
+    if(path==='/api/account-mcp'){operatorOnly(s);if(networkActor(me)&&!process.env.SESSION_ENCRYPTION_KEY)fail(503,'Secure account delegation is not configured.');if(s.accessJwt)credentialStore.saveAgent(me,{accessJwt:s.accessJwt,refreshJwt:s.refreshJwt,jwtExpires:s.jwtExpires});const name=textField(b.name,64,'a connection name');const days=b.neverExpires===true?null:Number(b.days||30);if(days!==null&&(!Number.isInteger(days)||days<1||days>90))fail(400,'Choose 1–90 days or never expires.');const id=randomUUID(),secret='as_operator_'+randomBytes(32).toString('base64url'),expires=days===null?null:new Date(Date.now()+days*86400000).toISOString();db.prepare('INSERT INTO account_mcp_keys(id,token_hash,owner,name,created,expires) VALUES (?,?,?,?,?,?)').run(id,hash(secret),me,name,new Date().toISOString(),expires);return json(res,201,{id,token:secret,expires,mcpUrl:mcpUrl(id)});}
+    if(path==='/api/account-mcp/revoke'){operatorOnly(s);const changed=db.prepare('UPDATE account_mcp_keys SET revoked=? WHERE id=? AND owner=?').run(new Date().toISOString(),b.id,me);if(!changed.changes)fail(404,'Connection not found.');return json(res,200,{ok:true});}
     if(path==='/api/agent-keys') {
       operatorOnly(s);const a=db.prepare('SELECT * FROM actors WHERE id=? AND operator_id=?').get(b.actor,me);if(!a)fail(403,'You can create credentials only for your own agents.');
       if(!Array.isArray(b.scopes)||!b.scopes.length||!b.scopes.every(scope=>['read','post','like','follow','profile','messages'].includes(scope)))fail(400,'Choose valid credential permissions.');
-      const name=textField(b.name,64,'a credential name');const days=Number(b.days||30);if(!Number.isInteger(days)||days<1||days>90)fail(400,'Choose an expiry between 1 and 90 days.');
-      const secret='as_agent_'+randomBytes(32).toString('base64url');const id=randomUUID(),created=new Date().toISOString(),expires=new Date(Date.now()+days*86400000).toISOString();
+      const name=textField(b.name,64,'a credential name');const days=b.neverExpires===true?null:Number(b.days||30);if(days!==null&&(!Number.isInteger(days)||days<1||days>90))fail(400,'Choose an expiry between 1 and 90 days.');
+      const secret='as_agent_'+randomBytes(32).toString('base64url');const id=randomUUID(),created=new Date().toISOString(),expires=days===null?null:new Date(Date.now()+days*86400000).toISOString();
       db.prepare('INSERT INTO api_keys(id,token_hash,actor,operator,name,scopes,created,expires) VALUES (?,?,?,?,?,?,?,?)').run(id,hash(secret),a.id,me,name,JSON.stringify([...new Set(b.scopes)]),created,expires);
-      return json(res,201,{id,token:secret,expires,scopes:b.scopes});
+      return json(res,201,{id,token:secret,expires,scopes:b.scopes,mcpUrl:mcpUrl(id)});
     }
     if(path==='/api/agent-keys/revoke') {operatorOnly(s);const key=db.prepare('SELECT id FROM api_keys WHERE id=? AND operator=?').get(b.id,me);if(!key)fail(404,'Credential not found.');db.prepare('UPDATE api_keys SET revoked=? WHERE id=?').run(new Date().toISOString(),b.id);return json(res,200,{ok:true});}
     if(path==='/api/logout'){sessions.delete(hash(token));db.prepare('DELETE FROM login_sessions WHERE token_hash=?').run(hash(token));return json(res,200,{ok:true});}
@@ -396,7 +438,7 @@ const server = http.createServer(async(req,res)=>{
       db.exec('BEGIN');try{const result=db.prepare('INSERT INTO messages(sender,recipient,text,created) VALUES (?,?,?,?)').run(me,b.recipient,text,created);notify(b.recipient,me,'message',null,Number(result.lastInsertRowid));db.exec('COMMIT');return json(res,201,{message:{id:Number(result.lastInsertRowid),sender:me,recipient:b.recipient,text,created,seen:0}});}catch(e){if(db.isTransaction)db.exec('ROLLBACK');throw e;}
     }
     if(path==='/api/messages/read'){if(typeof b.peer!=='string'||!Number.isSafeInteger(b.through)||b.through<0)fail(400,'Choose a conversation and message.');db.prepare('UPDATE messages SET seen=1 WHERE recipient=? AND sender=? AND id<=?').run(me,b.peer,b.through);db.prepare("UPDATE notifications SET seen=1 WHERE recipient=? AND sender=? AND type='message' AND message<=?").run(me,b.peer,b.through);return json(res,200,{ok:true});}
-    if(path==='/api/notifications/read') {db.prepare('UPDATE notifications SET seen=1 WHERE recipient=? AND id<=?').run(me,Number(b.through)||0);return json(res,200,{ok:true});}
+    if(path==='/api/notifications/read') {if(Number.isSafeInteger(b.id)){db.prepare('UPDATE notifications SET seen=1 WHERE recipient=? AND id=?').run(me,b.id);return json(res,200,{ok:true});}db.prepare('UPDATE notifications SET seen=1 WHERE recipient=? AND id<=?').run(me,Number(b.through)||0);return json(res,200,{ok:true});}
     if(path==='/api/profile') {
       const name=textField(b.name,64,'a display name');
       if(typeof b.bio!=='string'||b.bio.length>300)fail(400,'Bio must be at most 300 characters.');
@@ -487,7 +529,7 @@ const server = http.createServer(async(req,res)=>{
       const existing=db.prepare('SELECT * FROM follows WHERE actor=? AND subject=?').get(me,b.subject);
       if(existing){await removeRecord(s,existing.uri,'app.bsky.graph.follow');db.prepare('DELETE FROM follows WHERE actor=? AND subject=?').run(me,b.subject);}
       else{const r=await record(s,'app.bsky.graph.follow',{subject:b.subject,createdAt:new Date().toISOString()},!networkActor(b.subject));db.prepare('INSERT INTO follows VALUES (?,?,?)').run(me,b.subject,r.uri);notify(b.subject,me,'follow');}
-      return json(res,200,{following:!existing});
+      return json(res,200,relationship(b.subject,me));
     }
     fail(404,'Not found.');
   } catch(error) {

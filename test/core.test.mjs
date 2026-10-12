@@ -16,7 +16,7 @@ async function launch(env={}) {
 }
 async function request(base,path,body,token,extra={}){const response=await fetch(base+path,{method:body?'POST':'GET',headers:{...(body?{'Content-Type':'application/json'}:{}),...(token?{Authorization:`Bearer ${token}`} : {}),...extra},...(body?{body:JSON.stringify(body)}:{})});return {status:response.status,data:await response.json()};}
 
-test('Plus-only media, repost following feed, quote quota, streaming, deletion and durable attachments',async()=>{
+test('Plus media, repost following feed, quote quota, streaming, deletion and durable attachments',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'amerika-media-'));let app=await launch({DATA_DIR:dir});
  try{
   const register=async handle=>(await request(app.base,'/api/register',{handle,name:handle,kind:'human',password:'media-test-password',americanConfirmed:true,rulesAccepted:true})).data;
@@ -48,6 +48,33 @@ test('Plus-only media, repost following feed, quote quota, streaming, deletion a
   assert.equal((await request(app.base,'/api/reposts',{uri:imagePost.data.post.uri},viewer.token)).data.reposted,false);assert.equal((await request(app.base,'/api/feed?following=1',null,observer.token)).data.posts.length,1,'Only the quote remains');
   await request(app.base,'/api/posts/delete',{uri:imagePost.data.post.uri},owner.token);assert.equal((await fetch(app.base+imagePost.data.post.media[0].url)).status,404);const tombstone=(await request(app.base,'/api/thread?uri='+encodeURIComponent(quoted.data.post.uri))).data.post.quote;assert.equal(tombstone.deleted,1);assert.equal(tombstone.media.length,0);assert.equal((await request(app.base,'/api/reposts',{uri:imagePost.data.post.uri},viewer.token)).status,410);
  }finally{await app.stop();await rm(dir,{recursive:true,force:true});}
+});
+
+test('current location verification unlocks photos, never videos, and expiry or removal revokes access',async()=>{
+ const app=await launch();
+ try{
+  const owner=(await request(app.base,'/api/register',{handle:'photo-owner.demo',name:'Photo owner',kind:'human',password:'photo-test-password',americanConfirmed:true,rulesAccepted:true})).data;
+  const agent=(await request(app.base,'/api/agents',{handle:'photo-agent.demo',name:'Photo agent',password:'photo-test-password',americanConfirmed:true,rulesAccepted:true},owner.token)).data.actor;
+  const agentKey=(await request(app.base,'/api/agent-keys',{actor:agent.id,name:'Photos',scopes:['post'],days:1},owner.token)).data.token;
+  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jC6sAAAAASUVORK5CYII=','base64');const video=await readFile(new URL('./fixtures/red.mp4',import.meta.url));
+  const upload=async(bytes,mime,token=owner.token)=>{const r=await fetch(app.base+'/api/media/upload',{method:'POST',headers:{'Content-Type':mime,Authorization:'Bearer '+token},body:bytes});return {status:r.status,data:await r.json()};};
+  const editDb=fn=>{const db=new DatabaseSync(join(app.dir,'botsky.sqlite'));try{fn(db);}finally{db.close();}};
+  assert.equal((await upload(png,'image/png')).status,403);
+  editDb(db=>db.prepare('INSERT INTO billing_subscriptions VALUES (?,?,?,?,?,?,?)').run('sub_old_plus',owner.actor.id,'cus_old','active',Math.floor(Date.now()/1000)+3600,0,new Date().toISOString()));
+  const oldVideo=await upload(video,'video/mp4');assert.equal(oldVideo.status,201);editDb(db=>db.prepare('DELETE FROM billing_subscriptions WHERE actor=?').run(owner.actor.id));
+  await request(app.base,'/api/location/verify',{consent:true,latitude:33.45,longitude:-112.07,accuracy:20,timestamp:Date.now()},owner.token);
+  const image=await upload(png,'image/png');assert.equal(image.status,201);
+  assert.equal((await upload(video,'video/mp4')).status,403);assert.equal((await upload(video,'video/mp4',agentKey)).status,403);
+  assert.equal((await request(app.base,'/api/posts',{text:'Old video bypass',media:[{id:oldVideo.data.id,alt:''}]},owner.token)).status,403);
+  assert.equal((await request(app.base,'/api/posts',{text:'Photos still use the free character cap '+ 'x'.repeat(300),media:[{id:image.data.id,alt:''}]},owner.token)).status,400);
+  const posted=await request(app.base,'/api/posts',{text:'A verified photo',media:[{id:image.data.id,alt:'Pixel'}]},owner.token);assert.equal(posted.status,201);assert.equal((await request(app.base,'/api/billing',null,owner.token)).data.originalPostsRemaining,2);
+  const agentImage=await upload(png,'image/png',agentKey);assert.equal(agentImage.status,201);assert.equal((await request(app.base,'/api/posts',{text:'Operator verified',media:[{id:agentImage.data.id,alt:''}]},agentKey)).status,201);
+  editDb(db=>db.prepare('UPDATE actors SET us_location_verified_at=? WHERE id=?').run(new Date(Date.now()-91*86400000).toISOString(),owner.actor.id));
+  assert.equal((await upload(png,'image/png')).status,403);assert.equal((await request(app.base,'/api/posts',{text:'Expired check',media:[{id:image.data.id,alt:''}],americanStatus:'verified'},owner.token)).status,403);
+  await request(app.base,'/api/location/verify',{consent:true,latitude:33.45,longitude:-112.07,accuracy:20,timestamp:Date.now()},owner.token);await request(app.base,'/api/location/remove',{},owner.token);
+  assert.equal((await upload(png,'image/png',agentKey)).status,403);assert.equal((await request(app.base,'/api/posts',{text:'Removed check',media:[{id:image.data.id,alt:''}]},owner.token)).status,403);
+  assert.equal((await fetch(app.base+posted.data.post.media[0].url)).status,200,'Earlier photos remain visible');
+ }finally{await app.stop();}
 });
 
 test('optional location status is session-only, persists without coordinates, and propagates to linked agents',async()=>{

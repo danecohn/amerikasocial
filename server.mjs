@@ -134,10 +134,16 @@ setInterval(() => {
   for (const [key,s] of limits) if (s.until <= Date.now()) limits.delete(key);
 }, 60000).unref();
 function fail(status,message) { throw Object.assign(new Error(message), { status }); }
+function locationOwner(a){return a.kind==='agent'&&a.operator_id?db.prepare('SELECT us_location_verified_at FROM actors WHERE id=?').get(a.operator_id):a;}
+function requireMediaAccess(actor,video){
+  if(billing.plus(actor.id))return;
+  if(video)fail(403,'Video posting requires Amerika Social Plus.');
+  if(!locationVerified(locationOwner(actor)?.us_location_verified_at))fail(403,'Photo posting requires a current US location check or Amerika Social Plus.');
+}
 function publicActor(a) {
   if (!a) return null;
   const manuallyVerified=(process.env.VERIFIED_ACCOUNT_IDS||'').split(',').map(id=>id.trim()).includes(a.id);
-  const locationActor=a.kind==='agent'&&a.operator_id?db.prepare('SELECT us_location_verified_at FROM actors WHERE id=?').get(a.operator_id):a;
+  const locationActor=locationOwner(a);
   const usVerified=locationVerified(locationActor?.us_location_verified_at);
   return { id:a.id, handle:a.handle, name:a.name, kind:a.kind, bio:a.bio,
     photo:a.photo||null, americanStatus:usVerified?'verified':a.american_confirmed_at?'self-declared':null,americanVerification:usVerified?{method:'device-location',checkedAt:locationActor.us_location_verified_at,operator:a.kind==='agent'}:null,networkIdentity:networkActor(a.id),plus:billing.plus(a.id),verified:manuallyVerified||billing.plus(a.id),verificationType:manuallyVerified?'platform':billing.plus(a.id)?'plus':null,
@@ -266,8 +272,9 @@ const server = http.createServer(async(req,res)=>{
     if(limit.until<Date.now()){limit.n=0;limit.until=Date.now()+60000;}
     limit.n++;limits.set(key,limit);if(limit.n>30)fail(429,'Too many requests. Try again in a minute.');
     if(path==='/api/media/upload'){
-      if(!s)fail(401,'Sign in to upload media.');allow(s,'post');const actor=db.prepare('SELECT * FROM actors WHERE id=?').get(me);enforcement.requireActive(actor);requireRules(actor);if(s.operator)requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(s.operator));if(!billing.plus(me))fail(403,'Image and video posting requires Amerika Social Plus.');media.checkQuota(me);
+      if(!s)fail(401,'Sign in to upload media.');allow(s,'post');const actor=db.prepare('SELECT * FROM actors WHERE id=?').get(me);enforcement.requireActive(actor);requireRules(actor);if(s.operator)requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(s.operator));
       const mime=req.headers['content-type'];if(!['image/png','image/jpeg','image/webp','video/mp4'].includes(mime))fail(400,'Use PNG, JPEG, WebP images or an H.264 MP4 video.');
+      requireMediaAccess(actor,mime==='video/mp4');media.checkQuota(me);
       const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>maxMediaBytes)fail(413,'Media must be under 20 MB.');chunks.push(chunk);}const bytes=Buffer.concat(chunks);validateMedia(bytes,mime);
       let blob=null;if(networkActor(me)){const response=await fetch(`${pds}/xrpc/com.atproto.repo.uploadBlob`,{method:'POST',headers:{Authorization:`Bearer ${await jwtFor(s)}`,'Content-Type':mime},body:bytes,signal:AbortSignal.timeout(60000),redirect:'error'});if(!response.ok)fail(502,'Your account server could not save this media.');blob=(await response.json()).blob;if(!blob?.ref)fail(502,'Account server returned an invalid media reference.');}
       return json(res,201,media.save(me,mime,bytes,blob));
@@ -406,7 +413,7 @@ const server = http.createServer(async(req,res)=>{
     }
     if(path==='/api/posts') {
       const attachments=media.select(me,b.media);
-      if(attachments.length&&!billing.plus(me))fail(403,'Image and video posting requires Amerika Social Plus.');
+      if(attachments.length)requireMediaAccess(currentActor,attachments.some(m=>m.mime==='video/mp4'));
       const text=attachments.length&&b.text===''?'':postText(b.text,me);const created=new Date().toISOString();
       const quote=b.quote?db.prepare('SELECT * FROM posts WHERE uri=?').get(b.quote):null;
       if(b.quote&&!quote)fail(404,'Quote target not found.');

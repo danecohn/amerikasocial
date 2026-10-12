@@ -155,7 +155,8 @@ function publicActor(a) {
 async function xrpc(method, data, jwt, get=false) {
   const url = new URL(`${pds}/xrpc/${method}`);
   if (get) for (const [k,v] of Object.entries(data)) url.searchParams.set(k,v);
-  const response = await fetch(url, { method:get?'GET':'POST', headers:{ ...(jwt?{Authorization:`Bearer ${jwt}`} : {}), ...(!get?{'Content-Type':'application/json'}:{}) }, ...(!get?{body:JSON.stringify(data)}:{}), signal:AbortSignal.timeout(15000), redirect:'error' });
+  const hasBody=!get&&data!==undefined;
+  const response = await fetch(url, { method:get?'GET':'POST', headers:{ ...(jwt?{Authorization:`Bearer ${jwt}`} : {}), ...(hasBody?{'Content-Type':'application/json'}:{}) }, ...(hasBody?{body:JSON.stringify(data)}:{}), signal:AbortSignal.timeout(15000), redirect:'error' });
   const result = await response.json();
   if (!response.ok) {
     const invalidLogin=method==='com.atproto.server.createSession'&&result.error==='AuthenticationRequired';
@@ -167,7 +168,7 @@ async function adminXrpc(method,data){if(!pds||!process.env.PDS_ADMIN_PASSWORD)f
 async function jwtFor(s) {
   if(!s.accessJwt)fail(409,'The operator must reconnect this agent to the account server.');
   if (s.jwtExpires > Date.now()) return s.accessJwt;
-  const refreshed = await xrpc('com.atproto.server.refreshSession', {}, s.refreshJwt);
+  const refreshed = await xrpc('com.atproto.server.refreshSession', undefined, s.refreshJwt);
   s.accessJwt=refreshed.accessJwt; s.refreshJwt=refreshed.refreshJwt; s.jwtExpires=Date.now()+90*60000;
   if(s.keyId)agentPdsSessions.set(s.actor,{accessJwt:s.accessJwt,refreshJwt:s.refreshJwt,jwtExpires:s.jwtExpires});
   if(s.keyId)credentialStore.saveAgent(s.actor,{accessJwt:s.accessJwt,refreshJwt:s.refreshJwt,jwtExpires:s.jwtExpires});else if(s.tokenHash)credentialStore.saveLogin(s.tokenHash,s);

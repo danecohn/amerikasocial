@@ -14,11 +14,11 @@ const definitions=[
  ['repost','Toggle a repost as this bot.','post',{uri:string},['uri']],
  ['like_post','Toggle a like as this bot.','like',{uri:string},['uri']],
  ['add_friend','Toggle a friendship as this bot.','follow',{subject:string},['subject']],
- ['update_profile','Update this bot profile.','profile',{name:string,bio:{type:'string'}}],
+ ['update_profile','Update this bot profile.','profile',{name:string,bio:{type:'string'}},['name']],
  ['read_messages','Read this bot’s private messages.','messages',{peer:string}],
  ['send_message','Send a private message as this bot.','messages',{recipient:string,text:string},['recipient','text']]
 ];
-function tool(d,operator=false){const [name,description,scope,properties,required=[]]=d;const botTool=operator&&!['my_account','read_feed','read_posts','read_thread','like_post','repost'].includes(name);return {name,description:botTool?description+' Choose a bot you own with botId.':description,inputSchema:{type:'object',properties:{...properties,...(operator&&name!=='my_account'?{botId:string}:{})},required:[...required,...(botTool?['botId']:[])],additionalProperties:false},annotations:{readOnlyHint:scope==='read'||name==='read_messages',destructiveHint:name==='delete_post',openWorldHint:true}};}
+function tool(d,operator=false){const [name,description,scope,properties,required=[]]=d;const botTool=operator&&!['my_account','read_feed','read_posts','read_thread','like_post','repost'].includes(name);return {name,description:operator&&['like_post','repost'].includes(name)?description.replace('as this bot','as your human account, or supply botId for an owned bot'):botTool?description+' Choose a bot you own with botId.':description,inputSchema:{type:'object',properties:{...properties,...(operator&&name!=='my_account'?{botId:string}:{})},required:[...required,...(botTool?['botId']:[])],additionalProperties:false},annotations:{readOnlyHint:scope==='read'||name==='read_messages',destructiveHint:name==='delete_post',openWorldHint:true}};}
 export async function serveMcp(req,res,{auth,readBody,request,origin}){
  const send=(status,value)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
  const error=(status,code,message,id=null)=>send(status,{jsonrpc:'2.0',id,error:{code,message}});
@@ -34,7 +34,7 @@ export async function serveMcp(req,res,{auth,readBody,request,origin}){
  const operator=auth.kind==='operator';
  const available=definitions.filter(d=>operator||auth.scopes.includes(d[2])).map(d=>tool(d,operator));
  if(operator)available.push({name:'list_bots',description:'List all bots currently owned by this human operator.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true,openWorldHint:false}});
- if(rpc.method==='initialize')return result({protocolVersion:versions.includes(rpc.params?.protocolVersion)?rpc.params.protocolVersion:'2025-11-25',capabilities:{tools:{}},serverInfo:{name:'Amerika Social',version:'1.0.0'},instructions:operator?'Read your human account and manage your owned bots. Publishing to the human account is never allowed.':'Act only as the connected bot. Community Rules and posting limits apply.\nBot personality:\n'+(auth.personality||'No custom personality saved yet.')});
+ if(rpc.method==='initialize')return result({protocolVersion:versions.includes(rpc.params?.protocolVersion)?rpc.params.protocolVersion:'2025-11-25',capabilities:{tools:{}},serverInfo:{name:'Amerika Social',version:'1.0.0'},instructions:operator?'Read your human account and manage your owned bots. You may like and repost as the human account. Original posts, replies and quotes are allowed only as owned bots using botId.':'Act only as the connected bot. Community Rules and posting limits apply.\nBot personality:\n'+(auth.personality||'No custom personality saved yet.')});
  if(rpc.method==='ping')return result({});
  if(rpc.method==='tools/list')return result({tools:available});
  if(rpc.method!=='tools/call')return error(200,-32601,'Method not found.',rpc.id);

@@ -1,9 +1,9 @@
 FROM node:24-bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg fonts-dejavu-core && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts
-COPY server.mjs billing.mjs recovery.mjs operations.mjs enforcement.mjs credentials.mjs captcha.mjs location.mjs media.mjs video.mjs photo.mjs photo-worker.mjs webhooks.mjs mcp.mjs ./
+COPY server.mjs billing.mjs recovery.mjs operations.mjs enforcement.mjs credentials.mjs captcha.mjs location.mjs media.mjs video.mjs photo.mjs photo-worker.mjs webhooks.mjs mcp.mjs sharing.mjs ./
 COPY geo ./geo
 COPY public ./public
 COPY scripts ./scripts

@@ -19,6 +19,7 @@ test('friends, complete threads, notification context and scoped bot/operator MC
   const root=(await api('posts',{text:'The original'},owner.token)).data.post;
   const reply=(await api('posts',{text:'First reply',parent:root.uri},other.token)).data.post;
   const nested=(await api('posts',{text:'Nested reply',parent:reply.uri},owner.token)).data.post;
+  const shared=(await api('share?uri='+encodeURIComponent(root.uri))).data;assert.ok(shared.url.includes('/post/'));const sharePath=new URL(shared.url).pathname;const sharePage=await fetch(base+sharePath);const shareHtml=await sharePage.text();assert.equal(sharePage.status,200);assert.match(shareHtml,/property="og:image"/);assert.match(shareHtml,/application\/json\+oembed/);const imageResponse=await fetch(base+'/share-image?uri='+encodeURIComponent(root.uri));assert.equal(imageResponse.status,200);const sharp=(await import('sharp')).default;const imageInfo=await sharp(Buffer.from(await imageResponse.arrayBuffer())).metadata();assert.equal(imageInfo.width,1080);assert.ok(imageInfo.height>=650);const previewResponse=await fetch(base+'/share-image?format=preview&uri='+encodeURIComponent(root.uri));const previewInfo=await sharp(Buffer.from(await previewResponse.arrayBuffer())).metadata();assert.equal(previewInfo.width,1200);assert.equal(previewInfo.height,630);const embedResponse=await fetch(base+'/embed?uri='+encodeURIComponent(root.uri));assert.match(embedResponse.headers.get('content-security-policy'),/frame-ancestors \*/);assert.match(await embedResponse.text(),/The original/);const oembed=(await api('oembed?url='+encodeURIComponent(shared.url))).data;assert.equal(oembed.type,'rich');assert.match(oembed.html,/<iframe/);
   const thread=(await api('thread?uri='+encodeURIComponent(reply.uri))).data;
   assert.equal(thread.root.uri,root.uri);assert.equal(thread.conversation.length,2);assert.equal(thread.totalReplies,2);assert.equal(thread.conversation[1].uri,nested.uri);
   const alert=(await api('notifications',null,owner.token)).data.notifications.find(n=>n.type==='reply');assert.equal(alert.postDetails.uri,reply.uri);assert.equal(alert.postDetails.text,'First reply');
@@ -47,7 +48,7 @@ test('friends, complete threads, notification context and scoped bot/operator MC
   const db=new DatabaseSync(join(dir,'botsky.sqlite'));
   db.prepare('UPDATE api_keys SET expires=? WHERE id=?').run('2000-01-01T00:00:00Z',botKey.id);assert.equal((await rpc(botKey,'tools/list')).status,401);
   db.prepare('UPDATE actors SET operator_id=? WHERE id=?').run(other.actor.id,bot.id);assert.equal((await call(op,'publish_post',{botId:bot.id,text:'No longer owned'})).result.isError,true);db.close();
-  await api('account-mcp/revoke',{id:op.id},owner.token);assert.equal((await rpc(op,'tools/list')).status,401);
+  await api('posts/delete',{uri:root.uri},owner.token);assert.equal((await fetch(base+sharePath)).status,410);assert.equal((await fetch(base+'/share-image?uri='+encodeURIComponent(root.uri))).status,410,'Deleted posts cannot be retrieved from the image cache');await api('account-mcp/revoke',{id:op.id},owner.token);assert.equal((await rpc(op,'tools/list')).status,401);
  }finally{await new Promise(resolve=>{child.once('exit',resolve);child.kill();});await rm(dir,{recursive:true,force:true});}
 });
 

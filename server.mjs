@@ -1,3 +1,4 @@
+import { createSharing, escapeHtml, postPath } from './sharing.mjs';
 import { serveMcp } from './mcp.mjs';
 import { createWebhooks } from './webhooks.mjs';
 import { normalizePhoto } from './photo.mjs';
@@ -238,6 +239,7 @@ function viewPost(p,me,depth=0) {
     liked:!!(me && db.prepare('SELECT actor FROM likes WHERE actor=? AND post=?').get(me,p.uri)) };
 }
 function json(res,status,data) { res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'}); res.end(JSON.stringify(data)); }
+const sharing=createSharing({origin:()=>publicOrigin||`http://localhost:${server.address().port}`,handleDomain,getPost:uri=>{const row=db.prepare('SELECT * FROM posts WHERE uri=?').get(uri);if(!row)fail(404,'Post not found.');const p=viewPost(row,null);if(p.deleted)fail(410,'This post is unavailable.');return p;},getImages:uri=>db.prepare("SELECT m.bytes FROM post_media pm JOIN media m ON m.id=pm.media WHERE pm.post=? AND m.mime!='video/mp4' ORDER BY pm.position").all(uri).map(m=>Buffer.from(m.bytes))});
 const server = http.createServer(async(req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Referrer-Policy','same-origin');
@@ -245,6 +247,16 @@ const server = http.createServer(async(req,res)=>{
   try {
     const url=new URL(req.url,'http://localhost');
     const path=url.pathname;
+    if(path.startsWith('/post/')||path==='/share-image'||path==='/embed'){
+      if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');
+      let uri;try{uri=path.startsWith('/post/')?decodeURIComponent(path.slice(6)):url.searchParams.get('uri');}catch{fail(400,'Invalid post link.');}
+      if(typeof uri!=='string'||uri.length>2048)fail(400,'Choose a post.');
+      res.setHeader('Cache-Control','no-store');
+      if(path==='/share-image'){const key='share-image:'+req.socket.remoteAddress;const l=limits.get(key)||{n:0,until:Date.now()+60000};if(l.until<Date.now()){l.n=0;l.until=Date.now()+60000;}limits.set(key,l);if(++l.n>60)fail(429,'Too many share image requests. Retry shortly.');const bytes=await sharing.image(uri,url.searchParams.get('format')==='preview');res.setHeader('Content-Type','image/png');res.setHeader('Content-Length',bytes.length);if(url.searchParams.get('download')==='1')res.setHeader('Content-Disposition','attachment; filename="amerika-social-post.png"');return res.end(req.method==='HEAD'?undefined:bytes);}
+      res.setHeader('Content-Type','text/html; charset=utf-8');
+      if(path==='/embed'){res.setHeader('Content-Security-Policy',"default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors *");return res.end(req.method==='HEAD'?undefined:sharing.embed(uri));}
+      const html=sharing.page(await readFile(join(root,'public','index.html'),'utf8'),uri);return res.end(req.method==='HEAD'?undefined:html);
+    }
     if(path.startsWith('/mcp/')){
       const credential=req.headers.authorization?.replace(/^Bearer /,'');const id=path.slice(5);let auth;
       const bot=session(credential);
@@ -265,6 +277,8 @@ const server = http.createServer(async(req,res)=>{
     if(path==='/api/stripe/webhook'&&req.method==='POST'){let raw=Buffer.alloc(0);for await(const chunk of req){raw=Buffer.concat([raw,chunk]);if(raw.length>1000000)fail(413,'Request is too large.');}await billing.webhook(raw,req.headers['stripe-signature']);return json(res,200,{received:true});}
     if(req.method==='GET') {
       if(path==='/api/recovery/status'){if(!s)fail(401,'Sign in to manage recovery.');if(s.keyId)fail(403,'Account sign-in required.');const target=billingActor(s,url.searchParams.get('actor'));return json(res,200,recovery.status(target.id));}
+      if(path==='/api/share'){const uri=url.searchParams.get('uri');sharing.page('<head></head>',uri);return json(res,200,{url:sharing.url(uri),image:(publicOrigin||`http://localhost:${server.address().port}`)+'/share-image?uri='+encodeURIComponent(uri)});}
+      if(path==='/api/oembed'){let shared;try{shared=new URL(url.searchParams.get('url'));}catch{fail(400,'Choose a post URL.');}if(shared.origin!==(publicOrigin||`http://localhost:${server.address().port}`)||!shared.pathname.startsWith('/post/'))fail(400,'Choose an Amerika Social post URL.');let uri;try{uri=decodeURIComponent(shared.pathname.slice(6));}catch{fail(400,'Invalid post URL.');}sharing.page('<head></head>',uri);const src=(publicOrigin||`http://localhost:${server.address().port}`)+'/embed?uri='+encodeURIComponent(uri);return json(res,200,{version:'1.0',type:'rich',provider_name:'Amerika Social',provider_url:publicOrigin||`http://localhost:${server.address().port}`,width:550,height:550,html:`<iframe src="${escapeHtml(src)}" width="550" height="550" title="Amerika Social post" loading="lazy" style="max-width:100%;border:0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"></iframe>`});}
       if(path==='/api/health'){db.prepare('SELECT 1').get();return json(res,200,{ok:true});}
       if(path==='/api/admin'){const a=me&&db.prepare('SELECT * FROM actors WHERE id=?').get(me);enforcement.requireAdmin(s,a);return json(res,200,{...enforcement.queue(),operations:operations.status(),billingConfigured:billing.enabled,billingVerification:billing.verification()});}
       if(path==='/api/billing'){if(!s)fail(401,'Sign in to see your plan.');const actor=billingActor(s,url.searchParams.get('actor'));return json(res,200,billing.status(actor.id));}

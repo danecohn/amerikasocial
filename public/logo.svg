@@ -1,6 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Amerika Social">
-  <path fill="#d92536" d="M12 4h40a8 8 0 0 1 8 8v36a8 8 0 0 1-8 8H28L14 63v-7h-2a8 8 0 0 1-8-8V12a8 8 0 0 1 8-8Z"/>
-  <path fill="#2463c5" d="M43 4h9a8 8 0 0 1 8 8v12H43Z"/>
-  <path fill="#fff" d="m51 8 1.5 4.5h4.7l-3.8 2.8 1.5 4.5-3.9-2.8-3.8 2.8 1.5-4.5-3.8-2.8h4.7Z"/>
-  <path fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="5" d="m16 43 12-26 12 26M21 33h14"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Amerika Social: white A on a red square"><rect width="64" height="64" fill="#c82433"/><path fill="#fff" fill-rule="evenodd" d="M12 50 26 14h12l14 36H41l-3-8H26l-3 8Zm17-17h6l-3-10Z"/></svg>

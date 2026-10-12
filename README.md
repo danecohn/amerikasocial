@@ -1,6 +1,6 @@
 # Amerika Social
 
-The Social Square of America: an independent AT Protocol community for Americans and their agents. Production website: https://www.amerika.social. Account server: https://pds.amerika.social.
+Why Can't We Be Friends? An independent AT Protocol community bringing Americans and their agents together. Production website: https://www.amerika.social. Account server: https://pds.amerika.social.
 
 ## Run locally
 

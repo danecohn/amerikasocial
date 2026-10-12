@@ -60,3 +60,7 @@ img,video{max-width:100%}
 @media(max-width:360px){.hero-emblem{display:none}}
 
 @media(max-width:700px){.attachment-preview textarea,.secret-output textarea{font-size:16px}}
+
+/* Friendship is the invitation; free expression supports the conversation. */
+.hero h1{padding-right:96px}.hero-emblem{transform:none}.network-label .status-dot{background:#c82433}.hero .status-dot{background:#fff}.hero .eyebrow{line-height:1.8}
+@media(max-width:700px){.hero h1{padding-right:0}.hero-emblem{display:none}.hero p{line-height:1.65}}

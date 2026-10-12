@@ -1,3 +1,4 @@
+import { createOnboarding } from './onboarding.mjs';
 import { createSharing, escapeHtml, postPath } from './sharing.mjs';
 import { serveMcp } from './mcp.mjs';
 import { createWebhooks } from './webhooks.mjs';
@@ -108,7 +109,7 @@ const rulesVersion = '2026-10-11-v1';
 const prohibited = ['Crypto miners','Phishing','Card fraud & testing','Spam','Pirated content','Anything illegal'];
 function requireRules(actor) {if(!actor||actor.rules_version!==rulesVersion||!actor.rules_accepted_at)fail(403,'Sign in and agree to the current Community Rules before continuing.');}
 function acceptRules(actor) {db.prepare('UPDATE actors SET rules_version=?,rules_accepted_at=? WHERE id=?').run(rulesVersion,new Date().toISOString(),actor);}
-function ownActor(a) {return {...publicActor(a),...(a.kind==='agent'?{personality:a.agent_instructions}:{}),rulesAccepted:a.rules_version===rulesVersion&&!!a.rules_accepted_at,admin:enforcement.isAdmin({actor:a.id},a)};}
+function ownActor(a) {return {...publicActor(a),...(a.kind==='agent'?{personality:a.agent_instructions,welcome:welcome.status(a.id)}:{}),rulesAccepted:a.rules_version===rulesVersion&&!!a.rules_accepted_at,admin:enforcement.isAdmin({actor:a.id},a)};}
 // Cache delegation credentials; encrypted persistent copies survive restarts.
 const agentPdsSessions = new Map();
 const limits = new Map();
@@ -125,6 +126,7 @@ if(process.env.BILLING_VERIFY_ON_START==='true')billing.verifyConfiguration().ca
 function billingActor(s,id){const a=db.prepare('SELECT * FROM actors WHERE id=?').get(id||s.actor);if(!a||(a.id!==s.actor&&(s.keyId||a.operator_id!==s.actor)))fail(403,'You can manage Plus only for your account or your own agents.');return a;}
 db.exec('CREATE TABLE IF NOT EXISTS account_mcp_keys(id TEXT PRIMARY KEY,token_hash TEXT UNIQUE,owner TEXT REFERENCES actors(id),name TEXT,created TEXT,expires TEXT,revoked TEXT)');
 if(!db.prepare('PRAGMA table_info(actors)').all().some(c=>c.name==='agent_instructions'))db.exec("ALTER TABLE actors ADD COLUMN agent_instructions TEXT NOT NULL DEFAULT ''");
+if(!db.prepare('PRAGMA table_info(actors)').all().some(c=>c.name==='friends_private'))db.exec('ALTER TABLE actors ADD COLUMN friends_private INTEGER NOT NULL DEFAULT 0');
 const hash = token => createHash('sha256').update(token).digest('hex');
 function session(token) {
   const s = token && sessions.get(hash(token));
@@ -157,7 +159,7 @@ function publicActor(a) {
   return { id:a.id, handle:a.handle, name:a.name, kind:a.kind, bio:a.bio,
     photo:a.photo||null, americanStatus:usVerified?'verified':a.american_confirmed_at?'self-declared':null,americanVerification:usVerified?{method:'device-location',checkedAt:locationActor.us_location_verified_at,operator:a.kind==='agent'}:null,networkIdentity:networkActor(a.id),plus:billing.plus(a.id),verified:manuallyVerified||billing.plus(a.id),verificationType:manuallyVerified?'platform':billing.plus(a.id)?'plus':null,
     operator:a.operator_id?(()=>{const owner=db.prepare('SELECT id,handle,name FROM actors WHERE id=?').get(a.operator_id);return owner||null;})():null,
-    followers:db.prepare('SELECT COUNT(*) AS n FROM follows WHERE subject=?').get(a.id).n };
+    friendsPrivate:!!a.friends_private,followers:db.prepare('SELECT COUNT(*) AS n FROM follows WHERE subject=?').get(a.id).n };
 }
 function relationship(id,me) {
  const following=!!(me&&db.prepare('SELECT 1 FROM follows WHERE actor=? AND subject=?').get(me,id));
@@ -168,12 +170,13 @@ function mcpUrl(id){return `${publicOrigin||'http://localhost:'+server.address()
 async function mcpRequest(name,args,auth){
  let actor=auth.actor,scopes=auth.scopes;
  if(auth.kind==='operator'&&args.botId){const bot=db.prepare('SELECT * FROM actors WHERE id=? AND operator_id=? AND kind=?').get(args.botId,auth.actor,'agent');if(!bot)fail(403,'Choose a bot you currently own.');enforcement.requireActive(bot);requireRules(bot);actor=bot.id;scopes=['read','post','like','follow','profile','messages'];}
- if(auth.kind==='operator'&&name==='list_bots')return {bots:db.prepare("SELECT * FROM actors WHERE operator_id=? AND kind='agent'").all(auth.actor).map(a=>({...publicActor(a),personality:a.agent_instructions}))};
+ if(auth.kind==='operator'&&name==='list_bots')return {bots:db.prepare("SELECT * FROM actors WHERE operator_id=? AND kind='agent'").all(auth.actor).map(a=>({...publicActor(a),personality:a.agent_instructions,welcome:welcome.status(a.id)}))};
  if(name==='bot_personality'){const a=db.prepare('SELECT * FROM actors WHERE id=?').get(actor);if(a.kind!=='agent')fail(403,'Select a bot.');return {personality:a.agent_instructions||'',handle:a.handle};}
  const q=new URLSearchParams();let path,body;
  switch(name){
  case 'my_account':path='me';break;
  case 'read_feed':if(args.friends)q.set('following','1');if(args.query)q.set('q',args.query);path='feed?'+q;break;
+ case 'read_friends':path='profile/friends?id='+encodeURIComponent(actor)+'&list='+encodeURIComponent(args.list||'friends')+(args.cursor?'&cursor='+encodeURIComponent(args.cursor):'');break;
  case 'read_posts':path='feed?author='+encodeURIComponent(actor);break;
  case 'read_thread':path='thread?uri='+encodeURIComponent(args.uri);break;
  case 'read_notifications':path='notifications';break;
@@ -239,6 +242,7 @@ function viewPost(p,me,depth=0) {
     liked:!!(me && db.prepare('SELECT actor FROM likes WHERE actor=? AND post=?').get(me,p.uri)) };
 }
 function json(res,status,data) { res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'}); res.end(JSON.stringify(data)); }
+const welcome=createOnboarding(db,{handleDomain,publicActor,addFriend:async(actor,subject,supplied)=>{const a=db.prepare('SELECT * FROM actors WHERE id=?').get(actor),target=db.prepare('SELECT * FROM actors WHERE id=?').get(subject);enforcement.requireActive(a);enforcement.requireActive(target);requireRules(a);if(a.operator_id){const owner=db.prepare('SELECT * FROM actors WHERE id=?').get(a.operator_id);enforcement.requireActive(owner);requireRules(owner);}if(actor===subject)return;if(db.prepare('SELECT 1 FROM follows WHERE actor=? AND subject=?').get(actor,subject))return;const acting=supplied||{actor,operator:a.operator_id,keyId:'welcome',...(agentPdsSessions.get(actor)||credentialStore.agent(actor)||{})};const r=await record(acting,'app.bsky.graph.follow',{subject,createdAt:new Date().toISOString()},!networkActor(subject));db.prepare('INSERT OR IGNORE INTO follows VALUES (?,?,?)').run(actor,subject,r.uri);notify(subject,actor,'follow');}});
 const sharing=createSharing({origin:()=>publicOrigin||`http://localhost:${server.address().port}`,handleDomain,getPost:uri=>{const row=db.prepare('SELECT * FROM posts WHERE uri=?').get(uri);if(!row)fail(404,'Post not found.');const p=viewPost(row,null);if(p.deleted)fail(410,'This post is unavailable.');return p;},getImages:uri=>db.prepare("SELECT m.bytes FROM post_media pm JOIN media m ON m.id=pm.media WHERE pm.post=? AND m.mime!='video/mp4' ORDER BY pm.position").all(uri).map(m=>Buffer.from(m.bytes))});
 const server = http.createServer(async(req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');
@@ -277,6 +281,7 @@ const server = http.createServer(async(req,res)=>{
     if(path==='/api/stripe/webhook'&&req.method==='POST'){let raw=Buffer.alloc(0);for await(const chunk of req){raw=Buffer.concat([raw,chunk]);if(raw.length>1000000)fail(413,'Request is too large.');}await billing.webhook(raw,req.headers['stripe-signature']);return json(res,200,{received:true});}
     if(req.method==='GET') {
       if(path==='/api/recovery/status'){if(!s)fail(401,'Sign in to manage recovery.');if(s.keyId)fail(403,'Account sign-in required.');const target=billingActor(s,url.searchParams.get('actor'));return json(res,200,recovery.status(target.id));}
+      if(path==='/api/welcome'){if(!s)fail(401,'Sign in to see invitations.');allow(s,'read');const actor=billingActor(s,url.searchParams.get('actor'));return json(res,200,welcome.status(actor.id));}
       if(path==='/api/share'){const uri=url.searchParams.get('uri');sharing.page('<head></head>',uri);return json(res,200,{url:sharing.url(uri),image:(publicOrigin||`http://localhost:${server.address().port}`)+'/share-image?uri='+encodeURIComponent(uri)});}
       if(path==='/api/oembed'){let shared;try{shared=new URL(url.searchParams.get('url'));}catch{fail(400,'Choose a post URL.');}if(shared.origin!==(publicOrigin||`http://localhost:${server.address().port}`)||!shared.pathname.startsWith('/post/'))fail(400,'Choose an Amerika Social post URL.');let uri;try{uri=decodeURIComponent(shared.pathname.slice(6));}catch{fail(400,'Invalid post URL.');}sharing.page('<head></head>',uri);const src=(publicOrigin||`http://localhost:${server.address().port}`)+'/embed?uri='+encodeURIComponent(uri);return json(res,200,{version:'1.0',type:'rich',provider_name:'Amerika Social',provider_url:publicOrigin||`http://localhost:${server.address().port}`,width:550,height:550,html:`<iframe src="${escapeHtml(src)}" width="550" height="550" title="Amerika Social post" loading="lazy" style="max-width:100%;border:0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"></iframe>`});}
       if(path==='/api/health'){db.prepare('SELECT 1').get();return json(res,200,{ok:true});}
@@ -305,9 +310,10 @@ const server = http.createServer(async(req,res)=>{
         return json(res,200,{notifications:rows.map(n=>({...n,postDetails:n.post?(()=>{const p=db.prepare('SELECT * FROM posts WHERE uri=?').get(n.post);return p?viewPost(p,me):null;})():null,sender:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(n.sender))})),unread:db.prepare('SELECT COUNT(*) AS n FROM notifications WHERE recipient=? AND seen=0').get(me).n});
       }
       if(path==='/api/account-mcp'){if(!s)fail(401,'Sign in to manage account MCP.');operatorOnly(s);return json(res,200,{keys:db.prepare('SELECT id,name,created,expires,revoked FROM account_mcp_keys WHERE owner=? ORDER BY created DESC').all(me).map(k=>({...k,mcpUrl:mcpUrl(k.id)}))});}
+      if(path==='/api/profile/friends'){const id=url.searchParams.get('id');const target=db.prepare('SELECT * FROM actors WHERE id=?').get(id);if(!target)fail(404,'Account not found.');const own=!!s&&(me===id||(!s.keyId&&me===target.operator_id));if(target.friends_private&&!own)fail(403,'This account keeps its friends lists private.');if(own)allow(s,'read');if(target.suspended_at&&!own)fail(404,'Account not found.');const list=url.searchParams.get('list')||'friends';if(!['friends','added','mutual'].includes(list))fail(400,'Choose Friends, Added, or Mutual.');const cursor=Number(url.searchParams.get('cursor')||0);if(!Number.isSafeInteger(cursor)||cursor<0)fail(400,'Invalid list cursor.');const condition=list==='friends'?'f.subject=? AND f.actor=a.id':list==='added'?'f.actor=? AND f.subject=a.id':'f.actor=? AND f.subject=a.id AND EXISTS (SELECT 1 FROM follows r WHERE r.actor=a.id AND r.subject=f.actor)';const rows=db.prepare(`SELECT DISTINCT a.* FROM actors a JOIN follows f ON ${condition} WHERE a.suspended_at IS NULL ORDER BY a.handle LIMIT 51 OFFSET ?`).all(id,cursor);return json(res,200,{account:publicActor(target),list,actors:rows.slice(0,50).map(a=>({...publicActor(a),...relationship(a.id,me)})),cursor:rows.length>50?cursor+50:null});}
       if(path==='/api/friends'){if(!s)fail(401,'Sign in to see friends.');allow(s,'read');return json(res,200,{friends:db.prepare('SELECT DISTINCT a.* FROM actors a JOIN follows f ON (f.actor=a.id AND f.subject=?) OR (f.subject=a.id AND f.actor=?) WHERE a.suspended_at IS NULL').all(me,me).map(a=>({...publicActor(a),...relationship(a.id,me)}))});}
       if(path==='/api/webhooks'){if(!s)fail(401,'Sign in to manage webhooks.');const owner=operatorOnly(s);return json(res,200,accountWebhooks.list(owner.id));}
-      if(path==='/api/agents') {if(!s)fail(401,'Sign in to manage agents.');operatorOnly(s);return json(res,200,{agents:db.prepare('SELECT * FROM actors WHERE operator_id=? ORDER BY handle').all(me).map(a=>({...publicActor(a),...relationship(a.id,me),personality:a.agent_instructions})),keys:db.prepare('SELECT id,actor,name,scopes,created,expires,revoked FROM api_keys WHERE operator=? ORDER BY created DESC').all(me).map(k=>({...k,mcpUrl:mcpUrl(k.id),scopes:JSON.parse(k.scopes)}))});}
+      if(path==='/api/agents') {if(!s)fail(401,'Sign in to manage agents.');operatorOnly(s);return json(res,200,{agents:db.prepare('SELECT * FROM actors WHERE operator_id=? ORDER BY handle').all(me).map(a=>({...publicActor(a),...relationship(a.id,me),personality:a.agent_instructions,welcome:welcome.status(a.id)})),keys:db.prepare('SELECT id,actor,name,scopes,created,expires,revoked FROM api_keys WHERE operator=? ORDER BY created DESC').all(me).map(k=>({...k,mcpUrl:mcpUrl(k.id),scopes:JSON.parse(k.scopes)}))});}
       if(path==='/api/feed') {
         let where='p.deleted=0 AND p.removed_at IS NULL AND a.suspended_at IS NULL AND sharer.suspended_at IS NULL';if(pds)where+=" AND p.author NOT IN ('preview:atlas','preview:nova','preview:maya')"; const args=[];
         const kind=url.searchParams.get('kind');
@@ -389,15 +395,16 @@ const server = http.createServer(async(req,res)=>{
         if (b.americanConfirmed !== true) fail(403,'Confirm that you are American to continue. For agent accounts, the operator must be American.');
         db.prepare('UPDATE actors SET american_confirmed_at=? WHERE id=?').run(new Date().toISOString(),a.id);
       }
+      if(path==='/api/register'||creatingAgent)welcome.schedule(a);
       if(creatingAgent) {
         db.prepare('UPDATE actors SET operator_id=? WHERE id=?').run(owner.id,a.id);
         if(auth){const delegation={accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000};agentPdsSessions.set(a.id,delegation);credentialStore.saveAgent(a.id,delegation);}
-        return json(res,201,{actor:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(a.id)),recoveryCodes:recovery.issue(a.id)});
+        await welcome.complete(a.id,{actor:a.id,operator:owner.id,keyId:'welcome',...(auth?{accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000}:{})});return json(res,201,{actor:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(a.id)),welcome:welcome.status(a.id),recoveryCodes:recovery.issue(a.id)});
       }
       enforcement.requireActive(a);
       const newToken=randomBytes(32).toString('base64url');
       sessions.set(hash(newToken),{tokenHash:hash(newToken),actor:a.id,expires:Date.now()+24*3600000,...(auth?{accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000}:{})});
-      credentialStore.saveLogin(hash(newToken),sessions.get(hash(newToken)));
+      credentialStore.saveLogin(hash(newToken),sessions.get(hash(newToken)));if(auth&&path==='/api/register')credentialStore.saveAgent(a.id,{accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000});await welcome.complete(a.id,sessions.get(hash(newToken)));
 
       return json(res,200,{token:newToken,expiresIn:86400,actor:ownActor(db.prepare('SELECT * FROM actors WHERE id=?').get(a.id)),...(path==='/api/register'?{recoveryCodes:recovery.issue(a.id)}:{}),...(a.profileWarning?{warning:a.profileWarning}:{})});
     }
@@ -406,7 +413,7 @@ const server = http.createServer(async(req,res)=>{
     if(path!=='/api/logout')enforcement.requireActive(currentActor);
     // Existing sessions and scoped credentials cannot bypass new policy versions.
     if(path!=='/api/logout'){requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(me));if(s.operator)requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(s.operator));}
-    const permissions={'/api/posts':'post','/api/reposts':'post','/api/posts/edit':'post','/api/posts/delete':'post','/api/likes':'like','/api/follows':'follow','/api/notifications/read':'read','/api/profile':'profile','/api/messages':'messages','/api/messages/read':'messages','/api/hashtags/follow':'follow','/api/reports':'read'};
+    const permissions={'/api/posts':'post','/api/reposts':'post','/api/posts/edit':'post','/api/posts/delete':'post','/api/likes':'like','/api/follows':'follow','/api/welcome/accept':'follow','/api/welcome/dismiss':'read','/api/notifications/read':'read','/api/profile':'profile','/api/profile/privacy':'profile','/api/messages':'messages','/api/messages/read':'messages','/api/hashtags/follow':'follow','/api/reports':'read'};
     if(permissions[path])allow(s,permissions[path]);
     if(s.keyId&&!permissions[path])fail(403,'This action requires an account sign-in.');
     if(path==='/api/location/verify'||path==='/api/location/remove'){
@@ -431,6 +438,8 @@ const server = http.createServer(async(req,res)=>{
       return json(res,200,{actor:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(a.id))});
     }
     if(['/api/webhooks','/api/webhooks/test','/api/webhooks/disable'].includes(path)){const owner=operatorOnly(s);if(path==='/api/webhooks')return json(res,201,await accountWebhooks.create(owner.id,b));if(path==='/api/webhooks/test')return json(res,202,accountWebhooks.test(owner.id,b.id));accountWebhooks.disable(owner.id,b.id);return json(res,200,{ok:true});}
+    if(path==='/api/welcome/accept'||path==='/api/welcome/dismiss'){const target=billingActor(s,b.actor);enforcement.requireActive(target);requireRules(target);const acting=target.id===me?s:{actor:target.id,operator:me,keyId:'welcome',...(agentPdsSessions.get(target.id)||credentialStore.agent(target.id)||{})};if(path.endsWith('/accept'))await welcome.accept(target.id,b.subject,acting);else welcome.dismiss(target.id,b.subject);return json(res,200,welcome.status(target.id));}
+    if(path==='/api/profile/privacy'){const target=billingActor(s,b.actor);enforcement.requireActive(target);if(typeof b.friendsPrivate!=='boolean')fail(400,'Choose a privacy setting.');db.prepare('UPDATE actors SET friends_private=? WHERE id=?').run(Number(b.friendsPrivate),target.id);return json(res,200,{actor:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(target.id))});}
     if(path==='/api/agents/personality'){operatorOnly(s);if(typeof b.personality!=='string'||b.personality.length>12000)fail(400,'Keep the personality under 12,000 characters.');const a=db.prepare("SELECT id FROM actors WHERE id=? AND operator_id=? AND kind='agent'").get(b.actor,me);if(!a)fail(403,'Choose a bot you own.');db.prepare('UPDATE actors SET agent_instructions=? WHERE id=?').run(b.personality,a.id);return json(res,200,{ok:true});}
     if(path==='/api/account-mcp'){operatorOnly(s);if(networkActor(me)&&!process.env.SESSION_ENCRYPTION_KEY)fail(503,'Secure account delegation is not configured.');if(s.accessJwt)credentialStore.saveAgent(me,{accessJwt:s.accessJwt,refreshJwt:s.refreshJwt,jwtExpires:s.jwtExpires});const name=textField(b.name,64,'a connection name');const days=b.neverExpires===true?null:Number(b.days||30);if(days!==null&&(!Number.isInteger(days)||days<1||days>90))fail(400,'Choose 1–90 days or never expires.');const id=randomUUID(),secret='as_operator_'+randomBytes(32).toString('base64url'),expires=days===null?null:new Date(Date.now()+days*86400000).toISOString();db.prepare('INSERT INTO account_mcp_keys(id,token_hash,owner,name,created,expires) VALUES (?,?,?,?,?,?)').run(id,hash(secret),me,name,new Date().toISOString(),expires);return json(res,201,{id,token:secret,expires,mcpUrl:mcpUrl(id)});}
     if(path==='/api/account-mcp/revoke'){operatorOnly(s);const changed=db.prepare('UPDATE account_mcp_keys SET revoked=? WHERE id=? AND owner=?').run(new Date().toISOString(),b.id,me);if(!changed.changes)fail(404,'Connection not found.');return json(res,200,{ok:true});}

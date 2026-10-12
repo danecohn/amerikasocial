@@ -15,7 +15,7 @@ test('friends, complete threads, notification context and scoped bot/operator MC
  const call=async(key,name,args={})=>(await rpc(key,'tools/call',{name,arguments:args})).data;
  try{
   const register=async handle=>(await api('register',{handle,name:handle,kind:'human',password:'square-test-password',americanConfirmed:true,rulesAccepted:true})).data;
-  const owner=await register('owner.demo'),other=await register('other.demo');
+  const owner=await register('ant.demo');const official=(await api('agents',{handle:'amerika.demo',name:'Amerika',password:'square-test-password',americanConfirmed:true,rulesAccepted:true},owner.token)).data.actor;const other=await register('other.demo');const onboarding=(await api('welcome',null,other.token)).data;assert.equal(onboarding.official.id,official.id);assert.equal(onboarding.pendingOfficial,false);assert.equal(onboarding.invites[0].id,owner.actor.id);const addedAtSignup=(await api('profile/friends?id='+other.actor.id+'&list=added',null,other.token)).data.actors;assert.ok(addedAtSignup.some(a=>a.id===official.id));assert.ok(!addedAtSignup.some(a=>a.id===owner.actor.id));
   const root=(await api('posts',{text:'The original'},owner.token)).data.post;
   const reply=(await api('posts',{text:'First reply',parent:root.uri},other.token)).data.post;
   const nested=(await api('posts',{text:'Nested reply',parent:reply.uri},owner.token)).data.post;
@@ -26,13 +26,15 @@ test('friends, complete threads, notification context and scoped bot/operator MC
   await api('notifications/read',{id:alert.id},owner.token);assert.equal((await api('notifications',null,owner.token)).data.notifications.find(n=>n.id===alert.id).seen,1);
   assert.equal((await api('follows',{subject:other.actor.id},owner.token)).data.friendship,'one-way');
   assert.equal((await api('follows',{subject:owner.actor.id},other.token)).data.friendship,'mutual');
-  const friends=(await api('friends',null,owner.token)).data.friends;assert.equal(friends[0].friendship,'mutual');assert.equal((await api('profile?id='+owner.actor.id,null,owner.token)).data.actor.mutualCount,1);
-  const bot=(await api('agents',{handle:'square-bot.demo',name:'Bot',password:'square-test-password',americanConfirmed:true,rulesAccepted:true},owner.token)).data.actor;
-  await api('agents/personality',{actor:bot.id,personality:'You are a cheerful gardener.'},owner.token);
+  await api('welcome/accept',{subject:owner.actor.id},other.token);assert.equal((await api('welcome',null,other.token)).data.invites.length,0);const friends=(await api('friends',null,owner.token)).data.friends;assert.equal(friends[0].friendship,'mutual');assert.equal((await api('profile?id='+owner.actor.id,null,owner.token)).data.actor.mutualCount,1);
+  const publicList=await api('profile/friends?id='+owner.actor.id+'&list=mutual');assert.equal(publicList.status,200);assert.equal(publicList.data.actors[0].id,other.actor.id);
+  assert.equal((await api('profile/privacy',{friendsPrivate:true},owner.token)).status,200);assert.equal((await api('profile/friends?id='+owner.actor.id)).status,403);assert.equal((await api('profile/friends?id='+owner.actor.id,null,other.token)).status,403);assert.equal((await api('profile/friends?id='+owner.actor.id,null,owner.token)).status,200);
+  const bot=(await api('agents' ,{handle:'square-bot.demo',name:'Bot',password:'square-test-password',americanConfirmed:true,rulesAccepted:true},owner.token)).data.actor;
+  await api('profile/privacy',{actor:bot.id,friendsPrivate:true},owner.token);assert.equal((await api('profile/friends?id='+bot.id)).status,403);assert.equal((await api('profile/friends?id='+bot.id,null,owner.token)).status,200);assert.equal((await api('profile/friends?id='+bot.id,null,other.token)).status,403);assert.equal((await api('profile/privacy',{actor:bot.id,friendsPrivate:false},other.token)).status,403);await api('agents/personality',{actor:bot.id,personality:'You are a cheerful gardener.'},owner.token);
   assert.equal((await api('agents/personality',{actor:bot.id,personality:'Stolen'},other.token)).status,403);
   assert.equal((await api('profile?id='+bot.id)).data.actor.personality,undefined);
   const botKey=(await api('agent-keys',{actor:bot.id,name:'MCP bot',scopes:['read','post'],neverExpires:true},owner.token)).data;assert.equal(botKey.expires,null);
-  const init=(await rpc(botKey,'initialize',{protocolVersion:'2025-11-25'})).data.result;assert.match(init.instructions,/cheerful gardener/);
+  assert.equal((await api('profile/friends?id='+bot.id,null,botKey.token)).status,200);const init=(await rpc(botKey,'initialize',{protocolVersion:'2025-11-25'})).data.result;assert.match(init.instructions,/cheerful gardener/);
   const tools=(await rpc(botKey,'tools/list')).data.result.tools;assert.ok(tools.some(t=>t.name==='publish_post'));assert.ok(!tools.some(t=>t.name==='send_message'));
   assert.equal((await call(botKey,'publish_post',{text:'Hello',parent:reply.uri})).result.isError,false);
   assert.equal((await call(botKey,'send_message',{recipient:owner.actor.id,text:'No'})).error.code,-32602);
@@ -41,7 +43,7 @@ test('friends, complete threads, notification context and scoped bot/operator MC
   assert.equal((await api('posts',{text:'Human impersonation'},op.token)).status,401);
   assert.equal((await call(op,'publish_post',{text:'Human impersonation'})).error.code,-32602);
   assert.equal((await call(op,'publish_post',{botId:owner.actor.id,text:'Human impersonation'})).result.isError,true);
-  const bots=JSON.parse((await call(op,'list_bots')).result.content[0].text).bots;assert.equal(bots[0].personality,'You are a cheerful gardener.');
+  assert.equal((await call(op,'read_friends',{list:'mutual'})).result.isError,false);assert.equal((await call(op,'read_friends',{botId:bot.id,list:'friends'})).result.isError,false);const bots=JSON.parse((await call(op,'list_bots')).result.content[0].text).bots;assert.equal(bots.find(a=>a.id===bot.id).personality,'You are a cheerful gardener.');
   assert.equal((await call(op,'publish_post',{botId:bot.id,text:'An operator-directed bot reply',parent:reply.uri})).result.isError,false);
   assert.equal((await call(op,'like_post',{uri:root.uri})).result.isError,false);assert.equal((await call(op,'repost',{uri:reply.uri})).result.isError,false);
   const myPosts=JSON.parse((await call(op,'read_posts')).result.content[0].text).posts;assert.ok(myPosts.some(p=>p.uri===root.uri));

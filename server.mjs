@@ -1,3 +1,4 @@
+import { createMcpOAuth } from './oauth.mjs';
 import { createOnboarding } from './onboarding.mjs';
 import { createSharing, escapeHtml, postPath } from './sharing.mjs';
 import { serveMcp } from './mcp.mjs';
@@ -115,7 +116,7 @@ const agentPdsSessions = new Map();
 const limits = new Map();
 const billing = createBilling(db,publicOrigin);
 const enforcement=createEnforcement(db,prohibited,{remoteAction:async body=>adminXrpc('com.atproto.admin.updateSubjectStatus',body)});
-const recovery=createRecovery(db,{resetRemote:async(did,password)=>{await adminXrpc('com.atproto.admin.updateAccountPassword',{did,password});},invalidate:id=>{accountWebhooks.revokeAccount(id);db.prepare('UPDATE account_mcp_keys SET revoked=? WHERE owner=? AND revoked IS NULL').run(new Date().toISOString(),id);for(const [key,s] of sessions)if(s.actor===id||s.operator===id)sessions.delete(key);db.prepare('DELETE FROM login_sessions WHERE actor=?').run(id);for(const agent of db.prepare('SELECT id FROM actors WHERE id=? OR operator_id=?').all(id,id)){agentPdsSessions.delete(agent.id);db.prepare('DELETE FROM agent_sessions WHERE actor=?').run(agent.id);}}});
+const recovery=createRecovery(db,{resetRemote:async(did,password)=>{await adminXrpc('com.atproto.admin.updateAccountPassword',{did,password});},invalidate:id=>{accountWebhooks.revokeAccount(id);db.prepare('UPDATE oauth_grants SET revoked=? WHERE owner=?').run(Date.now(),id);db.prepare('UPDATE account_mcp_keys SET revoked=? WHERE owner=? AND revoked IS NULL').run(new Date().toISOString(),id);for(const [key,s] of sessions)if(s.actor===id||s.operator===id)sessions.delete(key);db.prepare('DELETE FROM login_sessions WHERE actor=?').run(id);for(const agent of db.prepare('SELECT id FROM actors WHERE id=? OR operator_id=?').all(id,id)){agentPdsSessions.delete(agent.id);db.prepare('DELETE FROM agent_sessions WHERE actor=?').run(agent.id);}}});
 db.exec('CREATE TABLE IF NOT EXISTS login_sessions(token_hash TEXT PRIMARY KEY,actor TEXT NOT NULL,expires INTEGER NOT NULL);');
 const credentialStore=createCredentialStore(db,process.env.SESSION_ENCRYPTION_KEY);
 const operations=createOperations(db,dir);
@@ -185,7 +186,7 @@ async function mcpRequest(name,args,auth){
  }
  if(auth.kind==='operator'&&actor===auth.actor&&['like_post','repost'].includes(name))scopes=['read','like','post'];
  const delegation=actor!==auth.actor?agentPdsSessions.get(actor)||credentialStore.agent(actor)||{}:auth.delegation||{};
- const internal=randomBytes(32).toString('base64url');sessions.set(hash(internal),{actor,operator:auth.kind==='operator'?auth.actor:auth.operator,keyId:'mcp',scopes,expires:Date.now()+180000,...delegation});
+ const internal=randomBytes(32).toString('base64url');sessions.set(hash(internal),{...delegation,actor,operator:auth.kind==='operator'?auth.actor:auth.operator,keyId:'mcp',scopes,expires:Date.now()+180000});
  try{const response=await fetch(`http://127.0.0.1:${server.address().port}/api/${path}`,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+internal,...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(170000),redirect:'error'});const result=await response.json();if(!response.ok)fail(response.status,result.error||'Action failed.');return result;}finally{sessions.delete(hash(internal));}
 }
 async function xrpc(method, data, jwt, get=false) {
@@ -244,6 +245,13 @@ function viewPost(p,me,depth=0) {
 function json(res,status,data) { res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'}); res.end(JSON.stringify(data)); }
 const welcome=createOnboarding(db,{handleDomain,publicActor,addFriend:async(actor,subject,supplied)=>{const a=db.prepare('SELECT * FROM actors WHERE id=?').get(actor),target=db.prepare('SELECT * FROM actors WHERE id=?').get(subject);enforcement.requireActive(a);enforcement.requireActive(target);requireRules(a);if(a.operator_id){const owner=db.prepare('SELECT * FROM actors WHERE id=?').get(a.operator_id);enforcement.requireActive(owner);requireRules(owner);}if(actor===subject)return;if(db.prepare('SELECT 1 FROM follows WHERE actor=? AND subject=?').get(actor,subject))return;const acting=supplied||{actor,operator:a.operator_id,keyId:'welcome',...(agentPdsSessions.get(actor)||credentialStore.agent(actor)||{})};const r=await record(acting,'app.bsky.graph.follow',{subject,createdAt:new Date().toISOString()},!networkActor(subject));db.prepare('INSERT OR IGNORE INTO follows VALUES (?,?,?)').run(actor,subject,r.uri);notify(subject,actor,'follow');}});
 const sharing=createSharing({origin:()=>publicOrigin||`http://localhost:${server.address().port}`,handleDomain,getPost:uri=>{const row=db.prepare('SELECT * FROM posts WHERE uri=?').get(uri);if(!row)fail(404,'Post not found.');const p=viewPost(row,null);if(p.deleted)fail(410,'This post is unavailable.');return p;},getImages:uri=>db.prepare("SELECT m.bytes FROM post_media pm JOIN media m ON m.id=pm.media WHERE pm.post=? AND m.mime!='video/mp4' ORDER BY pm.position").all(uri).map(m=>Buffer.from(m.bytes))});
+function oauthTarget(id){
+ const current=new Date().toISOString();
+ const key=db.prepare('SELECT * FROM api_keys WHERE id=? AND revoked IS NULL AND (expires IS NULL OR expires>?)').get(id,current);
+ if(key){const a=db.prepare('SELECT * FROM actors WHERE id=?').get(key.actor),owner=db.prepare('SELECT * FROM actors WHERE id=?').get(key.operator);if(!a||a.kind!=='agent'||a.operator_id!==key.operator||a.suspended_at||!owner||owner.suspended_at||a.rules_version!==rulesVersion||owner.rules_version!==rulesVersion||!a.rules_accepted_at||!owner.rules_accepted_at)return null;return {kind:'bot',actor:a.id,owner:key.operator,name:key.name,actorName:a.name,scopes:JSON.parse(key.scopes),expires:key.expires,personality:a.agent_instructions};}
+ const op=db.prepare('SELECT * FROM account_mcp_keys WHERE id=? AND revoked IS NULL AND (expires IS NULL OR expires>?)').get(id,current);if(!op)return null;const a=db.prepare('SELECT * FROM actors WHERE id=?').get(op.owner);if(!a||a.kind!=='human'||a.suspended_at||a.rules_version!==rulesVersion||!a.rules_accepted_at)return null;return {kind:'operator',actor:a.id,owner:a.id,name:op.name,actorName:a.name,scopes:['mcp'],expires:op.expires};
+}
+const oauth=createMcpOAuth(db,{origin:()=>publicOrigin||'http://localhost:'+server.address().port,target:oauthTarget,requireOperator:s=>{if(!s)fail(401,'Sign in to authorize this connection.');const a=operatorOnly(s);enforcement.requireActive(a);requireRules(a);},saveDelegation:s=>{if(networkActor(s.actor)&&!process.env.SESSION_ENCRYPTION_KEY)fail(503,'Secure account delegation is not configured.');if(s.accessJwt)credentialStore.saveAgent(s.actor,{accessJwt:s.accessJwt,refreshJwt:s.refreshJwt,jwtExpires:s.jwtExpires});},delegation:c=>agentPdsSessions.get(c.actor)||credentialStore.agent(c.actor)||{}});
 const server = http.createServer(async(req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Referrer-Policy','same-origin');
@@ -251,6 +259,7 @@ const server = http.createServer(async(req,res)=>{
   try {
     const url=new URL(req.url,'http://localhost');
     const path=url.pathname;
+    if(await oauth.handle(req,res,url))return;
     if(path.startsWith('/post/')||path==='/share-image'||path==='/embed'){
       if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');
       let uri;try{uri=path.startsWith('/post/')?decodeURIComponent(path.slice(6)):url.searchParams.get('uri');}catch{fail(400,'Invalid post link.');}
@@ -262,12 +271,14 @@ const server = http.createServer(async(req,res)=>{
       const html=sharing.page(await readFile(join(root,'public','index.html'),'utf8'),uri);return res.end(req.method==='HEAD'?undefined:html);
     }
     if(path.startsWith('/mcp/')){
-      const credential=req.headers.authorization?.replace(/^Bearer /,'');const id=path.slice(5);let auth;
-      const bot=session(credential);
-      if(bot?.keyId===id){const a=db.prepare('SELECT * FROM actors WHERE id=?').get(bot.actor);requireRules(a);requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(bot.operator));auth={kind:'bot',actor:bot.actor,operator:bot.operator,scopes:bot.scopes,personality:a.agent_instructions,delegation:bot};}
-      else if(credential?.startsWith('as_operator_')){const key=db.prepare('SELECT * FROM account_mcp_keys WHERE id=? AND token_hash=? AND revoked IS NULL AND (expires IS NULL OR expires>?)').get(id,hash(credential),new Date().toISOString());if(key){const owner=db.prepare('SELECT * FROM actors WHERE id=?').get(key.owner);enforcement.requireActive(owner);requireRules(owner);const login=db.prepare('SELECT token_hash FROM login_sessions WHERE actor=? AND expires>? ORDER BY expires DESC LIMIT 1').get(key.owner,Date.now());const saved=login&&(sessions.get(login.token_hash)||credentialStore.login(login.token_hash));auth={kind:'operator',actor:key.owner,scopes:['read'],delegation:agentPdsSessions.get(key.owner)||credentialStore.agent(key.owner)||saved||{}};}}
+      const id=path.slice(5);const resource=mcpUrl(id);const credential=req.headers.authorization?.replace(/^Bearer /,'');const auth=oauth.authenticate(credential,resource);
+      const origin=publicOrigin||'http://localhost:'+server.address().port;
+      const allowedOrigin=!req.headers.origin||req.headers.origin===origin||auth?.clientOrigins.includes(req.headers.origin);
+      if(allowedOrigin&&req.headers.origin){res.setHeader('Access-Control-Allow-Origin',req.headers.origin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Expose-Headers','WWW-Authenticate');}
+      if(req.method==='OPTIONS'){res.setHeader('Access-Control-Allow-Origin','*');res.setHeader('Access-Control-Allow-Methods','POST, GET, OPTIONS');res.setHeader('Access-Control-Allow-Headers','Authorization, Content-Type, Accept, MCP-Protocol-Version, MCP-Session-Id');res.writeHead(204);return res.end();}
+      if(!auth){res.setHeader('Access-Control-Allow-Origin','*');res.setHeader('Access-Control-Expose-Headers','WWW-Authenticate');try{res.setHeader('WWW-Authenticate',oauth.challenge(id));}catch{res.setHeader('WWW-Authenticate','Bearer resource_metadata="'+origin+'/.well-known/oauth-protected-resource"');}}
       if(auth){const bucket='mcp:'+id;const l=limits.get(bucket)||{n:0,until:Date.now()+60000};if(l.until<Date.now()){l.n=0;l.until=Date.now()+60000;}limits.set(bucket,l);if(++l.n>120)fail(429,'Too many MCP requests. Retry shortly.');}
-      return serveMcp(req,res,{auth,readBody:body,request:mcpRequest,origin:publicOrigin||`http://${req.headers.host}`});
+      return serveMcp(req,res,{auth,readBody:body,request:mcpRequest,origin:allowedOrigin&&req.headers.origin?req.headers.origin:origin});
     }
     if (!path.startsWith('/api/')) {
       if(req.method!=='GET') fail(405,'Method not allowed.');
@@ -280,6 +291,8 @@ const server = http.createServer(async(req,res)=>{
     if(path==='/api/media'&&req.method==='GET')return media.serve(url.searchParams.get('id'),req,res);
     if(path==='/api/stripe/webhook'&&req.method==='POST'){let raw=Buffer.alloc(0);for await(const chunk of req){raw=Buffer.concat([raw,chunk]);if(raw.length>1000000)fail(413,'Request is too large.');}await billing.webhook(raw,req.headers['stripe-signature']);return json(res,200,{received:true});}
     if(req.method==='GET') {
+      if(path==='/api/oauth/request')return json(res,200,oauth.consent(url.searchParams.get('id'),s));
+      if(path==='/api/oauth/grants'){if(!s)fail(401,'Sign in to manage OAuth connections.');operatorOnly(s);return json(res,200,{grants:oauth.grants(me)});}
       if(path==='/api/recovery/status'){if(!s)fail(401,'Sign in to manage recovery.');if(s.keyId)fail(403,'Account sign-in required.');const target=billingActor(s,url.searchParams.get('actor'));return json(res,200,recovery.status(target.id));}
       if(path==='/api/welcome'){if(!s)fail(401,'Sign in to see invitations.');allow(s,'read');const actor=billingActor(s,url.searchParams.get('actor'));return json(res,200,welcome.status(actor.id));}
       if(path==='/api/share'){const uri=url.searchParams.get('uri');sharing.page('<head></head>',uri);return json(res,200,{url:sharing.url(uri),image:(publicOrigin||`http://localhost:${server.address().port}`)+'/share-image?uri='+encodeURIComponent(uri)});}
@@ -441,15 +454,17 @@ const server = http.createServer(async(req,res)=>{
     if(path==='/api/welcome/accept'||path==='/api/welcome/dismiss'){const target=billingActor(s,b.actor);enforcement.requireActive(target);requireRules(target);const acting=target.id===me?s:{actor:target.id,operator:me,keyId:'welcome',...(agentPdsSessions.get(target.id)||credentialStore.agent(target.id)||{})};if(path.endsWith('/accept'))await welcome.accept(target.id,b.subject,acting);else welcome.dismiss(target.id,b.subject);return json(res,200,welcome.status(target.id));}
     if(path==='/api/profile/privacy'){const target=billingActor(s,b.actor);enforcement.requireActive(target);if(typeof b.friendsPrivate!=='boolean')fail(400,'Choose a privacy setting.');db.prepare('UPDATE actors SET friends_private=? WHERE id=?').run(Number(b.friendsPrivate),target.id);return json(res,200,{actor:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(target.id))});}
     if(path==='/api/agents/personality'){operatorOnly(s);if(typeof b.personality!=='string'||b.personality.length>12000)fail(400,'Keep the personality under 12,000 characters.');const a=db.prepare("SELECT id FROM actors WHERE id=? AND operator_id=? AND kind='agent'").get(b.actor,me);if(!a)fail(403,'Choose a bot you own.');db.prepare('UPDATE actors SET agent_instructions=? WHERE id=?').run(b.personality,a.id);return json(res,200,{ok:true});}
-    if(path==='/api/account-mcp'){operatorOnly(s);if(networkActor(me)&&!process.env.SESSION_ENCRYPTION_KEY)fail(503,'Secure account delegation is not configured.');if(s.accessJwt)credentialStore.saveAgent(me,{accessJwt:s.accessJwt,refreshJwt:s.refreshJwt,jwtExpires:s.jwtExpires});const name=textField(b.name,64,'a connection name');const days=b.neverExpires===true?null:Number(b.days||30);if(days!==null&&(!Number.isInteger(days)||days<1||days>90))fail(400,'Choose 1–90 days or never expires.');const id=randomUUID(),secret='as_operator_'+randomBytes(32).toString('base64url'),expires=days===null?null:new Date(Date.now()+days*86400000).toISOString();db.prepare('INSERT INTO account_mcp_keys(id,token_hash,owner,name,created,expires) VALUES (?,?,?,?,?,?)').run(id,hash(secret),me,name,new Date().toISOString(),expires);return json(res,201,{id,token:secret,expires,mcpUrl:mcpUrl(id)});}
+    if(path==='/api/oauth/approve'){const result=oauth.approve(b.id,s,b.approve===true);return json(res,200,result);}
+    if(path==='/api/oauth/revoke'){operatorOnly(s);return json(res,200,oauth.revoke(me,b.id));}
+    if(path==='/api/account-mcp'){operatorOnly(s);if(networkActor(me)&&!process.env.SESSION_ENCRYPTION_KEY)fail(503,'Secure account delegation is not configured.');if(s.accessJwt)credentialStore.saveAgent(me,{accessJwt:s.accessJwt,refreshJwt:s.refreshJwt,jwtExpires:s.jwtExpires});const name=textField(b.name,64,'a connection name');const days=b.neverExpires===true?null:Number(b.days||30);if(days!==null&&(!Number.isInteger(days)||days<1||days>90))fail(400,'Choose 1–90 days or never expires.');const id=randomUUID(),secret='as_operator_'+randomBytes(32).toString('base64url'),expires=days===null?null:new Date(Date.now()+days*86400000).toISOString();db.prepare('INSERT INTO account_mcp_keys(id,token_hash,owner,name,created,expires) VALUES (?,?,?,?,?,?)').run(id,hash(secret),me,name,new Date().toISOString(),expires);return json(res,201,{id,expires,mcpUrl:mcpUrl(id)});}
     if(path==='/api/account-mcp/revoke'){operatorOnly(s);const changed=db.prepare('UPDATE account_mcp_keys SET revoked=? WHERE id=? AND owner=?').run(new Date().toISOString(),b.id,me);if(!changed.changes)fail(404,'Connection not found.');return json(res,200,{ok:true});}
-    if(path==='/api/agent-keys') {
+    if(path==='/api/agent-keys'||path==='/api/bot-mcp') {
       operatorOnly(s);const a=db.prepare('SELECT * FROM actors WHERE id=? AND operator_id=?').get(b.actor,me);if(!a)fail(403,'You can create credentials only for your own agents.');
       if(!Array.isArray(b.scopes)||!b.scopes.length||!b.scopes.every(scope=>['read','post','like','follow','profile','messages'].includes(scope)))fail(400,'Choose valid credential permissions.');
       const name=textField(b.name,64,'a credential name');const days=b.neverExpires===true?null:Number(b.days||30);if(days!==null&&(!Number.isInteger(days)||days<1||days>90))fail(400,'Choose an expiry between 1 and 90 days.');
       const secret='as_agent_'+randomBytes(32).toString('base64url');const id=randomUUID(),created=new Date().toISOString(),expires=days===null?null:new Date(Date.now()+days*86400000).toISOString();
       db.prepare('INSERT INTO api_keys(id,token_hash,actor,operator,name,scopes,created,expires) VALUES (?,?,?,?,?,?,?,?)').run(id,hash(secret),a.id,me,name,JSON.stringify([...new Set(b.scopes)]),created,expires);
-      return json(res,201,{id,token:secret,expires,scopes:b.scopes,mcpUrl:mcpUrl(id)});
+      return json(res,201,{id,...(path==='/api/agent-keys'?{token:secret}:{}),expires,scopes:b.scopes,mcpUrl:mcpUrl(id)});
     }
     if(path==='/api/agent-keys/revoke') {operatorOnly(s);const key=db.prepare('SELECT id FROM api_keys WHERE id=? AND operator=?').get(b.id,me);if(!key)fail(404,'Credential not found.');db.prepare('UPDATE api_keys SET revoked=? WHERE id=?').run(new Date().toISOString(),b.id);return json(res,200,{ok:true});}
     if(path==='/api/logout'){sessions.delete(hash(token));db.prepare('DELETE FROM login_sessions WHERE token_hash=?').run(hash(token));return json(res,200,{ok:true});}

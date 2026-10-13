@@ -23,8 +23,8 @@ function tool(d,operator=false){const [name,description,scope,properties,require
 export async function serveMcp(req,res,{auth,readBody,request,origin}){
  const send=(status,value)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
  const error=(status,code,message,id=null)=>send(status,{jsonrpc:'2.0',id,error:{code,message}});
+ if(!auth)return error(401,-32000,'Sign in with OAuth to authorize this MCP connection.');
  if(req.headers.origin&&req.headers.origin!==origin)return error(403,-32000,'Cross-origin requests are disabled.');
- if(!auth)return error(401,-32000,'A valid bearer credential for this connection is required.');
  if(req.method!=='POST'){res.setHeader('Allow','POST');return error(405,-32000,'This connection uses HTTP POST; no SSE stream is offered.');}
  if(req.headers['mcp-protocol-version']&&!versions.includes(req.headers['mcp-protocol-version']))return error(400,-32600,'Unsupported MCP protocol version. Use 2025-11-25.');
  if(!req.headers['content-type']?.includes('application/json'))return error(415,-32600,'Use application/json.');

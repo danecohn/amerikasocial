@@ -1,3 +1,4 @@
+import {authorizeMcp} from './oauth-helper.mjs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {spawn} from 'node:child_process';
@@ -11,11 +12,12 @@ test('friends, complete threads, notification context and scoped bot/operator MC
  const child=spawn(process.execPath,['server.mjs'],{env:{...process.env,PORT:'0',HOST:'127.0.0.1',PDS_URL:'',DATA_DIR:dir},stdio:['ignore','pipe','pipe']});
  const base=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Startup timed out')),10000);child.stdout.on('data',data=>{const match=String(data).match(/"port":(\d+)/);if(match){clearTimeout(timer);resolve('http://127.0.0.1:'+match[1]);}});child.once('exit',()=>{clearTimeout(timer);reject(Error('Server exited'));});});
  const api=async(path,body,token)=>{const r=await fetch(base+'/api/'+path,{method:body?'POST':'GET',headers:{...(body?{'Content-Type':'application/json'}:{}),...(token?{Authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});return {status:r.status,data:await r.json()};};
- const rpc=async(key,method,params={},extra={})=>{const r=await fetch(base+new URL(key.mcpUrl).pathname,{method:'POST',headers:{Authorization:'Bearer '+key.token,'Content-Type':'application/json',Accept:'application/json, text/event-stream',...extra},body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})});return {status:r.status,data:await r.json()};};
+ let ownerSession;const oauthTokens=new Map();
+ const rpc=async(key,method,params={},extra={})=>{if(!oauthTokens.has(key.id))oauthTokens.set(key.id,(await authorizeMcp(base,key,ownerSession)).access_token);const r=await fetch(base+new URL(key.mcpUrl).pathname,{method:'POST',headers:{Authorization:'Bearer '+oauthTokens.get(key.id),'Content-Type':'application/json',Accept:'application/json, text/event-stream',...extra},body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})});return {status:r.status,data:await r.json()};};
  const call=async(key,name,args={})=>(await rpc(key,'tools/call',{name,arguments:args})).data;
  try{
   const register=async handle=>(await api('register',{handle,name:handle,kind:'human',password:'square-test-password',americanConfirmed:true,rulesAccepted:true})).data;
-  const owner=await register('ant.demo');const official=(await api('agents',{handle:'amerika.demo',name:'Amerika',password:'square-test-password',americanConfirmed:true,rulesAccepted:true},owner.token)).data.actor;const other=await register('other.demo');const onboarding=(await api('welcome',null,other.token)).data;assert.equal(onboarding.official.id,official.id);assert.equal(onboarding.pendingOfficial,false);assert.equal(onboarding.invites[0].id,owner.actor.id);const addedAtSignup=(await api('profile/friends?id='+other.actor.id+'&list=added',null,other.token)).data.actors;assert.ok(addedAtSignup.some(a=>a.id===official.id));assert.ok(!addedAtSignup.some(a=>a.id===owner.actor.id));
+  const owner=await register('ant.demo');ownerSession=owner.token;const official=(await api('agents',{handle:'amerika.demo',name:'Amerika',password:'square-test-password',americanConfirmed:true,rulesAccepted:true},owner.token)).data.actor;const other=await register('other.demo');const onboarding=(await api('welcome',null,other.token)).data;assert.equal(onboarding.official.id,official.id);assert.equal(onboarding.pendingOfficial,false);assert.equal(onboarding.invites[0].id,owner.actor.id);const addedAtSignup=(await api('profile/friends?id='+other.actor.id+'&list=added',null,other.token)).data.actors;assert.ok(addedAtSignup.some(a=>a.id===official.id));assert.ok(!addedAtSignup.some(a=>a.id===owner.actor.id));
   const root=(await api('posts',{text:'The original'},owner.token)).data.post;
   const reply=(await api('posts',{text:'First reply',parent:root.uri},other.token)).data.post;
   const nested=(await api('posts',{text:'Nested reply',parent:reply.uri},owner.token)).data.post;

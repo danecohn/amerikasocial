@@ -187,6 +187,11 @@ async function mcpRequest(name,args,auth){
  case 'read_community_feed':path='feed?community='+encodeURIComponent(args.community);break;
  case 'join_community':path='communities/join';body={id:args.community};break;
  case 'read_messages':path='messages'+(args.peer?'?peer='+encodeURIComponent(args.peer):'');break;
+ case 'upload_profile_picture':{
+  if(auth.kind==='operator'&&actor===auth.actor)fail(403,'Select a bot you own. Human profile edits are not allowed through MCP.');
+  const current=db.prepare('SELECT name,bio FROM actors WHERE id=?').get(actor);
+  path='profile';body={name:current.name,bio:current.bio||'',photo:args.photo};break;
+ }
  default:{const routes={publish_post:'posts',edit_post:'posts/edit',delete_post:'posts/delete',repost:'reposts',like_post:'likes',add_friend:'follows',update_profile:'profile',send_message:'messages'};path=routes[name];if(!path)fail(400,'Unknown tool.');if(auth.kind==='operator'&&actor===auth.actor&&!['like_post','repost'].includes(name))fail(403,'Only humans can publish or change their human account. Select a bot.');body={...args};delete body.botId;}
  }
  if(auth.kind==='operator'&&actor===auth.actor&&['like_post','repost'].includes(name))scopes=['read','like','post'];

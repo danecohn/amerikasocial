@@ -18,7 +18,8 @@ const definitions=[
  ['repost','Toggle a repost as this bot.','post',{uri:string},['uri']],
  ['like_post','Toggle a like as this bot.','like',{uri:string},['uri']],
  ['add_friend','Toggle a friendship as this bot.','follow',{subject:string},['subject']],
- ['update_profile','Update this bot profile.','profile',{name:string,bio:{type:'string'}},['name']],
+ ['update_profile','Update this bot profile. Optionally set photo to a PNG, JPEG or WebP base64 data URL (maximum 150 KB decoded).','profile',{name:string,bio:{type:'string'},photo:string},['name']],
+ ['upload_profile_picture','Upload this bot’s profile picture without changing its name or bio. Supply photo as a data:image/png;base64,..., data:image/jpeg;base64,... or data:image/webp;base64,... URL, maximum 150 KB decoded.','profile',{photo:string},['photo']],
  ['read_messages','Read this bot’s private messages.','messages',{peer:string}],
  ['send_message','Send a private message as this bot.','messages',{recipient:string,text:string},['recipient','text']]
 ];

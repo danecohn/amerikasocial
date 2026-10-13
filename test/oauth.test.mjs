@@ -44,6 +44,7 @@ test('OAuth MCP discovery, explicit consent, PKCE, resource binding, refresh rot
   const token=(await req('/oauth/token',exchange)).data;assert.equal(token.scope,'read');assert.ok(token.access_token);assert.equal((await req('/oauth/token',exchange)).status,400,'Code is single use');
   assert.equal((await rpc(key,token.access_token,'initialize',{protocolVersion:'2025-11-25'})).status,200);
   const tools=(await rpc(key,token.access_token,'tools/list')).data.result.tools;assert.ok(!tools.some(x=>x.name==='publish_post'),'OAuth scope cannot escalate to connection permissions');
+  assert.ok(!tools.some(x=>x.name==='upload_profile_picture'),'Read-only connections cannot upload photos');
   assert.equal((await rpc(op,token.access_token,'tools/list')).status,401,'Access token is bound to exact resource');
   assert.equal((await req('/api/me',null,token.access_token)).data.actor,null,'OAuth access token cannot be used as an ordinary REST session');
   const refresh={grant_type:'refresh_token',client_id:client.client_id,resource:key.mcpUrl,refresh_token:token.refresh_token};
@@ -56,6 +57,20 @@ test('OAuth MCP discovery, explicit consent, PKCE, resource binding, refresh rot
   assert.equal((await req('/oauth/token',{grant_type:'refresh_token',client_id:latest.client_id,resource:key.mcpUrl,refresh_token:latest.refresh_token})).status,400);
   const operator=await authorizeMcp(base,op,owner.token);assert.equal((await rpc(op,operator.access_token,'tools/call',{name:'publish_post',arguments:{text:'Impersonation'}})).data.error.code,-32602);
   assert.equal((await rpc(op,operator.access_token,'tools/call',{name:'publish_post',arguments:{botId:owner.actor.id,text:'Impersonation'}})).data.result.isError,true);
+  const photo='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jBz8AAAAASUVORK5CYII=';
+  const opTools=(await rpc(op,operator.access_token,'tools/list')).data.result.tools;
+  assert.ok(opTools.find(x=>x.name==='upload_profile_picture').inputSchema.required.includes('botId'));
+  assert.equal((await rpc(op,operator.access_token,'tools/call',{name:'upload_profile_picture',arguments:{photo}})).data.error.code,-32602);
+  assert.equal((await rpc(op,operator.access_token,'tools/call',{name:'upload_profile_picture',arguments:{botId:owner.actor.id,photo}})).data.result.isError,true);
+  const uploaded=(await rpc(op,operator.access_token,'tools/call',{name:'upload_profile_picture',arguments:{botId:bot.id,photo}})).data.result;
+  assert.equal(uploaded.isError,false);const changed=JSON.parse(uploaded.content[0].text).actor;
+  assert.equal(changed.photo,photo);assert.equal(changed.name,bot.name);assert.equal(changed.bio,bot.bio);
+  assert.equal((await rpc(op,operator.access_token,'tools/call',{name:'upload_profile_picture',arguments:{botId:bot.id,photo:'https://example.com/photo.png'}})).data.result.isError,true);
+  assert.equal((await rpc(op,operator.access_token,'tools/call',{name:'upload_profile_picture',arguments:{botId:bot.id,photo:'data:image/png;base64,'+Buffer.alloc(150001).toString('base64')}})).data.result.isError,true);
+  const profileKey=(await req('/api/bot-mcp',{actor:bot.id,name:'Profile OAuth',scopes:['profile'],neverExpires:true},owner.token)).data;
+  const profileAuth=await authorizeMcp(base,profileKey,owner.token);
+  assert.equal((await rpc(profileKey,profileAuth.access_token,'tools/call',{name:'upload_profile_picture',arguments:{photo}})).data.result.isError,false);
+  assert.equal((await rpc(profileKey,profileAuth.access_token,'tools/call',{name:'update_profile',arguments:{name:'Updated bot',bio:'Updated bio',photo}})).data.result.isError,false);
   const db=new DatabaseSync(join(dir,'botsky.sqlite'));db.prepare('UPDATE account_mcp_keys SET expires=? WHERE id=?').run('2000-01-01T00:00:00Z',op.id);assert.equal((await rpc(op,operator.access_token,'tools/list')).status,401);db.close();
  }finally{await new Promise(resolve=>{child.once('exit',resolve);child.kill();});await rm(dir,{recursive:true,force:true});}
 });

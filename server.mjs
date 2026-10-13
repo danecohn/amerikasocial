@@ -1,3 +1,5 @@
+import { createCommunities } from './communities.mjs';
+import { createDating } from './dating.mjs';
 import { createMcpOAuth } from './oauth.mjs';
 import { createOnboarding } from './onboarding.mjs';
 import { createSharing, escapeHtml, postPath } from './sharing.mjs';
@@ -181,6 +183,9 @@ async function mcpRequest(name,args,auth){
  case 'read_posts':path='feed?author='+encodeURIComponent(actor);break;
  case 'read_thread':path='thread?uri='+encodeURIComponent(args.uri);break;
  case 'read_notifications':path='notifications';break;
+ case 'read_communities':path='communities/list'+(args.joined?'?joined=1':'');break;
+ case 'read_community_feed':path='feed?community='+encodeURIComponent(args.community);break;
+ case 'join_community':path='communities/join';body={id:args.community};break;
  case 'read_messages':path='messages'+(args.peer?'?peer='+encodeURIComponent(args.peer):'');break;
  default:{const routes={publish_post:'posts',edit_post:'posts/edit',delete_post:'posts/delete',repost:'reposts',like_post:'likes',add_friend:'follows',update_profile:'profile',send_message:'messages'};path=routes[name];if(!path)fail(400,'Unknown tool.');if(auth.kind==='operator'&&actor===auth.actor&&!['like_post','repost'].includes(name))fail(403,'Only humans can publish or change their human account. Select a bot.');body={...args};delete body.botId;}
  }
@@ -232,9 +237,9 @@ function postText(v,actor) {
 }
 function viewPost(p,me,depth=0) {
   const author=db.prepare('SELECT * FROM actors WHERE id=?').get(p.author);
-  const unavailable=p.deleted||p.removed_at||author.suspended_at;
+  const unavailable=p.deleted||p.removed_at||p.community_removed_at||author.suspended_at;
   const quote=!unavailable&&depth===0&&p.quote_uri?db.prepare('SELECT * FROM posts WHERE uri=?').get(p.quote_uri):null;
-  return {...p,embed:undefined,text:p.removed_at?'[Removed for violating Community Rules]':p.deleted?'[Post deleted by its author]':author.suspended_at?'[Post unavailable]':p.text,deleted:Number(!!unavailable),author:publicActor(author),
+  return {...p,community:communities.viewPost(p.community_id,me),embed:undefined,text:p.community_removed_at?'[Removed from this community]':p.removed_at?'[Removed for violating Community Rules]':p.deleted?'[Post deleted by its author]':author.suspended_at?'[Post unavailable]':p.text,deleted:Number(!!unavailable),author:publicActor(author),
     media:unavailable?[]:media.view(p.uri),quote:quote?viewPost(quote,me,depth+1):null,
     reposts:db.prepare('SELECT COUNT(*) AS n FROM reposts WHERE post=?').get(p.uri).n,
     reposted:!!(me&&db.prepare('SELECT actor FROM reposts WHERE actor=? AND post=?').get(me,p.uri)),
@@ -252,6 +257,8 @@ function oauthTarget(id){
  const op=db.prepare('SELECT * FROM account_mcp_keys WHERE id=? AND revoked IS NULL AND (expires IS NULL OR expires>?)').get(id,current);if(!op)return null;const a=db.prepare('SELECT * FROM actors WHERE id=?').get(op.owner);if(!a||a.kind!=='human'||a.suspended_at||a.rules_version!==rulesVersion||!a.rules_accepted_at)return null;return {kind:'operator',actor:a.id,owner:a.id,name:op.name,actorName:a.name,scopes:['mcp'],expires:op.expires};
 }
 const oauth=createMcpOAuth(db,{origin:()=>publicOrigin||'http://localhost:'+server.address().port,target:oauthTarget,requireOperator:s=>{if(!s)fail(401,'Sign in to authorize this connection.');const a=operatorOnly(s);enforcement.requireActive(a);requireRules(a);},saveDelegation:s=>{if(networkActor(s.actor)&&!process.env.SESSION_ENCRYPTION_KEY)fail(503,'Secure account delegation is not configured.');if(s.accessJwt)credentialStore.saveAgent(s.actor,{accessJwt:s.accessJwt,refreshJwt:s.refreshJwt,jwtExpires:s.jwtExpires});},delegation:c=>agentPdsSessions.get(c.actor)||credentialStore.agent(c.actor)||{}});
+const communities=createCommunities(db,{actor:id=>db.prepare('SELECT * FROM actors WHERE id=?').get(id),active:enforcement.requireActive,rules:requireRules});
+const dating=createDating(db,{actor:id=>db.prepare('SELECT * FROM actors WHERE id=?').get(id),active:enforcement.requireActive,rules:requireRules,notify,admin:enforcement.requireAdmin});
 const server = http.createServer(async(req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Referrer-Policy','same-origin');
@@ -282,12 +289,16 @@ const server = http.createServer(async(req,res)=>{
     }
     if (!path.startsWith('/api/')) {
       if(req.method!=='GET') fail(405,'Method not allowed.');
-      const files={'/':['index.html','text/html'],'/app.js':['app.js','text/javascript'],'/style.css':['style.css','text/css'],'/agent.md':['agent.md','text/plain'],'/logo.svg':['logo.svg','image/svg+xml'],'/manifest.webmanifest':['manifest.webmanifest','application/manifest+json'],'/icon-32.png':['icon-32.png','image/png'],'/icon-180.png':['icon-180.png','image/png'],'/icon-192.png':['icon-192.png','image/png'],'/icon-512.png':['icon-512.png','image/png'],'/icon-maskable-512.png':['icon-maskable-512.png','image/png']};
+      const files={'/':['index.html','text/html'],'/app.js':['app.js','text/javascript'],'/dating.js':['dating.js','text/javascript'],'/communities.js':['communities.js','text/javascript'],'/features.css':['features.css','text/css'],'/style.css':['style.css','text/css'],'/agent.md':['agent.md','text/plain'],'/logo.svg':['logo.svg','image/svg+xml'],'/manifest.webmanifest':['manifest.webmanifest','application/manifest+json'],'/icon-32.png':['icon-32.png','image/png'],'/icon-180.png':['icon-180.png','image/png'],'/icon-192.png':['icon-192.png','image/png'],'/icon-512.png':['icon-512.png','image/png'],'/icon-maskable-512.png':['icon-maskable-512.png','image/png']};
       const f=files[path]; if(!f) fail(404,'Not found.');
-      res.setHeader('Content-Type',f[1]); if(['index.html','app.js','style.css'].includes(f[0]))res.setHeader('Cache-Control','no-store'); res.end(await readFile(join(root,'public',f[0]))); return;
+      res.setHeader('Content-Type',f[1]); if(['index.html','app.js','style.css','dating.js','communities.js','features.css'].includes(f[0]))res.setHeader('Cache-Control','no-store'); res.end(await readFile(join(root,'public',f[0]))); return;
     }
     const token=req.headers.authorization?.replace(/^Bearer /,'');
     const s=session(token); const me=s?.actor;
+    if(path==='/api/dating/media'){if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');return dating.mediaServe(url.searchParams.get('id'),url.searchParams.get('access')||'',req,res);}
+    if(path.startsWith('/api/communities/')){const action=path.slice(17);if(req.method==='GET')return json(res,200,communities.read(action,url,s));if(req.method!=='POST')fail(405,'Method not allowed.');if(req.headers.origin&&req.headers.origin!==(publicOrigin||`http://${req.headers.host}`))fail(403,'Cross-origin requests are disabled.');const key='communities:'+me;const l=limits.get(key)||{n:0,until:Date.now()+60000};if(l.until<Date.now()){l.n=0;l.until=Date.now()+60000;}limits.set(key,l);if(++l.n>60)fail(429,'Too many community requests.');return json(res,200,communities.write(action,await body(req),s));}
+    if(path.startsWith('/api/dating/')){const action=path.slice(12);if(req.method==='GET')return json(res,200,action==='admin/reports'?dating.reports(s):dating.get(action,url,s));if(req.method!=='POST')fail(405,'Method not allowed.');if(req.headers.origin&&req.headers.origin!==(publicOrigin||`http://${req.headers.host}`))fail(403,'Cross-origin requests are disabled.');const key='dating:'+me+':'+action;const l=limits.get(key)||{n:0,until:Date.now()+60000};if(l.until<Date.now()){l.n=0;l.until=Date.now()+60000;}limits.set(key,l);if(++l.n>(action==='upload'?20:60))fail(429,'Too many Dating requests. Retry shortly.');if(action==='upload')return json(res,201,await dating.upload(req,s,url));const b=await body(req);return json(res,200,action==='admin/action'?dating.action(s,b):dating.post(action,b,s));}
+
     if(path==='/api/media'&&req.method==='GET')return media.serve(url.searchParams.get('id'),req,res);
     if(path==='/api/stripe/webhook'&&req.method==='POST'){let raw=Buffer.alloc(0);for await(const chunk of req){raw=Buffer.concat([raw,chunk]);if(raw.length>1000000)fail(413,'Request is too large.');}await billing.webhook(raw,req.headers['stripe-signature']);return json(res,200,{received:true});}
     if(req.method==='GET') {
@@ -339,6 +350,7 @@ const server = http.createServer(async(req,res)=>{
         const author=url.searchParams.get('author'); if(author) {where+=' AND e.actor=?';args.push(author);}
         if(url.searchParams.get('tab')==='posts')where+=" AND (e.type='repost' OR p.parent IS NULL)";
         if(url.searchParams.get('tab')==='replies')where+=" AND e.type='post' AND p.parent IS NOT NULL";
+        where+=' AND p.community_removed_at IS NULL';const community=url.searchParams.get('community');if(community){where+=' AND p.community_id=?';args.push(community);}if(url.searchParams.get('communities')==='joined'){if(!me)fail(401,'Sign in to see your communities.');where+=' AND p.community_id IN (SELECT community FROM community_members WHERE actor=? AND banned=0)';args.push(me);}
         const cursor=url.searchParams.get('cursor'); if(cursor) {where+=' AND e.id<?';args.push(Number(cursor)||0);}
         const rows=db.prepare(`SELECT p.*,e.id AS sequence,e.type AS event_type,e.actor AS event_actor FROM feed_events e JOIN posts p ON p.uri=e.post JOIN actors a ON a.id=p.author JOIN actors sharer ON sharer.id=e.actor WHERE ${where} ORDER BY e.id DESC LIMIT 31`).all(...args);
         return json(res,200,{posts:rows.slice(0,30).map(p=>({...viewPost(p,me),repostBy:p.event_type==='repost'?publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(p.event_actor)):null})),cursor:rows.length>30?String(rows[29].sequence):null});
@@ -471,7 +483,7 @@ const server = http.createServer(async(req,res)=>{
     if(path==='/api/billing/checkout'||path==='/api/billing/portal'||path==='/api/billing/refresh'){if(s.keyId)fail(403,'Sign in to manage billing.');const actor=billingActor(s,b.actor);requireRules(actor);if(path.endsWith('/refresh')){if(billing.enabled)await billing.refresh(actor.id);return json(res,200,billing.status(actor.id));}return json(res,200,await (path.endsWith('/checkout')?billing.checkout(actor):billing.customerPortal(actor)));}
     if(path==='/api/hashtags/follow'){const tag=tagName(b.tag);if(typeof b.following!=='boolean')fail(400,'Choose follow or unfollow.');if(b.following)db.prepare('INSERT OR IGNORE INTO tag_follows VALUES (?,?)').run(me,tag);else db.prepare('DELETE FROM tag_follows WHERE actor=? AND tag=?').run(me,tag);return json(res,200,{tag,following:b.following});}
     if(path==='/api/messages') {
-      if(typeof b.recipient!=='string'||!db.prepare('SELECT id FROM actors WHERE id=?').get(b.recipient))fail(404,'Recipient not found.');if(b.recipient===me)fail(400,'Choose another account.');
+      if(typeof b.recipient!=='string'||!db.prepare('SELECT id FROM actors WHERE id=?').get(b.recipient))fail(404,'Recipient not found.');if(b.recipient===me)fail(400,'Choose another account.');if(dating.blocked(db.prepare('SELECT operator_id FROM actors WHERE id=?').get(me)?.operator_id||me,db.prepare('SELECT operator_id FROM actors WHERE id=?').get(b.recipient)?.operator_id||b.recipient))fail(403,'This account is blocked.');
       const text=textField(b.text,2000,'a message');const created=new Date().toISOString();
       db.exec('BEGIN');try{const result=db.prepare('INSERT INTO messages(sender,recipient,text,created) VALUES (?,?,?,?)').run(me,b.recipient,text,created);notify(b.recipient,me,'message',null,Number(result.lastInsertRowid));db.exec('COMMIT');return json(res,201,{message:{id:Number(result.lastInsertRowid),sender:me,recipient:b.recipient,text,created,seen:0}});}catch(e){if(db.isTransaction)db.exec('ROLLBACK');throw e;}
     }
@@ -510,18 +522,19 @@ const server = http.createServer(async(req,res)=>{
       const text=attachments.length&&b.text===''?'':postText(b.text,me);const created=new Date().toISOString();
       const quote=b.quote?db.prepare('SELECT * FROM posts WHERE uri=?').get(b.quote):null;
       if(b.quote&&!quote)fail(404,'Quote target not found.');
-      if(quote&&(quote.deleted||quote.removed_at||db.prepare('SELECT suspended_at FROM actors WHERE id=?').get(quote.author).suspended_at))fail(410,'This quote target is unavailable.');
+      if(quote&&(quote.deleted||quote.removed_at||quote.community_removed_at||db.prepare('SELECT suspended_at FROM actors WHERE id=?').get(quote.author).suspended_at))fail(410,'This quote target is unavailable.');
       if(b.quote&&b.parent)fail(400,'Choose a quote post or a reply.');
       const mediaEmbed=media.embed(attachments);
       const quoteEmbed=quote?.uri.startsWith('at://')?{$type:'app.bsky.embed.record',record:{uri:quote.uri,cid:quote.cid}}:null;
       const embed=quoteEmbed&&mediaEmbed?{$type:'app.bsky.embed.recordWithMedia',record:quoteEmbed,media:mediaEmbed}:quoteEmbed||mediaEmbed;
       const parent=b.parent?db.prepare('SELECT * FROM posts WHERE uri=?').get(b.parent):null;
       if(b.parent&&!parent)fail(404,'Reply target not found.');
-      if(parent?.deleted||parent?.removed_at)fail(410,'This post is unavailable. Choose another reply in the thread.');
+      if(parent?.deleted||parent?.removed_at||parent?.community_removed_at)fail(410,'This post is unavailable. Choose another reply in the thread.');
+      const communityId=communities.posting(s,b.community,parent);
       const rootPost=parent?(parent.root?db.prepare('SELECT * FROM posts WHERE uri=?').get(parent.root):parent):null;
       const reservation=parent?null:billing.reserve(me);let result;
-      try{result=await record(s,'app.bsky.feed.post',{...postRecord(text,parent,rootPost),createdAt:created,...(embed?{embed}:{})},!!parent&&!parent.uri.startsWith('at://')||!!quote&&!quote.uri.startsWith('at://'));}catch(e){billing.release(reservation);throw e;}
-      db.prepare('INSERT INTO posts(uri,cid,author,text,created,parent,root,quote_uri,embed) VALUES (?,?,?,?,?,?,?,?,?)').run(result.uri,result.cid,me,text,created,parent?.uri||null,rootPost?.uri||null,quote?.uri||null,embed?JSON.stringify(embed):null);
+      try{result=await record(s,'app.bsky.feed.post',{...postRecord(text,parent,rootPost),createdAt:created,...(communityId?{'social.amerika.community':communityId}:{}),...(embed?{embed}:{})},!!parent&&!parent.uri.startsWith('at://')||!!quote&&!quote.uri.startsWith('at://'));}catch(e){billing.release(reservation);throw e;}
+      db.prepare('INSERT INTO posts(uri,cid,author,text,created,parent,root,quote_uri,embed,community_id) VALUES (?,?,?,?,?,?,?,?,?,?)').run(result.uri,result.cid,me,text,created,parent?.uri||null,rootPost?.uri||null,quote?.uri||null,embed?JSON.stringify(embed):null,communityId);
       media.link(result.uri,attachments);
       billing.confirm(reservation,result.uri);
       if(parent)notify(parent.author,me,'reply',result.uri);
@@ -547,7 +560,7 @@ const server = http.createServer(async(req,res)=>{
         return json(res,200,{ok:true});
       }
       const text=b.text===''&&media.view(post.uri).length?'':postText(b.text,me);let cid=post.cid;
-      if(networkActor(me)&&post.uri.startsWith('at://')){const parent=post.parent?db.prepare('SELECT * FROM posts WHERE uri=?').get(post.parent):null;const root=post.root?db.prepare('SELECT * FROM posts WHERE uri=?').get(post.root):null;const updated=await xrpc('com.atproto.repo.putRecord',{repo:me,collection:'app.bsky.feed.post',rkey:post.uri.split('/').at(-1),swapRecord:post.cid,record:{$type:'app.bsky.feed.post',...postRecord(text,parent,root),createdAt:post.created,...(post.embed?{embed:JSON.parse(post.embed)}:{})}},await jwtFor(s));cid=updated.cid;}
+      if(networkActor(me)&&post.uri.startsWith('at://')){const parent=post.parent?db.prepare('SELECT * FROM posts WHERE uri=?').get(post.parent):null;const root=post.root?db.prepare('SELECT * FROM posts WHERE uri=?').get(post.root):null;const updated=await xrpc('com.atproto.repo.putRecord',{repo:me,collection:'app.bsky.feed.post',rkey:post.uri.split('/').at(-1),swapRecord:post.cid,record:{$type:'app.bsky.feed.post',...postRecord(text,parent,root),createdAt:post.created,...(post.community_id?{'social.amerika.community':post.community_id}:{}),...(post.embed?{embed:JSON.parse(post.embed)}:{})}},await jwtFor(s));cid=updated.cid;}
       const before=new Set(mentions(post.text).map(m=>m.actor.id));
       db.prepare('UPDATE posts SET text=?,cid=?,edited_at=? WHERE uri=?').run(text,cid,new Date().toISOString(),post.uri);
       for(const id of new Set(mentions(text).map(m=>m.actor.id)))if(!before.has(id))notify(id,me,'mention',post.uri);
@@ -555,7 +568,7 @@ const server = http.createServer(async(req,res)=>{
     }
     if(path==='/api/likes') {
       const post=db.prepare('SELECT * FROM posts WHERE uri=?').get(b.uri);if(!post)fail(404,'Post not found.');
-      if(post.deleted||post.removed_at)fail(410,'This post is unavailable.');
+      if(post.deleted||post.removed_at||post.community_removed_at)fail(410,'This post is unavailable.');
       const existing=db.prepare('SELECT * FROM likes WHERE actor=? AND post=?').get(me,b.uri);
       if(existing){await removeRecord(s,existing.uri,'app.bsky.feed.like');db.prepare('DELETE FROM likes WHERE actor=? AND post=?').run(me,b.uri);}
       else{const r=await record(s,'app.bsky.feed.like',{subject:{uri:post.uri,cid:post.cid},createdAt:new Date().toISOString()},!post.uri.startsWith('at://'));db.prepare('INSERT INTO likes VALUES (?,?,?)').run(me,b.uri,r.uri);notify(post.author,me,'like',post.uri);}

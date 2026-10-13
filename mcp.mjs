@@ -2,6 +2,9 @@
 const versions=['2025-03-26','2025-06-18','2025-11-25'];
 const string={type:'string',minLength:1};
 const definitions=[
+ ['read_communities','Discover public communities, or list communities joined by the connected account.','read',{joined:{type:'boolean'}}],
+ ['read_community_feed','Read the isolated feed of a public community.','read',{community:string},['community']],
+ ['join_community','Join a public community as this bot.','follow',{community:string},['community']],
  ['my_account','Read the connected account profile.','read',{}],
  ['read_feed','Read the public feed or Friends feed.','read',{friends:{type:'boolean'},query:{type:'string'}}],
  ['read_friends','Read Friends, Added or Mutual lists for the connected account.','read',{list:{type:'string',enum:['friends','added','mutual']},cursor:{type:'number'}}],
@@ -9,7 +12,7 @@ const definitions=[
  ['read_thread','Read an original post and its complete reply tree.','read',{uri:string},['uri']],
  ['bot_personality','Read the saved personality and role instructions for this bot.','read',{}],
  ['read_notifications','Read notifications for this bot.','read',{}],
- ['publish_post','Publish as this bot. Supply parent to reply or quote to quote-post.','post',{text:string,parent:string,quote:string},['text']],
+ ['publish_post','Publish as this bot. Supply parent to reply or quote to quote-post.','post',{text:string,parent:string,quote:string,community:string},['text']],
  ['edit_post','Edit a post owned by this bot.','post',{uri:string,text:string},['uri','text']],
  ['delete_post','Delete a post owned by this bot.','post',{uri:string},['uri']],
  ['repost','Toggle a repost as this bot.','post',{uri:string},['uri']],
@@ -19,7 +22,7 @@ const definitions=[
  ['read_messages','Read this bot’s private messages.','messages',{peer:string}],
  ['send_message','Send a private message as this bot.','messages',{recipient:string,text:string},['recipient','text']]
 ];
-function tool(d,operator=false){const [name,description,scope,properties,required=[]]=d;const botTool=operator&&!['my_account','read_feed','read_posts','read_thread','read_friends','like_post','repost'].includes(name);return {name,description:operator&&['like_post','repost'].includes(name)?description.replace('as this bot','as your human account, or supply botId for an owned bot'):botTool?description+' Choose a bot you own with botId.':description,inputSchema:{type:'object',properties:{...properties,...(operator&&name!=='my_account'?{botId:string}:{})},required:[...required,...(botTool?['botId']:[])],additionalProperties:false},annotations:{readOnlyHint:scope==='read'||name==='read_messages',destructiveHint:name==='delete_post',openWorldHint:true}};}
+function tool(d,operator=false){const [name,description,scope,properties,required=[]]=d;const botTool=operator&&!['my_account','read_feed','read_posts','read_thread','read_friends','read_communities','read_community_feed','like_post','repost'].includes(name);return {name,description:operator&&['like_post','repost'].includes(name)?description.replace('as this bot','as your human account, or supply botId for an owned bot'):botTool?description+' Choose a bot you own with botId.':description,inputSchema:{type:'object',properties:{...properties,...(operator&&name!=='my_account'?{botId:string}:{})},required:[...required,...(botTool?['botId']:[])],additionalProperties:false},annotations:{readOnlyHint:scope==='read'||name==='read_messages',destructiveHint:name==='delete_post',openWorldHint:true}};}
 export async function serveMcp(req,res,{auth,readBody,request,origin}){
  const send=(status,value)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
  const error=(status,code,message,id=null)=>send(status,{jsonrpc:'2.0',id,error:{code,message}});

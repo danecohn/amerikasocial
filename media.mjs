@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 const error=(status,message)=>Object.assign(new Error(message),{status});
 export const maxMediaBytes=250000000;
-export function validateMedia(bytes,mime,{allowIphone=false}={}){
+export function validateMedia(bytes,mime,{allowIphone=false,maxDuration=60}={}){
  if(!bytes.length)throw error(400,'Choose a nonempty media file.');
  const image=mime.startsWith('image/');
  if(bytes.length>(image?1000000:maxMediaBytes))throw error(413,image?'Images must be under 1 MB after resizing.':'Videos must be under 250 MB (0.25 GB).');
@@ -15,7 +15,7 @@ export function validateMedia(bytes,mime,{allowIphone=false}={}){
  if(type==='stsd'){if(p+8>offset+size)throw error(400,'Invalid MP4 codecs.');const entries=bytes.readUInt32BE(p+4);let e=p+8;for(let i=0;i<entries;i++){if(e+8>offset+size)throw error(400,'Invalid MP4 codecs.');const n=bytes.readUInt32BE(e);if(n<8||e+n>offset+size)throw error(400,'Invalid MP4 codecs.');if(['avc1','avc3'].includes(bytes.toString('ascii',e+4,e+8)))h264=true;if(['hvc1','hev1'].includes(bytes.toString('ascii',e+4,e+8)))hevc=true;e+=n;}}
  if(['moov','trak','mdia','minf','stbl'].includes(type))boxes(p,offset+size,depth+1);offset+=size;}}
  boxes(0,bytes.length);
- if(!hasData||!(h264||allowIphone&&hevc)||!Number.isFinite(duration)||duration<=0||duration>60)throw error(400,'Use an H.264 or HEVC video no longer than 60 seconds.');
+ if(!hasData||!(h264||allowIphone&&hevc)||!Number.isFinite(duration)||duration<=0||duration>maxDuration)throw error(400,'Use an H.264 or HEVC video no longer than '+maxDuration+' seconds.');
  return {h264,duration};
 }
 export function createMedia(db){
@@ -30,6 +30,6 @@ export function createMedia(db){
   embed(rows){if(!rows.length||rows.some(r=>!r.blob))return null;if(rows[0].mime==='video/mp4')return {$type:'app.bsky.embed.video',video:JSON.parse(rows[0].blob),alt:rows[0].alt};return {$type:'app.bsky.embed.images',images:rows.map(r=>({image:JSON.parse(r.blob),alt:r.alt}))};},
   link(uri,rows){const stmt=db.prepare('INSERT INTO post_media VALUES (?,?,?,?)');rows.forEach((r,i)=>stmt.run(uri,r.id,r.alt,i));},
   view(uri){return db.prepare('SELECT m.id,m.mime,pm.alt FROM post_media pm JOIN media m ON m.id=pm.media WHERE pm.post=? ORDER BY pm.position').all(uri).map(m=>({...m,url:'/api/media?id='+m.id}));},
-  serve(id,req,res){const row=db.prepare('SELECT m.mime,m.bytes FROM media m WHERE m.id=? AND EXISTS (SELECT 1 FROM post_media pm JOIN posts p ON p.uri=pm.post JOIN actors a ON a.id=p.author WHERE pm.media=m.id AND p.deleted=0 AND p.removed_at IS NULL AND a.suspended_at IS NULL)').get(id);if(!row)throw error(404,'Media not found.');const bytes=Buffer.from(row.bytes);const range=req.headers.range;res.setHeader('Content-Type',row.mime);res.setHeader('Accept-Ranges','bytes');res.setHeader('Cache-Control','no-store');if(range){const match=range.match(/^bytes=(\d*)-(\d*)$/);let start=match?.[1]?Number(match[1]):Math.max(0,bytes.length-Number(match?.[2]));let end=match?.[1]&&match?.[2]?Number(match[2]):bytes.length-1;if(!match||(!match[1]&&!match[2])||!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start<0||start>=bytes.length||end<start){res.writeHead(416,{'Content-Range':`bytes */${bytes.length}`});res.end();return;}end=Math.min(end,bytes.length-1);res.writeHead(206,{'Content-Range':`bytes ${start}-${end}/${bytes.length}`,'Content-Length':end-start+1});res.end(bytes.subarray(start,end+1));return;}res.setHeader('Content-Length',bytes.length);res.end(bytes);}
+  serve(id,req,res){const row=db.prepare('SELECT m.mime,m.bytes FROM media m WHERE m.id=? AND EXISTS (SELECT 1 FROM post_media pm JOIN posts p ON p.uri=pm.post JOIN actors a ON a.id=p.author WHERE pm.media=m.id AND p.deleted=0 AND p.removed_at IS NULL AND p.community_removed_at IS NULL AND a.suspended_at IS NULL)').get(id);if(!row)throw error(404,'Media not found.');const bytes=Buffer.from(row.bytes);const range=req.headers.range;res.setHeader('Content-Type',row.mime);res.setHeader('Accept-Ranges','bytes');res.setHeader('Cache-Control','no-store');if(range){const match=range.match(/^bytes=(\d*)-(\d*)$/);let start=match?.[1]?Number(match[1]):Math.max(0,bytes.length-Number(match?.[2]));let end=match?.[1]&&match?.[2]?Number(match[2]):bytes.length-1;if(!match||(!match[1]&&!match[2])||!Number.isSafeInteger(start)||!Number.isSafeInteger(end)||start<0||start>=bytes.length||end<start){res.writeHead(416,{'Content-Range':`bytes */${bytes.length}`});res.end();return;}end=Math.min(end,bytes.length-1);res.writeHead(206,{'Content-Range':`bytes ${start}-${end}/${bytes.length}`,'Content-Length':end-start+1});res.end(bytes.subarray(start,end+1));return;}res.setHeader('Content-Length',bytes.length);res.end(bytes);}
  };
 }

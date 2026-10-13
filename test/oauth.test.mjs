@@ -65,6 +65,13 @@ test('OAuth MCP discovery, explicit consent, PKCE, resource binding, refresh rot
   const uploaded=(await rpc(op,operator.access_token,'tools/call',{name:'upload_profile_picture',arguments:{botId:bot.id,photo}})).data.result;
   assert.equal(uploaded.isError,false);const changed=JSON.parse(uploaded.content[0].text).actor;
   assert.equal(changed.photo,photo);assert.equal(changed.name,bot.name);assert.equal(changed.bio,bot.bio);
+  assert.equal((await req('/api/agents/photo',{actor:bot.id,photo},stranger.token)).status,403);
+  assert.equal((await req('/api/agents/photo',{actor:owner.actor.id,photo},owner.token)).status,403);
+  assert.equal((await req('/api/agents/photo',{actor:bot.id,photo},apiKey.token)).status,403);
+  assert.equal((await req('/api/agents/photo',{actor:bot.id,photo:'invalid'},owner.token)).status,400);
+  const dashboardUpload=await req('/api/agents/photo',{actor:bot.id,photo},owner.token);
+  assert.equal(dashboardUpload.status,200);assert.equal(dashboardUpload.data.actor.name,bot.name);assert.equal(dashboardUpload.data.actor.photo,photo);
+  assert.equal((await req('/api/agents/photo',{actor:bot.id,photo:null},owner.token)).data.actor.photo,null);
   assert.equal((await rpc(op,operator.access_token,'tools/call',{name:'upload_profile_picture',arguments:{botId:bot.id,photo:'https://example.com/photo.png'}})).data.result.isError,true);
   assert.equal((await rpc(op,operator.access_token,'tools/call',{name:'upload_profile_picture',arguments:{botId:bot.id,photo:'data:image/png;base64,'+Buffer.alloc(150001).toString('base64')}})).data.result.isError,true);
   const profileKey=(await req('/api/bot-mcp',{actor:bot.id,name:'Profile OAuth',scopes:['profile'],neverExpires:true},owner.token)).data;

@@ -470,6 +470,11 @@ const server = http.createServer(async(req,res)=>{
     if(['/api/webhooks','/api/webhooks/test','/api/webhooks/disable'].includes(path)){const owner=operatorOnly(s);if(path==='/api/webhooks')return json(res,201,await accountWebhooks.create(owner.id,b));if(path==='/api/webhooks/test')return json(res,202,accountWebhooks.test(owner.id,b.id));accountWebhooks.disable(owner.id,b.id);return json(res,200,{ok:true});}
     if(path==='/api/welcome/accept'||path==='/api/welcome/dismiss'){const target=billingActor(s,b.actor);enforcement.requireActive(target);requireRules(target);const acting=target.id===me?s:{actor:target.id,operator:me,keyId:'welcome',...(agentPdsSessions.get(target.id)||credentialStore.agent(target.id)||{})};if(path.endsWith('/accept'))await welcome.accept(target.id,b.subject,acting);else welcome.dismiss(target.id,b.subject);return json(res,200,welcome.status(target.id));}
     if(path==='/api/profile/privacy'){const target=billingActor(s,b.actor);enforcement.requireActive(target);if(typeof b.friendsPrivate!=='boolean')fail(400,'Choose a privacy setting.');db.prepare('UPDATE actors SET friends_private=? WHERE id=?').run(Number(b.friendsPrivate),target.id);return json(res,200,{actor:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(target.id))});}
+    if(path==='/api/agents/photo'){
+      operatorOnly(s);if(typeof b.actor!=='string'||!b.actor)fail(400,'Choose a bot you own.');
+      if(b.photo!==null&&typeof b.photo!=='string')fail(400,'Choose a profile picture or remove the current one.');
+      return json(res,200,await mcpRequest('upload_profile_picture',{botId:b.actor,photo:b.photo},{kind:'operator',actor:me,scopes:[],delegation:s}));
+    }
     if(path==='/api/agents/personality'){operatorOnly(s);if(typeof b.personality!=='string'||b.personality.length>12000)fail(400,'Keep the personality under 12,000 characters.');const a=db.prepare("SELECT id FROM actors WHERE id=? AND operator_id=? AND kind='agent'").get(b.actor,me);if(!a)fail(403,'Choose a bot you own.');db.prepare('UPDATE actors SET agent_instructions=? WHERE id=?').run(b.personality,a.id);return json(res,200,{ok:true});}
     if(path==='/api/oauth/approve'){const result=oauth.approve(b.id,s,b.approve===true);return json(res,200,result);}
     if(path==='/api/oauth/revoke'){operatorOnly(s);return json(res,200,oauth.revoke(me,b.id));}

@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Amerika Social",
+    "slug": "amerika-social",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "amerikasocial",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "bundleIdentifier": "social.amerika.ios",
+      "supportsTablet": false,
+      "buildNumber": "1",
+      "infoPlist": { "ITSAppUsesNonExemptEncryption": false }
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-dev-client",
+      "expo-iap",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose photos or videos to share on Amerika Social.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
+    ]
+  }
+}

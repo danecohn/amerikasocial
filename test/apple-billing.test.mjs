@@ -1,0 +1,24 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {createAppleBilling} from '../apple-billing.mjs';
+import {createBilling} from '../billing.mjs';
+test('Apple purchases bind verified transactions to the owner, reject unsigned input and duplicates, and expire/refund independently of Stripe',async()=>{
+ const db=new DatabaseSync(':memory:');db.exec("CREATE TABLE actors(id TEXT PRIMARY KEY,kind TEXT,operator_id TEXT); CREATE TABLE posts(uri TEXT,author TEXT,parent TEXT,created TEXT); INSERT INTO actors VALUES ('owner','human',NULL),('other','human',NULL),('bot','agent','owner')");
+ const billing=createBilling(db,'https://www.amerika.social');let transaction,notification,failSignature=false;
+ const apple=createAppleBilling(db,{env:{APPLE_IAP_ENABLED:'true',APPLE_IAP_KEY_ID:'test',APPLE_IAP_ISSUER_ID:'test',APPLE_IAP_PRIVATE_KEY:'test',APPLE_BUNDLE_ID:'social.amerika.ios',APPLE_IAP_ENVIRONMENT:'Production',APPLE_APP_ID:'123'},client:{getTransactionInfo:async()=>({signedTransactionInfo:'SIGNED-BY-APPLE'})},verifier:{verifyAndDecodeTransaction:async value=>{if(failSignature||value!=='SIGNED-BY-APPLE')throw Error('signature');return transaction;},verifyAndDecodeNotification:async value=>{if(value!=='SIGNED-NOTIFICATION')throw Error('signature');return notification;}}});
+ const token=apple.account('owner').appAccountToken;assert.equal(apple.account('owner').appAccountToken,token);
+ transaction={bundleId:'social.amerika.ios',productId:apple.product,environment:'Production',type:'Auto-Renewable Subscription',inAppOwnershipType:'PURCHASED',transactionId:'100',originalTransactionId:'100',appAccountToken:token,expiresDate:Date.now()+3600000,signedDate:Date.now()};
+ await assert.rejects(apple.verify('other','100'),{status:403});assert.equal(billing.plus('other'),false);
+ failSignature=true;await assert.rejects(apple.verify('owner','100'),{status:502});assert.equal(billing.plus('owner'),false);failSignature=false;
+ await apple.verify('owner','100');assert.equal(billing.plus('owner'),true);assert.equal(billing.plus('bot'),true);
+ notification={notificationUUID:'renewal',notificationType:'DID_RENEW',data:{signedTransactionInfo:'SIGNED-BY-APPLE'}};
+ await assert.rejects(apple.notification('client-invented-payload'),{status:400});await apple.notification('SIGNED-NOTIFICATION');assert.equal((await apple.notification('SIGNED-NOTIFICATION')).duplicate,true);
+ transaction={...transaction,revocationDate:Date.now(),signedDate:Date.now()+100};notification={...notification,notificationUUID:'refund',notificationType:'REFUND'};await apple.notification('SIGNED-NOTIFICATION');assert.equal(billing.plus('owner'),false);assert.equal(billing.plus('bot'),false);
+ transaction={...transaction,revocationDate:undefined,expiresDate:Date.now()-1,signedDate:Date.now()+200};await apple.verify('owner','100');assert.equal(billing.plus('owner'),false);
+ transaction={...transaction,environment:'Sandbox',expiresDate:Date.now()+3600000};await assert.rejects(apple.verify('owner','100'),{status:400});
+ transaction={...transaction,environment:'Production',bundleId:'different.app'};await assert.rejects(apple.verify('owner','100'),{status:400});
+ transaction={...transaction,bundleId:'social.amerika.ios',transactionId:'101',expiresDate:Date.now()+7200000,signedDate:Date.now()+300};await apple.verify('owner','101');assert.equal(billing.plus('owner'),true);
+ transaction={...transaction,transactionId:'100',expiresDate:Date.now()-1,signedDate:Date.now()+400};await apple.verify('owner','100');assert.equal(billing.plus('owner'),true,'Restoring an older transaction must not shorten a renewal');
+ const disabled=createAppleBilling(db,{env:{}});assert.equal(disabled.enabled,false);assert.throws(()=>disabled.account('owner'),{status:503});db.close();
+});

@@ -54,7 +54,7 @@ export function createMcpEvents(db,{origin,activeGrant,key=process.env.SESSION_E
   if(!configured)throw Object.assign(Error('Encrypted event subscriptions are not configured.'),{rpcCode:-32603});
   if(p.cursor!==null&&p.cursor!==undefined)invalid('Replay cursors are not supported. Use cursor null.');
   const selected=identify(auth,p,true),secret=p.delivery.secret;
-  if(typeof secret!=='string'||!secret.startsWith('whsec_'))invalid('Use a whsec_ Standard Webhooks signing key.');let bytes;try{bytes=standardWebhookKey(secret);}catch{invalid('Invalid signing key.');}if(bytes.length<24||bytes.length>64)invalid('The signing key must decode to 24–64 bytes.');
+  if(typeof secret!=='string'||secret.length>94||!secret.startsWith('whsec_'))invalid('Use a whsec_ Standard Webhooks signing key.');let bytes;try{bytes=standardWebhookKey(secret);}catch{invalid('Invalid signing key.');}if(bytes.length<24||bytes.length>64)invalid('The signing key must decode to 24–64 bytes.');
   const ttl=p.ttlMs===undefined||p.ttlMs===null?86400000:p.ttlMs;if(!Number.isSafeInteger(ttl)||ttl<1)invalid('Use a positive integer ttlMs.');const expires=now()+Math.min(ttl,7*86400000);
   const old=db.prepare('SELECT * FROM mcp_event_subscriptions WHERE id=?').get(selected.id);
   if((!old||!old.enabled||old.expires<=now())&&db.prepare('SELECT COUNT(*) AS n FROM mcp_event_subscriptions WHERE owner=? AND enabled=1 AND expires>?').get(selected.g.owner,now()).n>=10)throw Object.assign(Error('Use up to ten active event subscriptions per operator.'),{rpcCode:-32025});
@@ -66,7 +66,9 @@ export function createMcpEvents(db,{origin,activeGrant,key=process.env.SESSION_E
    try{response=await webhookRequest(p.delivery.url,JSON.stringify({type:'verification',challenge}),secret,id,testing,{readResponse:true,headers:{'X-MCP-Subscription-Id':selected.id}});let echo;try{echo=JSON.parse(response.body).challenge;}catch{}if(response.status<200||response.status>=300||typeof echo!=='string'||Buffer.byteLength(echo)!==Buffer.byteLength(challenge)||!timingSafeEqual(Buffer.from(echo),Buffer.from(challenge)))throw Error('challenge');}
    catch{throw Object.assign(Error('Webhook callback verification failed.'),{rpcCode:-32015,rpcData:{reason:'challenge_failed'}});}
    // Authorization can change while the callback request is in flight.
-   resolve(auth,p.name,p.arguments||{});
+   const current=resolve(auth,p.name,p.arguments||{});if(current.actor!==selected.actor)denied();
+   const present=db.prepare('SELECT enabled,expires FROM mcp_event_subscriptions WHERE id=?').get(selected.id);
+   if((!present||!present.enabled||present.expires<=now())&&db.prepare('SELECT COUNT(*) AS n FROM mcp_event_subscriptions WHERE owner=? AND enabled=1 AND expires>?').get(selected.g.owner,now()).n>=10)throw Object.assign(Error('Use up to ten active event subscriptions per operator.'),{rpcCode:-32025});
    const rotated=old&&decrypt(old.secret)!==secret;
    db.prepare(`INSERT INTO mcp_event_subscriptions VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET grant_id=excluded.grant_id,secret=excluded.secret,previous_secret=excluded.previous_secret,previous_until=excluded.previous_until,expires=excluded.expires,enabled=1`).run(selected.id,selected.g.owner,selected.actor,selected.g.connection.id,auth.oauthGrant,p.name,JSON.stringify(selected.args),p.delivery.url,encrypt(secret),rotated?old.secret:old?.previous_secret||null,rotated?now()+300000:old?.previous_until||null,expires,1,old?.created||now());
    return {id:selected.id,refreshBefore:new Date(expires).toISOString(),cursor:null,truncated:false};

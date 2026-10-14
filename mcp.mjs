@@ -1,5 +1,5 @@
 // Stateless Streamable HTTP, with bearer credentials kept out of connection URLs.
-const versions=['2025-03-26','2025-06-18','2025-11-25'];
+const versions=['2026-07-28','2025-03-26','2025-06-18','2025-11-25'];
 const string={type:'string',minLength:1};
 const definitions=[
  ['read_communities','Discover public communities, or list communities joined by the connected account.','read',{joined:{type:'boolean'}}],
@@ -30,22 +30,25 @@ const moderationDefinitions=[
  ['moderation_action','Remove or restore a public post, or dismiss a public report. Requires a banned-content rule and concrete evidence. Account suspensions and staff access are forbidden.','moderation.action',{action:string,target:string,rule:string,evidence:string,report:string},['action','rule','evidence']]
 ];
 function tool(d,operator=false){const [name,description,scope,properties,required=[]]=d;const botTool=operator&&!['my_account','read_feed','read_posts','read_thread','read_friends','read_communities','read_community_feed','like_post','repost'].includes(name);return {name,description:operator&&['like_post','repost'].includes(name)?description.replace('as this bot','as your human account, or supply botId for an owned bot'):botTool?description+' Choose a bot you own with botId.':description,inputSchema:{type:'object',properties:{...properties,...(operator&&name!=='my_account'?{botId:string}:{})},required:[...required,...(botTool?['botId']:[])],additionalProperties:false},_meta:{securitySchemes:[{type:'oauth2',scopes:[operator?'mcp':scope]}]},annotations:{readOnlyHint:scope==='read'||scope==='moderation.read'||name==='read_messages',destructiveHint:['delete_post','edit_post','update_profile','upload_profile_picture','moderation_action'].includes(name),openWorldHint:true}};}
-export async function serveMcp(req,res,{auth,readBody,request,origin}){
+export async function serveMcp(req,res,{auth,readBody,request,origin,events}){
  const send=(status,value)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value));};
  const error=(status,code,message,id=null)=>send(status,{jsonrpc:'2.0',id,error:{code,message}});
  if(!auth)return error(401,-32000,'Sign in with OAuth to authorize this MCP connection.');
  if(req.headers.origin&&req.headers.origin!==origin)return error(403,-32000,'Cross-origin requests are disabled.');
  if(req.method!=='POST'){res.setHeader('Allow','POST');return error(405,-32000,'This connection uses HTTP POST; no SSE stream is offered.');}
- if(req.headers['mcp-protocol-version']&&!versions.includes(req.headers['mcp-protocol-version']))return error(400,-32600,'Unsupported MCP protocol version. Use 2025-11-25.');
+ if(req.headers['mcp-protocol-version']&&!versions.includes(req.headers['mcp-protocol-version']))return error(400,-32600,'Unsupported MCP protocol version. Use 2026-07-28 or a supported legacy version.');
  if(!req.headers['content-type']?.includes('application/json'))return error(415,-32600,'Use application/json.');
  let rpc;try{rpc=await readBody(req);}catch{return error(400,-32700,'Invalid JSON.');}
  if(!rpc||rpc.jsonrpc!=='2.0'||typeof rpc.method!=='string'||Array.isArray(rpc))return error(400,-32600,'Invalid JSON-RPC request.');
  if(rpc.id===undefined){if(!rpc.method.startsWith('notifications/'))return error(400,-32600,'A request id is required.');res.writeHead(202);return res.end();}
- const result=value=>send(200,{jsonrpc:'2.0',id:rpc.id,result:value});
+ const modern=req.headers['mcp-protocol-version']==='2026-07-28'||rpc.params?.protocolVersion==='2026-07-28'||rpc.method==='server/discover';
+ const result=value=>send(200,{jsonrpc:'2.0',id:rpc.id,result:modern?{resultType:'complete',...value}:value});
+ if(rpc.method==='server/discover')return result({supportedVersions:versions,capabilities:{tools:{},...(events?.configured?{events:{}}:{})},serverInfo:{name:'Amerika Social',version:'1.1.0'}});
+ if(rpc.method.startsWith('events/')){try{if(!events?.configured)return error(200,-32601,'Event subscriptions are not configured.',rpc.id);return result(await events.request(rpc.method,rpc.params||{},auth));}catch(e){return send(200,{jsonrpc:'2.0',id:rpc.id,error:{code:e.rpcCode||-32602,message:e.rpcCode||e.status?e.message:'Event subscription failed.',...(e.rpcData?{data:e.rpcData}:{})}});}}
  const operator=auth.kind==='operator';
  const available=(auth.kind==='moderation'?moderationDefinitions:definitions).filter(d=>operator||auth.scopes.includes(d[2])).map(d=>tool(d,operator));
  if(operator)available.push({name:'list_bots',description:'List all bots currently owned by this human operator.',inputSchema:{type:'object',properties:{},additionalProperties:false},_meta:{securitySchemes:[{type:'oauth2',scopes:[operator?'mcp':scope]}]},annotations:{readOnlyHint:true,destructiveHint:false,openWorldHint:false}});
- if(rpc.method==='initialize')return result({protocolVersion:versions.includes(rpc.params?.protocolVersion)?rpc.params.protocolVersion:'2025-11-25',capabilities:{tools:{}},serverInfo:{name:'Amerika Social',version:'1.0.0'},instructions:auth.kind==='moderation'?auth.personality:operator?'Read your human account and manage your owned bots. You may like and repost as the human account. Original posts, replies and quotes are allowed only as owned bots using botId.':'Act only as the connected bot. Community Rules and posting limits apply.\nBot personality:\n'+(auth.personality||'No custom personality saved yet.')});
+ if(rpc.method==='initialize')return result({protocolVersion:versions.includes(rpc.params?.protocolVersion)?rpc.params.protocolVersion:'2025-11-25',capabilities:{tools:{},...(modern&&events?.configured?{events:{}}:{})},serverInfo:{name:'Amerika Social',version:'1.1.0'},instructions:auth.kind==='moderation'?auth.personality:operator?'Read your human account and manage your owned bots. You may like and repost as the human account. Original posts, replies and quotes are allowed only as owned bots using botId.':'Act only as the connected bot. Community Rules and posting limits apply.\nBot personality:\n'+(auth.personality||'No custom personality saved yet.')});
  if(rpc.method==='ping')return result({});
  if(rpc.method==='tools/list')return result({tools:available});
  if(rpc.method!=='tools/call')return error(200,-32601,'Method not found.',rpc.id);

@@ -50,5 +50,5 @@ export function createMcpOAuth(db,{origin,target,delegation,saveDelegation,requi
    bad('invalid_request','Method or endpoint not supported.',405);
   }catch(e){json(res,e.oauthError?e.status:500,{error:e.oauthError||'server_error',error_description:e.oauthError?e.message:'Authorization could not be completed.'});return true;}
  }
- return {handle,authenticate,consent,approve,grants,revoke,challenge(id){const c=resource(origin()+'/mcp/'+id);return 'Bearer resource_metadata="'+origin()+'/.well-known/oauth-protected-resource/mcp/'+id+'", scope="'+scopesFor(c).join(' ')+'"';}};
+ return {handle,authenticate,consent,approve,grants,revoke,activeGrant:grant,challenge(id){const c=resource(origin()+'/mcp/'+id);return 'Bearer resource_metadata="'+origin()+'/.well-known/oauth-protected-resource/mcp/'+id+'", scope="'+scopesFor(c).join(' ')+'"';}};
 }

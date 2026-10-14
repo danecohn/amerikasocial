@@ -24,17 +24,19 @@ export function standardWebhookKey(secret){
  if(secret.startsWith('whsec_'))throw Error('Malformed Standard Webhooks signing secret');
  return Buffer.from(secret,'utf8');
 }
-async function deliver(raw,payload,secret,id,testing){
+export async function webhookRequest(raw,payload,secret,id,testing,options={}){
  // Resolve and pin a vetted address for each attempt; never follow redirects.
  const {url,address}=await webhookDestination(raw,{testing});const timestamp=String(Math.floor(Date.now()/1000));
  const signature=createHmac('sha256',secret).update(timestamp+'.'+payload).digest('hex');
- const standardSignature=createHmac('sha256',standardWebhookKey(secret)).update(id+'.'+timestamp+'.'+payload).digest('base64');
+ let standardSignature='v1,'+createHmac('sha256',standardWebhookKey(secret)).update(id+'.'+timestamp+'.'+payload).digest('base64');
+ if(options.previousSecret)standardSignature+=' v1,'+createHmac('sha256',standardWebhookKey(options.previousSecret)).update(id+'.'+timestamp+'.'+payload).digest('base64');
  return new Promise((done,reject)=>{
   const transport=url.protocol==='https:'?https:http;
-  const req=transport.request(url,{method:'POST',agent:false,lookup:(_host,options,callback)=>options.all?callback(null,[{address,family:4}]):callback(null,address,4),headers:{'Content-Type':'application/json','Content-Length':Buffer.byteLength(payload),'User-Agent':'Amerika-Social-Webhooks/1','Amerika-Webhook-Id':id,'Amerika-Webhook-Timestamp':timestamp,'Amerika-Webhook-Signature':'v1='+signature,'webhook-id':id,'webhook-timestamp':timestamp,'webhook-signature':'v1,'+standardSignature}},res=>{res.destroy();done(res.statusCode);});
+  const req=transport.request(url,{method:'POST',agent:false,lookup:(_host,options,callback)=>options.all?callback(null,[{address,family:4}]):callback(null,address,4),headers:{'Content-Type':'application/json','Content-Length':Buffer.byteLength(payload),'User-Agent':'Amerika-Social-Webhooks/1','Amerika-Webhook-Id':id,'Amerika-Webhook-Timestamp':timestamp,'Amerika-Webhook-Signature':'v1='+signature,'webhook-id':id,'webhook-timestamp':timestamp,'webhook-signature':standardSignature,...options.headers}},res=>{if(!options.readResponse){res.destroy();done({status:res.statusCode});return;}let body='',bytes=0;res.on('data',chunk=>{bytes+=chunk.length;if(bytes>8192){res.destroy();reject(Error('Callback response too large'));}else body+=chunk.toString();});res.on('end',()=>done({status:res.statusCode,body}));res.on('error',reject);});
   const timer=setTimeout(()=>req.destroy(new Error('Delivery deadline exceeded')),15000);req.once('close',()=>clearTimeout(timer));req.setTimeout(10000,()=>req.destroy(new Error('Delivery timed out')));req.on('error',reject);req.end(payload);
  });
 }
+async function deliver(...args){return (await webhookRequest(...args)).status;}
 export function createWebhooks(db,{key=process.env.SESSION_ENCRYPTION_KEY,origin='',testing=process.env.ALLOW_TEST_WEBHOOKS==='1',validateModeration=()=>false}={}){
  db.exec(`CREATE TABLE IF NOT EXISTS webhooks(id TEXT PRIMARY KEY,owner TEXT NOT NULL REFERENCES actors(id),actor TEXT NOT NULL REFERENCES actors(id),url TEXT NOT NULL,secret TEXT NOT NULL,events TEXT NOT NULL,include_messages INTEGER NOT NULL,enabled INTEGER NOT NULL,created TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS webhook_deliveries(id TEXT PRIMARY KEY,hook TEXT NOT NULL REFERENCES webhooks(id),notification INTEGER,payload TEXT,status TEXT NOT NULL DEFAULT 'pending',attempts INTEGER NOT NULL DEFAULT 0,next_at INTEGER NOT NULL,last_status INTEGER,last_error TEXT,created TEXT NOT NULL);

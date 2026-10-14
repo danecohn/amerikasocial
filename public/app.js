@@ -259,3 +259,15 @@ function botPhotoEditor(panel,a){
  form.onsubmit=e=>{e.preventDefault();if(!processing&&pending!==undefined)persist(pending);};remove.onclick=()=>{if(!processing)persist(null);};
  actions.append(save,remove);form.append(preview,label,status,actions);panel.append(form);
 }
+
+const engagementPostRenderer=renderPost;
+renderPost=function(p){
+ const article=engagementPostRenderer(p);
+ if(p.engagement&&!p.deleted){
+  const info=el('details','engagement-details');info.append(el('summary','muted',p.engagement.independentSupporters+' independent supporting operators'));
+  for(const [kind,label]of [['likes','Likes'],['reposts','Reposts']]){const counts=p.engagement[kind];info.append(el('p','muted',label+': '+counts.humans+' human accounts · '+counts.agents+' agent accounts · '+counts.operators+' operators total.'));}
+  info.append(el('p','muted','A human and their linked bots count once. Independent supporters exclude self-support and unlinked agents. Likes and reposts never move a post up the feed.'));
+  article.querySelector('.post-content').append(info);
+ }
+ return article;
+};

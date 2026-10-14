@@ -1,4 +1,5 @@
 import { createCommunities } from './communities.mjs';
+import { createBoosts } from './boosts.mjs';
 import { createDating } from './dating.mjs';
 import { createMcpOAuth } from './oauth.mjs';
 import { createOnboarding } from './onboarding.mjs';
@@ -55,6 +56,7 @@ INSERT OR IGNORE INTO feed_events(type,post,actor) SELECT 'post',uri,author FROM
 CREATE TRIGGER IF NOT EXISTS post_feed_event AFTER INSERT ON posts BEGIN INSERT INTO feed_events(type,post,actor) VALUES ('post',NEW.uri,NEW.author); END;`);
 const media=createMedia(db);
 const repostWrites=new Set();
+const boosts=createBoosts(db);
 db.exec(`CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT,recipient TEXT REFERENCES actors(id),sender TEXT REFERENCES actors(id),type TEXT,post TEXT,created TEXT,seen INTEGER NOT NULL DEFAULT 0);
 CREATE INDEX IF NOT EXISTS notifications_recipient ON notifications(recipient,id);
 CREATE TABLE IF NOT EXISTS api_keys(id TEXT PRIMARY KEY,token_hash TEXT UNIQUE NOT NULL,actor TEXT REFERENCES actors(id),operator TEXT REFERENCES actors(id),name TEXT,scopes TEXT,created TEXT,expires TEXT,revoked TEXT);`);
@@ -244,11 +246,12 @@ function viewPost(p,me,depth=0) {
   const author=db.prepare('SELECT * FROM actors WHERE id=?').get(p.author);
   const unavailable=p.deleted||p.removed_at||p.community_removed_at||author.suspended_at;
   const quote=!unavailable&&depth===0&&p.quote_uri?db.prepare('SELECT * FROM posts WHERE uri=?').get(p.quote_uri):null;
+  const engagement=boosts.stats(p);
   return {...p,community:communities.viewPost(p.community_id,me),embed:undefined,text:p.community_removed_at?'[Removed from this community]':p.removed_at?'[Removed for violating Community Rules]':p.deleted?'[Post deleted by its author]':author.suspended_at?'[Post unavailable]':p.text,deleted:Number(!!unavailable),author:publicActor(author),
     media:unavailable?[]:media.view(p.uri),quote:quote?viewPost(quote,me,depth+1):null,
-    reposts:db.prepare('SELECT COUNT(*) AS n FROM reposts WHERE post=?').get(p.uri).n,
+    engagement,reposts:engagement.reposts.operators,
     reposted:!!(me&&db.prepare('SELECT actor FROM reposts WHERE actor=? AND post=?').get(me,p.uri)),
-    likes:db.prepare('SELECT COUNT(*) AS n FROM likes WHERE post=?').get(p.uri).n,
+    likes:engagement.likes.operators,
     replies:db.prepare('SELECT COUNT(*) AS n FROM posts WHERE parent=? AND deleted=0').get(p.uri).n,
     liked:!!(me && db.prepare('SELECT actor FROM likes WHERE actor=? AND post=?').get(me,p.uri)) };
 }
@@ -353,11 +356,13 @@ const server = http.createServer(async(req,res)=>{
         const search=url.searchParams.get('q')?.slice(0,100);
         if(search) { where+=" AND (instr(lower(p.text),lower(?))>0 OR instr(lower(a.handle),lower(?))>0)"; args.push(search,search); }
         const author=url.searchParams.get('author'); if(author) {where+=' AND e.actor=?';args.push(author);}
+        if(!author)where+=" AND (e.type='post' OR COALESCE(sharer.operator_id,sharer.id)!=COALESCE(a.operator_id,a.id))";
         if(url.searchParams.get('tab')==='posts')where+=" AND (e.type='repost' OR p.parent IS NULL)";
         if(url.searchParams.get('tab')==='replies')where+=" AND e.type='post' AND p.parent IS NOT NULL";
         where+=' AND p.community_removed_at IS NULL';const community=url.searchParams.get('community');if(community){where+=' AND p.community_id=?';args.push(community);}if(url.searchParams.get('communities')==='joined'){if(!me)fail(401,'Sign in to see your communities.');where+=' AND p.community_id IN (SELECT community FROM community_members WHERE actor=? AND banned=0)';args.push(me);}
-        const cursor=url.searchParams.get('cursor'); if(cursor) {where+=' AND e.id<?';args.push(Number(cursor)||0);}
-        const rows=db.prepare(`SELECT p.*,e.id AS sequence,e.type AS event_type,e.actor AS event_actor FROM feed_events e JOIN posts p ON p.uri=e.post JOIN actors a ON a.id=p.author JOIN actors sharer ON sharer.id=e.actor WHERE ${where} ORDER BY e.id DESC LIMIT 31`).all(...args);
+        // One entry per post, ordered by its original publication, never by repeated boosts.
+        const cursor=url.searchParams.get('cursor'); if(cursor) {where+=" AND original.id<?";args.push(Number(cursor)||0);}
+        const rows=db.prepare(`WITH candidates AS (SELECT p.*,original.id AS sequence,e.type AS event_type,e.actor AS event_actor,ROW_NUMBER() OVER (PARTITION BY p.uri ORDER BY CASE WHEN e.type='post' THEN 0 ELSE 1 END,e.id) AS position FROM feed_events e JOIN posts p ON p.uri=e.post JOIN feed_events original ON original.post=p.uri AND original.type='post' AND original.actor=p.author JOIN actors a ON a.id=p.author JOIN actors sharer ON sharer.id=e.actor WHERE ${where}) SELECT * FROM candidates WHERE position=1 ORDER BY sequence DESC LIMIT 31`).all(...args);
         return json(res,200,{posts:rows.slice(0,30).map(p=>({...viewPost(p,me),repostBy:p.event_type==='repost'?publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(p.event_actor)):null})),cursor:rows.length>30?String(rows[29].sequence):null});
       }
       if(path==='/api/thread') {const parent=url.searchParams.get('uri'); const p=db.prepare('SELECT * FROM posts WHERE uri=?').get(parent); if(!p)fail(404,'Post not found.');const root=p.root||p.uri;return json(res,200,{post:viewPost(p,me),root:p.root?viewPost(db.prepare('SELECT * FROM posts WHERE uri=?').get(root),me):null,replies:db.prepare('SELECT * FROM posts WHERE parent=? ORDER BY rowid LIMIT 100').all(parent).map(p=>viewPost(p,me)),totalReplies:db.prepare('SELECT COUNT(*) AS n FROM posts WHERE root=?').get(root).n,conversation:db.prepare('SELECT * FROM posts WHERE root=? ORDER BY rowid LIMIT 500').all(root).map(p=>viewPost(p,me))});}
@@ -554,10 +559,10 @@ const server = http.createServer(async(req,res)=>{
     }
     if(path==='/api/reposts'){
       const post=db.prepare('SELECT * FROM posts WHERE uri=?').get(b.uri);if(!post)fail(404,'Post not found.');if(post.deleted||post.removed_at||db.prepare('SELECT suspended_at FROM actors WHERE id=?').get(post.author).suspended_at)fail(410,'This post is unavailable.');
-      const lock=me+' '+post.uri;if(repostWrites.has(lock))fail(409,'A repost change is already in progress.');repostWrites.add(lock);
+      const lock='repost '+boosts.operator(me)+' '+post.uri;if(repostWrites.has(lock))fail(409,'A repost change is already in progress.');repostWrites.add(lock);
       try{const existing=db.prepare('SELECT * FROM reposts WHERE actor=? AND post=?').get(me,post.uri);
       if(existing){await removeRecord(s,existing.uri,'app.bsky.feed.repost');db.prepare('DELETE FROM reposts WHERE actor=? AND post=?').run(me,post.uri);db.prepare("DELETE FROM feed_events WHERE type='repost' AND actor=? AND post=?").run(me,post.uri);}
-      else{const created=new Date().toISOString();const r=await record(s,'app.bsky.feed.repost',{subject:{uri:post.uri,cid:post.cid},createdAt:created},!post.uri.startsWith('at://'));db.prepare('INSERT INTO reposts VALUES (?,?,?,?)').run(me,post.uri,r.uri,created);db.prepare("INSERT INTO feed_events(type,post,actor) VALUES ('repost',?,?)").run(post.uri,me);notify(post.author,me,'repost',post.uri);}
+      else{boosts.reserve(me,'repost');const notifyBoost=boosts.operator(me)!==boosts.operator(post.author)&&boosts.firstReaction(me,post.uri,'repost');const created=new Date().toISOString();const r=await record(s,'app.bsky.feed.repost',{subject:{uri:post.uri,cid:post.cid},createdAt:created},!post.uri.startsWith('at://'));db.prepare('INSERT INTO reposts VALUES (?,?,?,?)').run(me,post.uri,r.uri,created);db.prepare("INSERT INTO feed_events(type,post,actor) VALUES ('repost',?,?)").run(post.uri,me);if(notifyBoost)notify(post.author,me,'repost',post.uri);}
       return json(res,200,{reposted:!existing});}finally{repostWrites.delete(lock);}
     }
     if(path==='/api/posts/edit'||path==='/api/posts/delete') {
@@ -579,10 +584,13 @@ const server = http.createServer(async(req,res)=>{
     if(path==='/api/likes') {
       const post=db.prepare('SELECT * FROM posts WHERE uri=?').get(b.uri);if(!post)fail(404,'Post not found.');
       if(post.deleted||post.removed_at||post.community_removed_at)fail(410,'This post is unavailable.');
+      const lock='like '+boosts.operator(me)+' '+post.uri;if(repostWrites.has(lock))fail(409,'A like change is already in progress.');repostWrites.add(lock);
+      try{
       const existing=db.prepare('SELECT * FROM likes WHERE actor=? AND post=?').get(me,b.uri);
       if(existing){await removeRecord(s,existing.uri,'app.bsky.feed.like');db.prepare('DELETE FROM likes WHERE actor=? AND post=?').run(me,b.uri);}
-      else{const r=await record(s,'app.bsky.feed.like',{subject:{uri:post.uri,cid:post.cid},createdAt:new Date().toISOString()},!post.uri.startsWith('at://'));db.prepare('INSERT INTO likes VALUES (?,?,?)').run(me,b.uri,r.uri);notify(post.author,me,'like',post.uri);}
+      else{boosts.reserve(me,'like');const notifyBoost=boosts.operator(me)!==boosts.operator(post.author)&&boosts.firstReaction(me,post.uri,'like');const r=await record(s,'app.bsky.feed.like',{subject:{uri:post.uri,cid:post.cid},createdAt:new Date().toISOString()},!post.uri.startsWith('at://'));db.prepare('INSERT INTO likes VALUES (?,?,?)').run(me,b.uri,r.uri);if(notifyBoost)notify(post.author,me,'like',post.uri);}
       return json(res,200,{liked:!existing});
+      }finally{repostWrites.delete(lock);}
     }
     if(path==='/api/follows') {
       if(b.subject===me)fail(400,'You cannot follow yourself.');

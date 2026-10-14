@@ -8,7 +8,7 @@ permissions:
   contents: read
 concurrency:
   group: ios-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   ios-simulator:
     runs-on: macos-latest
@@ -35,11 +35,23 @@ jobs:
           set -o pipefail
           xcodebuild -workspace ios/AmerikaSocial.xcworkspace -scheme AmerikaSocial -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build > xcode-build.log 2>&1 || { tail -n 100 xcode-build.log; exit 1; }
           ditto -c -k --keepParent build/Build/Products/Release-iphonesimulator/AmerikaSocial.app AmerikaSocial-simulator.zip
+      - name: Launch native app and capture iPhone preview
+        run: |
+          DEVICE_ID=$(xcrun simctl list devices available -j | node -e 'let data="";process.stdin.on("data",c=>data+=c);process.stdin.on("end",()=>{const d=Object.values(JSON.parse(data).devices).flat().find(d=>d.isAvailable&&d.name.startsWith("iPhone"));if(!d)process.exit(1);process.stdout.write(d.udid);});')
+          xcrun simctl boot "$DEVICE_ID"
+          xcrun simctl bootstatus "$DEVICE_ID" -b
+          xcrun simctl install "$DEVICE_ID" build/Build/Products/Release-iphonesimulator/AmerikaSocial.app
+          xcrun simctl launch --terminate-running-process "$DEVICE_ID" social.amerika.ios
+          sleep 15
+          xcrun simctl spawn "$DEVICE_ID" launchctl list | awk '$3 ~ /social.amerika.ios/ && $1 ~ /^[0-9]+$/ {alive=1} END {exit !alive}'
+          xcrun simctl io "$DEVICE_ID" screenshot AmerikaSocial-iPhone-preview.png
       - name: Upload simulator build
         uses: actions/upload-artifact@v7
         with:
           name: Amerika-Social-iPhone-simulator
-          path: AmerikaSocial-simulator.zip
+          path: |
+            AmerikaSocial-simulator.zip
+            AmerikaSocial-iPhone-preview.png
           retention-days: 7
       - name: Upload build diagnostics
         if: failure()

@@ -121,7 +121,7 @@ export class API {
         if (
           response.status === 401 &&
           this.token &&
-          !["login", "register"].includes(path)
+          !["login", "register", "account/delete", "recovery/codes", "agents/link"].includes(path)
         )
           this.onExpired?.();
         throw new APIError(

@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
+  Image,
   Platform,
   ScrollView,
   Text,
@@ -11,10 +12,11 @@ import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import { File } from "expo-file-system";
 import { fetch as uploadFetch } from "expo/fetch";
-import { Actor, api, ORIGIN, shortHandle } from "./api";
+import { Actor, api, ORIGIN, absolute, shortHandle } from "./api";
 import { Button, Draft, Person, problem } from "./components";
 import { colors, styles as s } from "./theme";
 import {countGraphemes} from 'unicode-segmenter/grapheme';
+import {Select, useResource} from './ui';
 export default function Composer({
   draft,
   me,
@@ -29,9 +31,13 @@ export default function Composer({
   const [text, setText] = useState(draft.edit?.text||""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
-    [media, setMedia] = useState<{ id: string; mime: string; alt: string }[]>(
-      draft.edit?.media.map(m=>({id:m.id,mime:m.mime,alt:m.alt}))||[],
+    [community,setCommunity]=useState(draft.community||draft.parent?.community?.id||''),
+    [media, setMedia] = useState<{ id: string; mime: string; alt: string; preview?:string }[]>(
+      draft.edit?.media.map(m=>({id:m.id,mime:m.mime,alt:m.alt,preview:absolute(m.url)}))||[],
     );
+  const groups=useResource<any>(!draft.edit&&!draft.parent?'communities/list?joined=1':null);
+  const uploadController=useRef<AbortController|null>(null);
+  useEffect(()=>()=>uploadController.current?.abort(),[]);
   const cap = me.plus ? 833 : 300,
     count = countGraphemes(text);
   const choose = async (video: boolean) => {
@@ -47,6 +53,7 @@ export default function Composer({
       const asset = result.assets[0],
         file = new File(asset.uri);
       if (file.size > 250000000) throw Error("Choose a file under 250 MB.");
+      uploadController.current=new AbortController();
       const response = await uploadFetch(ORIGIN + "/api/media/upload", {
         method: "POST",
         headers: {
@@ -55,14 +62,16 @@ export default function Composer({
             asset.mimeType || (video ? "video/quicktime" : "image/jpeg"),
         },
         body: file,
+        signal:uploadController.current.signal,
       });
       const data = await response.json();
       if (!response.ok) throw Error(data.error || "Upload failed.");
-      setMedia((old) => [...old, { id: data.id, mime: data.mime, alt: "" }]);
+      setMedia((old) => [...old, { id: data.id, mime: data.mime, alt: "",preview:asset.uri }]);
     } catch (e) {
       setError(problem(e));
     } finally {
       setBusy(false);
+      uploadController.current=null;
     }
   };
   const send = async () => {
@@ -72,10 +81,10 @@ export default function Composer({
       await api.request(draft.edit?"posts/edit":"posts", {
         ...(draft.edit?{uri:draft.edit.uri}:{}),
         text,
-        media,
+        media:media.map(({id,alt})=>({id,alt})),
         ...(draft.parent ? { parent: draft.parent.uri } : {}),
         ...(draft.quote ? { quote: draft.quote.uri } : {}),
-        ...(draft.community?{community:draft.community}:{}),
+        ...(community?{community}:{}),
       });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onSent();
@@ -103,6 +112,8 @@ export default function Composer({
           />
         </View>
         <Person actor={me} />
+        {!draft.edit&&!draft.parent&&!!groups.data?.communities.length&&<Select label="Post destination" value={community} options={[{value:'',label:'Main timeline'},...groups.data.communities.filter((c:any)=>!c.archived).map((c:any)=>({value:c.id,label:c.name}))]} onChange={setCommunity}/>}
+        {busy&&uploadController.current&&<Button secondary title="Cancel upload" onPress={()=>uploadController.current?.abort()}/>}
         {(draft.parent || draft.quote) && (
           <View style={[s.secondary, { padding: 14, borderRadius: 12 }]}>
             <Text style={s.muted}>
@@ -150,6 +161,7 @@ export default function Composer({
         </Text>
         {media.map((m) => (
           <View key={m.id} style={{ gap: 8 }}>
+            {m.preview&&m.mime.startsWith('image/')&&<Image source={{uri:m.preview}} accessibilityLabel={m.alt||'Attached photo preview'} style={{width:'100%',height:220,borderRadius:12}}/>}
             <Text style={s.label}>
               {m.mime.startsWith("video/") ? "Video" : "Photo"} attached
             </Text>

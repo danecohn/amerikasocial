@@ -35,7 +35,7 @@ Use Node 24 and pnpm 11.25.0:
     pnpm exec expo export --platform ios
     pnpm start
 
-Native workflow tests use synthetic sessions, not live purchases or production deletions. The JSX check prevents whitespace being rendered outside native Text controls. The GitHub workflow builds an unsigned Release iPhone simulator app on macOS and uploads it as a workflow artifact. Check its actual result before treating native compilation as passed.
+Native workflow tests use synthetic sessions, not live purchases or production deletions. The JSX check prevents whitespace being rendered outside native Text controls. The GitHub workflow builds an unsigned Release iPhone simulator app on macOS launches it and captures an iPhone preview, then uploads the app and preview as workflow artifacts. Check its actual result before treating native compilation as passed.
 
 ## Device builds and publishing
 
@@ -48,7 +48,7 @@ Apple Developer enrollment is required for TestFlight/App Store, paid subscripti
 
 The `simulator` profile does not need an Apple signing certificate. `production` builds require your Apple team. Review source and test the signed device build before `pnpm dlx eas-cli@latest submit --platform ios`.
 
-Expo Go can preview screens if it supports SDK 57, but cannot test StoreKit or real push. Windows cannot compile Xcode; use the GitHub macOS check or EAS. This repository is source, not a signed IPA.
+Expo Go can preview screens if it supports SDK 57, but cannot test StoreKit or real push. Windows cannot compile Xcode; use the GitHub macOS check or EAS. Dependencies use copying instead of hard links so OneDrive file markers do not break the Windows bundler. If reusing an older installation, install fresh dependencies before starting Metro. This repository is source, not a signed IPA.
 
 ### Push activation
 

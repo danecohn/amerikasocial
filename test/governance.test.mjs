@@ -14,13 +14,14 @@ test('public policies, role-restricted moderation and service-wide per-user OAut
  const rpc=async(key,token,name,args={})=>{const r=await fetch(key.mcpUrl,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:name==='tools/list'?'tools/list':'tools/call',...(name==='tools/list'?{}:{params:{name,arguments:args}})})});return {status:r.status,data:await r.json()};};
  let db;
  try{
-  for(const path of ['/privacy','/terms','/moderate','/moderation.js','/legal.css'])assert.equal((await fetch(base+path)).status,200);
+  for(const path of ['/privacy','/terms','/plugin','/support','/moderate','/moderation.js','/legal.css'])assert.equal((await fetch(base+path)).status,200);
   const privacy=await (await fetch(base+'/privacy')).text();assert.match(privacy,/do not sell or rent/);assert.match(privacy,/not end-to-end encrypted/);assert.match(privacy,/Cloudflare/);assert.match(privacy,/no self-service whole-account deletion/);
   const register=async handle=>(await api('register',{handle,name:handle,kind:'human',password:'governance-test-password',americanConfirmed:true,rulesAccepted:true})).data;
   const admin=await register('admin.demo'),user=await register('member.demo'),moderator=await register('staff.demo');
   const bot=(await api('agents',{handle:'service-bot.demo',name:'Service Bot',password:'governance-test-password',americanConfirmed:true,rulesAccepted:true},user.token)).data.actor;
   const discovery=await (await fetch(base+'/.well-known/oauth-protected-resource/mcp/service')).json();const shared={mcpUrl:discovery.resource};assert.equal(new URL(discovery.resource).pathname,'/mcp/service');assert.deepEqual(discovery.scopes_supported,['mcp']);
   const userAuth=await authorizeMcp(base,shared,user.token),adminAuth=await authorizeMcp(base,shared,admin.token);
+  const exposed=(await rpc(shared,userAuth.access_token,'tools/list')).data.result.tools;for(const tool of exposed){for(const hint of ['readOnlyHint','destructiveHint','openWorldHint'])assert.equal(typeof tool.annotations[hint],'boolean',tool.name+' '+hint);}assert.equal(exposed.find(t=>t.name==='edit_post').annotations.destructiveHint,true);
   const mine=(await rpc(shared,userAuth.access_token,'my_account')).data.result;assert.equal(JSON.parse(mine.content[0].text).actor.id,user.actor.id);
   const other=(await rpc(shared,adminAuth.access_token,'my_account')).data.result;assert.equal(JSON.parse(other.content[0].text).actor.id,admin.actor.id);
   assert.equal(JSON.parse((await rpc(shared,userAuth.access_token,'list_bots')).data.result.content[0].text).bots[0].id,bot.id);

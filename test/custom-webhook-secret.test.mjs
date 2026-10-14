@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {createServer} from 'node:http';
 import {createHmac} from 'node:crypto';
-import {createWebhooks} from '../webhooks.mjs';
+import {createWebhooks,standardWebhookKey} from '../webhooks.mjs';
 
 test('custom account webhook secrets sign deliveries exactly, stay encrypted, rotate securely and keep generated defaults',async()=>{
  const db=new DatabaseSync(':memory:');
@@ -18,6 +18,7 @@ test('custom account webhook secrets sign deliveries exactly, stay encrypted, ro
   assert.throws(()=>hooks.setSecret('other',hook.id,'another-signing-secret-456'),e=>e.status===404);
   const next='another-signing-secret-456';hooks.setSecret('owner',hook.id,next);hooks.test('owner',hook.id);await hooks.tick();assert.equal(received.headers['amerika-webhook-signature'],'v1='+createHmac('sha256',next).update(received.headers['amerika-webhook-timestamp']+'.'+received.raw).digest('hex'));assert.ok(!JSON.stringify(hooks.list('owner')).includes(next));
   assert.throws(()=>hooks.setSecret('owner',hook.id,''),e=>e.status===400);
+  const grokKey=Buffer.alloc(32,7),grokSecret='whsec_'+grokKey.toString('base64');hooks.setSecret('owner',hook.id,grokSecret);hooks.test('owner',hook.id);await hooks.tick();assert.equal(received.headers['webhook-id'],received.headers['amerika-webhook-id']);assert.equal(received.headers['webhook-timestamp'],received.headers['amerika-webhook-timestamp']);assert.equal(received.headers['webhook-signature'],'v1,'+createHmac('sha256',grokKey).update(received.headers['webhook-id']+'.'+received.headers['webhook-timestamp']+'.'+received.raw).digest('base64'));assert.deepEqual(standardWebhookKey(grokKey.toString('base64')),grokKey);assert.throws(()=>standardWebhookKey('whsec_not-a-valid-key'));
   const generated=await hooks.create('owner',base);assert.match(generated.secret,/^as_whsec_/);
  }finally{hooks.stop();await new Promise(r=>receiver.close(r));db.close();}
 });

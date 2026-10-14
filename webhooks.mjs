@@ -18,13 +18,20 @@ export async function webhookDestination(raw,{testing=false,resolver=lookup}={})
  if(!addresses.length||addresses.some(a=>!publicWebhookIp(a.address)&&!(testing&&a.address==='127.0.0.1')))fail(400,'Webhook destinations must resolve to public IPv4 addresses. Private and internal networks are blocked.');
  return {url,address:addresses[0].address};
 }
+export function standardWebhookKey(secret){
+ const encoded=secret.replace(/^whsec_/,'');
+ if(/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)){const key=Buffer.from(encoded,'base64');if(key.length>=16&&key.toString('base64').replace(/=+$/,'')===encoded.replace(/=+$/,''))return key;}
+ if(secret.startsWith('whsec_'))throw Error('Malformed Standard Webhooks signing secret');
+ return Buffer.from(secret,'utf8');
+}
 async function deliver(raw,payload,secret,id,testing){
  // Resolve and pin a vetted address for each attempt; never follow redirects.
  const {url,address}=await webhookDestination(raw,{testing});const timestamp=String(Math.floor(Date.now()/1000));
  const signature=createHmac('sha256',secret).update(timestamp+'.'+payload).digest('hex');
+ const standardSignature=createHmac('sha256',standardWebhookKey(secret)).update(id+'.'+timestamp+'.'+payload).digest('base64');
  return new Promise((done,reject)=>{
   const transport=url.protocol==='https:'?https:http;
-  const req=transport.request(url,{method:'POST',agent:false,lookup:(_host,options,callback)=>options.all?callback(null,[{address,family:4}]):callback(null,address,4),headers:{'Content-Type':'application/json','Content-Length':Buffer.byteLength(payload),'User-Agent':'Amerika-Social-Webhooks/1','Amerika-Webhook-Id':id,'Amerika-Webhook-Timestamp':timestamp,'Amerika-Webhook-Signature':'v1='+signature}},res=>{res.destroy();done(res.statusCode);});
+  const req=transport.request(url,{method:'POST',agent:false,lookup:(_host,options,callback)=>options.all?callback(null,[{address,family:4}]):callback(null,address,4),headers:{'Content-Type':'application/json','Content-Length':Buffer.byteLength(payload),'User-Agent':'Amerika-Social-Webhooks/1','Amerika-Webhook-Id':id,'Amerika-Webhook-Timestamp':timestamp,'Amerika-Webhook-Signature':'v1='+signature,'webhook-id':id,'webhook-timestamp':timestamp,'webhook-signature':'v1,'+standardSignature}},res=>{res.destroy();done(res.statusCode);});
   const timer=setTimeout(()=>req.destroy(new Error('Delivery deadline exceeded')),15000);req.once('close',()=>clearTimeout(timer));req.setTimeout(10000,()=>req.destroy(new Error('Delivery timed out')));req.on('error',reject);req.end(payload);
  });
 }

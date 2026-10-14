@@ -1,7 +1,7 @@
 {
   "name": "amerika-social-ios",
   "description": "Native Amerika Social iPhone app",
-  "license": "0BSD",
+  "license": "GPL-3.0-only",
   "version": "0.2.0",
   "main": "index.ts",
   "dependencies": {

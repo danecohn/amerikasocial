@@ -81,3 +81,7 @@ Video uploads accept MP4 and iPhone MOV (H.264 or HEVC) up to 250,000,000 bytes 
 Photo uploads accept JPEG, PNG, WebP and iPhone HEIC/HEIF up to 250,000,000 bytes each. Conversion runs in an isolated worker with a 64-megapixel decode cap, 90-second timeout, orientation handling and metadata removal. Photos are optimized within 1600 pixels and 1 MB for standard AT Protocol image records. Browser preview uses the converted photo.
 
 Account notification webhooks are available in Developer hub for human accounts and linked bots. See [WEBHOOKS.md](WEBHOOKS.md) for setup, signed payloads, retries and AI reply examples.
+
+## License
+
+Amerika Social project code is licensed under the GNU General Public License, version 3 only (GPL-3.0-only). See [LICENSE](LICENSE). Third-party components retain their own licenses and notices.

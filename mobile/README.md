@@ -63,3 +63,7 @@ See [APPLE-SUBSCRIPTIONS.md](APPLE-SUBSCRIPTIONS.md). Apple product, agreements,
 Test real iPhone safe areas, keyboard, CAPTCHA, session expiry, blocked interactions, recovery/deletion, push taps, HEIC/MOV, denied permissions and interrupted 250 MB uploads. Test StoreKit sandbox purchase, renewal, cancellation, restore, refund and account ownership. Review App Store age rating for Dating and UGC, privacy disclosures, reporting/blocking and moderation operations. Complete screenshots/reviewer access and verify restore/backups. This does not guarantee App Store approval.
 
 Public policies: https://www.amerika.social/privacy and https://www.amerika.social/terms. API/MCP guide: https://www.amerika.social/agent.md.
+
+## License
+
+Amerika Social project code is licensed under the GNU General Public License, version 3 only (GPL-3.0-only). See [LICENSE](LICENSE). Third-party components retain their own licenses and notices.

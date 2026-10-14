@@ -126,7 +126,7 @@ db.exec('CREATE TABLE IF NOT EXISTS login_sessions(token_hash TEXT PRIMARY KEY,a
 const credentialStore=createCredentialStore(db,process.env.SESSION_ENCRYPTION_KEY);
 const operations=createOperations(db,dir);
 const captcha=createCaptcha({origin:publicOrigin});
-const accountWebhooks=createWebhooks(db,{origin:publicOrigin});
+const accountWebhooks=createWebhooks(db,{origin:publicOrigin,validateModeration:(owner,id)=>moderation.connection(id)?.owner===owner});
 if(process.env.BACKUPS_ENABLED==='true')operations.start();
 if(process.env.BILLING_VERIFY_ON_START==='true')billing.verifyConfiguration().catch(()=>{});
 function billingActor(s,id){const a=db.prepare('SELECT * FROM actors WHERE id=?').get(id||s.actor);if(!a||(a.id!==s.actor&&(s.keyId||a.operator_id!==s.actor)))fail(403,'You can manage Plus only for your account or your own agents.');return a;}
@@ -274,7 +274,7 @@ function oauthTarget(id,user){
 }
 const oauth=createMcpOAuth(db,{origin:()=>publicOrigin||'http://localhost:'+server.address().port,target:oauthTarget,requireOperator:s=>{if(!s)fail(401,'Sign in to authorize this connection.');const a=operatorOnly(s);enforcement.requireActive(a);requireRules(a);},saveDelegation:s=>{if(networkActor(s.actor)&&!process.env.SESSION_ENCRYPTION_KEY)fail(503,'Secure account delegation is not configured.');if(s.accessJwt)credentialStore.saveAgent(s.actor,{accessJwt:s.accessJwt,refreshJwt:s.refreshJwt,jwtExpires:s.jwtExpires});},delegation:c=>agentPdsSessions.get(c.actor)||credentialStore.agent(c.actor)||{}});
 const communities=createCommunities(db,{actor:id=>db.prepare('SELECT * FROM actors WHERE id=?').get(id),active:enforcement.requireActive,rules:requireRules});
-const moderation=createModeration(db,{enforcement,reasons:prohibited,operations,billing,publicActor,viewPost,origin:()=>publicOrigin||'http://localhost:'+server.address().port});
+const moderation=createModeration(db,{enforcement,reasons:prohibited,operations,billing,publicActor,viewPost,webhooks:accountWebhooks,origin:()=>publicOrigin||'http://localhost:'+server.address().port});
 const dating=createDating(db,{actor:id=>db.prepare('SELECT * FROM actors WHERE id=?').get(id),active:enforcement.requireActive,rules:requireRules,notify,admin:moderation.requireStaff});
 const server = http.createServer(async(req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');
@@ -306,7 +306,7 @@ const server = http.createServer(async(req,res)=>{
     }
     if (!path.startsWith('/api/')) {
       if(req.method!=='GET') fail(405,'Method not allowed.');
-      const files={'/':['index.html','text/html'],'/moderate':['index.html','text/html'],'/privacy':['privacy.html','text/html'],'/terms':['terms.html','text/html'],'/legal.css':['legal.css','text/css'],'/moderation.js':['moderation.js','text/javascript'],'/app.js':['app.js','text/javascript'],'/dating.js':['dating.js','text/javascript'],'/communities.js':['communities.js','text/javascript'],'/features.css':['features.css','text/css'],'/style.css':['style.css','text/css'],'/agent.md':['agent.md','text/plain'],'/logo.svg':['logo.svg','image/svg+xml'],'/manifest.webmanifest':['manifest.webmanifest','application/manifest+json'],'/icon-32.png':['icon-32.png','image/png'],'/icon-180.png':['icon-180.png','image/png'],'/icon-192.png':['icon-192.png','image/png'],'/icon-512.png':['icon-512.png','image/png'],'/icon-maskable-512.png':['icon-maskable-512.png','image/png']};
+      const files={'/':['index.html','text/html'],'/moderate':['index.html','text/html'],'/privacy':['privacy.html','text/html'],'/terms':['terms.html','text/html'],'/legal.css':['legal.css','text/css'],'/moderation-webhooks.md':['moderation-webhooks.md','text/plain'],'/moderation.js':['moderation.js','text/javascript'],'/app.js':['app.js','text/javascript'],'/dating.js':['dating.js','text/javascript'],'/communities.js':['communities.js','text/javascript'],'/features.css':['features.css','text/css'],'/style.css':['style.css','text/css'],'/agent.md':['agent.md','text/plain'],'/logo.svg':['logo.svg','image/svg+xml'],'/manifest.webmanifest':['manifest.webmanifest','application/manifest+json'],'/icon-32.png':['icon-32.png','image/png'],'/icon-180.png':['icon-180.png','image/png'],'/icon-192.png':['icon-192.png','image/png'],'/icon-512.png':['icon-512.png','image/png'],'/icon-maskable-512.png':['icon-maskable-512.png','image/png']};
       const f=files[path]; if(!f) fail(404,'Not found.');
       res.setHeader('Content-Type',f[1]); if(['index.html','app.js','style.css','dating.js','communities.js','features.css','privacy.html','terms.html','legal.css','moderation.js'].includes(f[0]))res.setHeader('Cache-Control','no-store'); res.end(await readFile(join(root,'public',f[0]))); return;
     }

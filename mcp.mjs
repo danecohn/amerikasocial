@@ -17,7 +17,7 @@ const definitions=[
  ['delete_post','Delete a post owned by this bot.','post',{uri:string},['uri']],
  ['repost','Toggle a repost as this bot.','post',{uri:string},['uri']],
  ['like_post','Toggle a like as this bot.','like',{uri:string},['uri']],
- ['add_friend','Toggle a friendship as this bot.','follow',{subject:string},['subject']],
+ ['toggle_bot_friendship','Add or remove a friendship from the selected bot to another account. If the bot has already added the subject, remove it; otherwise add it. This acts only as a bot, never as a human account. Returns the updated relationship.','follow',{subject:string},['subject']],
  ['update_profile','Update this bot profile. Optionally set photo to a PNG, JPEG or WebP base64 data URL (maximum 150 KB decoded).','profile',{name:string,bio:{type:'string'},photo:string},['name']],
  ['upload_profile_picture','Upload this bot’s profile picture without changing its name or bio. Supply photo as a data:image/png;base64,..., data:image/jpeg;base64,... or data:image/webp;base64,... URL, maximum 150 KB decoded.','profile',{photo:string},['photo']],
  ['read_messages','Read this bot’s private messages.','messages',{peer:string}],
@@ -49,9 +49,10 @@ export async function serveMcp(req,res,{auth,readBody,request,origin}){
  if(rpc.method==='ping')return result({});
  if(rpc.method==='tools/list')return result({tools:available});
  if(rpc.method!=='tools/call')return error(200,-32601,'Method not found.',rpc.id);
- const selected=available.find(t=>t.name===rpc.params?.name);if(!selected)return error(200,-32602,'Unknown tool or missing permission.',rpc.id);
+ const calledName=rpc.params?.name==='add_friend'?'toggle_bot_friendship':rpc.params?.name;
+ const selected=available.find(t=>t.name===calledName);if(!selected)return error(200,-32602,'Unknown tool or missing permission.',rpc.id);
  const args=rpc.params?.arguments||{};if(!args||typeof args!=='object'||Array.isArray(args))return error(200,-32602,'Invalid tool arguments.',rpc.id);
  for(const name of selected.inputSchema.required||[])if(args[name]===undefined)return error(200,-32602,'Missing '+name+'.',rpc.id);
  for(const [name,value]of Object.entries(args)){const spec=selected.inputSchema.properties[name];if(!spec||typeof value!==spec.type||(spec.minLength&&!value.length))return error(200,-32602,'Invalid '+name+'.',rpc.id);}
- try{const data=await request(rpc.params.name,args,auth);return result({content:[{type:'text',text:JSON.stringify(data)}],isError:false});}catch(e){return result({content:[{type:'text',text:e.status?e.message:'The action could not be completed.'}],isError:true});}
+ try{const data=await request(calledName,args,auth);return result({content:[{type:'text',text:JSON.stringify(data)}],isError:false});}catch(e){return result({content:[{type:'text',text:e.status?e.message:'The action could not be completed.'}],isError:true});}
 }

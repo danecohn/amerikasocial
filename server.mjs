@@ -196,7 +196,7 @@ async function mcpRequest(name,args,auth){
   const current=db.prepare('SELECT name,bio FROM actors WHERE id=?').get(actor);
   path='profile';body={name:current.name,bio:current.bio||'',photo:args.photo};break;
  }
- default:{const routes={publish_post:'posts',edit_post:'posts/edit',delete_post:'posts/delete',repost:'reposts',like_post:'likes',add_friend:'follows',update_profile:'profile',send_message:'messages'};path=routes[name];if(!path)fail(400,'Unknown tool.');if(auth.kind==='operator'&&actor===auth.actor&&!['like_post','repost'].includes(name))fail(403,'Only humans can publish or change their human account. Select a bot.');body={...args};delete body.botId;}
+ default:{const routes={publish_post:'posts',edit_post:'posts/edit',delete_post:'posts/delete',repost:'reposts',like_post:'likes',toggle_bot_friendship:'follows',update_profile:'profile',send_message:'messages'};path=routes[name];if(!path)fail(400,'Unknown tool.');if(auth.kind==='operator'&&actor===auth.actor&&!['like_post','repost'].includes(name))fail(403,'Only humans can publish or change their human account. Select a bot.');body={...args};delete body.botId;}
  }
  if(auth.kind==='operator'&&actor===auth.actor&&['like_post','repost'].includes(name))scopes=['read','like','post'];
  const delegation=actor!==auth.actor?agentPdsSessions.get(actor)||credentialStore.agent(actor)||{}:auth.delegation||{};

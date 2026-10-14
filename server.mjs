@@ -1,3 +1,4 @@
+import {createLoginGuard} from './login-guard.mjs';
 import { createCommunities } from './communities.mjs';
 import { createBoosts } from './boosts.mjs';
 import { createModeration } from './moderation.mjs';
@@ -119,6 +120,7 @@ function ownActor(a) {return {...publicActor(a),...(a.kind==='agent'?{personalit
 // Cache delegation credentials; encrypted persistent copies survive restarts.
 const agentPdsSessions = new Map();
 const limits = new Map();
+const loginGuard=createLoginGuard(db);
 const billing = createBilling(db,publicOrigin);
 const enforcement=createEnforcement(db,prohibited,{remoteAction:async body=>adminXrpc('com.atproto.admin.updateSubjectStatus',body)});
 const recovery=createRecovery(db,{resetRemote:async(did,password)=>{await adminXrpc('com.atproto.admin.updateAccountPassword',{did,password});},invalidate:id=>{accountWebhooks.revokeAccount(id);db.prepare('UPDATE oauth_grants SET revoked=? WHERE owner=?').run(Date.now(),id);db.prepare('UPDATE account_mcp_keys SET revoked=? WHERE owner=? AND revoked IS NULL').run(new Date().toISOString(),id);for(const [key,s] of sessions)if(s.actor===id||s.operator===id)sessions.delete(key);db.prepare('DELETE FROM login_sessions WHERE actor=?').run(id);for(const agent of db.prepare('SELECT id FROM actors WHERE id=? OR operator_id=?').all(id,id)){agentPdsSessions.delete(agent.id);db.prepare('DELETE FROM agent_sessions WHERE actor=?').run(agent.id);}}});
@@ -343,6 +345,7 @@ const server = http.createServer(async(req,res)=>{
         const rows=db.prepare(`SELECT m.*,CASE WHEN sender=? THEN recipient ELSE sender END AS peer FROM messages m WHERE (sender=? OR recipient=?) AND id IN (SELECT MAX(id) FROM messages WHERE sender=? OR recipient=? GROUP BY CASE WHEN sender=? THEN recipient ELSE sender END) ORDER BY id DESC`).all(me,me,me,me,me,me);
         return json(res,200,{conversations:rows.map(m=>({...m,peer:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(m.peer)),unread:db.prepare('SELECT COUNT(*) AS n FROM messages WHERE recipient=? AND sender=? AND seen=0').get(me,m.peer).n})),unread:db.prepare('SELECT COUNT(*) AS n FROM messages WHERE recipient=? AND seen=0').get(me).n});
       }
+      if(path==='/api/config')loginGuard.identity(req,res);
       if(path==='/api/config') return json(res,200,{name:'Amerika Social',tagline:"Why Can't We Be Friends?",americanConfirmationRequired:true,rules:{version:rulesVersion,prohibited},feedOrder:'newest-first',mode:pds?'atproto':'preview',pds:pds||null,handleDomain,managedInvites:!!process.env.PDS_ADMIN_PASSWORD,legacyAccounts:process.env.ALLOW_LEGACY_ACCOUNTS==='true',captcha:{enabled:captcha.required,siteKey:captcha.siteKey}});
       if(path==='/api/me') {const a=me&&db.prepare('SELECT * FROM actors WHERE id=?').get(me);return json(res,200,{actor:a?ownActor(a):null});}
       if(path==='/api/actors') return json(res,200,{actors:db.prepare(pds?"SELECT * FROM actors WHERE id NOT IN ('preview:atlas','preview:nova','preview:maya') ORDER BY handle LIMIT 100":'SELECT * FROM actors ORDER BY handle LIMIT 100').all().map(a=>({...publicActor(a),...relationship(a.id,me)}))});
@@ -387,7 +390,7 @@ const server = http.createServer(async(req,res)=>{
     if(req.method!=='POST') fail(405,'Method not allowed.');
     // Browser requests must originate here. Agent clients omit Origin and use bearer auth.
     if(req.headers.origin && req.headers.origin !== (publicOrigin || `http${req.socket.encrypted?'s':''}://${req.headers.host}`)) fail(403,'Cross-origin writes are disabled.');
-    const key=(me||req.socket.remoteAddress)+(path==='/api/login'||path==='/api/register'?':auth':':write');
+    const key=(me||(path==='/api/login'||path==='/api/register'?loginGuard.clientIp(req):req.socket.remoteAddress))+(path==='/api/login'||path==='/api/register'?':auth':':write');
     const limit=limits.get(key)||{n:0,until:Date.now()+60000};
     if(limit.until<Date.now()){limit.n=0;limit.until=Date.now()+60000;}
     limit.n++;limits.set(key,limit);if(limit.n>30)fail(429,'Too many requests. Try again in a minute.');
@@ -434,12 +437,16 @@ const server = http.createServer(async(req,res)=>{
           db.prepare('INSERT INTO actors(id,handle,name,kind,bio,password,salt) VALUES (?,?,?,?,?,?,?)').run(a.id,handle,name,kind,bio,digest,salt);
         }
       } else {
+        const loginIdentity=loginGuard.identity(req,res),releaseLogin=loginGuard.begin(loginIdentity);
+        try{
         a=db.prepare('SELECT * FROM actors WHERE handle=?').get(handle);
         if(!a&&pds&&handleDomain&&!handle.includes('.'))a=db.prepare('SELECT * FROM actors WHERE handle=?').get(handle+'.'+handleDomain);
         // Trust the enrolled account type, never a client-supplied human/agent flag.
         if(a?.kind!=='agent')await captcha.verify(b.captchaToken);
         if(pds&&(!a||networkActor(a.id))){ if(!a&&handleDomain&&!handle.includes('.'))handle=handle+'.'+handleDomain;auth=await xrpc('com.atproto.server.createSession',{identifier:a?.handle||handle,password}); a=db.prepare('SELECT * FROM actors WHERE id=?').get(auth.did); if(!a)fail(403,'This account is not enrolled in Amerika Social. Register through Amerika Social first.'); }
         else {if(!a?.password || !timingSafeEqual(Buffer.from(a.password,'hex'),scryptSync(password,a.salt,64)))fail(401,'Incorrect handle or password.');}
+        loginGuard.success(loginIdentity);
+        }catch(error){if(error.status===401||error.code==='AuthenticationRequired')loginGuard.failure(loginIdentity);throw error;}finally{releaseLogin();}
       }
       if(a.rules_version!==rulesVersion||!a.rules_accepted_at){if(b.rulesAccepted!==true)fail(403,'Agree to the current Community Rules to continue.');acceptRules(a.id);}
       if (!a.american_confirmed_at) {
@@ -619,7 +626,8 @@ const server = http.createServer(async(req,res)=>{
     }
     fail(404,'Not found.');
   } catch(error) {
-    json(res,error.status||500,{error:error.status?error.message:'Something went wrong. Please try again.'});
+    if(error.retryAfter)res.setHeader('Retry-After',String(error.retryAfter));
+    json(res,error.status||500,{error:error.status?error.message:'Something went wrong. Please try again.',...(error.retryAfter?{retryAfter:error.retryAfter}:{})});
   }
 });
 server.listen(Number(process.env.PORT||3000),process.env.HOST||'127.0.0.1',()=>console.log(`Amerika Social ${pds?'AT Protocol':'local preview'} listening on ${JSON.stringify(server.address())}`));

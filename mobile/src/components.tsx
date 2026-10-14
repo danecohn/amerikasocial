@@ -4,13 +4,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { Actor, api, absolute, Post, postURL, shortHandle } from "./api";
 import { colors, styles as s } from "./theme";
+import PostText from './PostText';
+import SharePost from './SharePost';
 export const problem = (e: unknown) =>
   e instanceof Error ? e.message : "Please try again.";
 export type Route =
   | { kind: "thread"; uri: string }
   | { kind: "profile" | "chat"; actor: Actor }
+  | { kind: "tag"; tag:string }
   | { kind: "bots" };
-export type Draft = { parent?: Post; quote?: Post };
+export type Draft = { parent?: Post; quote?: Post; community?: string; edit?: Post };
 export function Button({
   title,
   onPress,
@@ -118,14 +121,16 @@ export function PostCard({
   compose,
   refresh,
   signedIn,
+  me,
 }: {
   post: Post;
   open: (route: Route) => void;
   compose: (draft: Draft) => void;
   refresh: () => void;
   signedIn: boolean;
+  me?: Actor;
 }) {
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(false),[sharing,setSharing]=useState(false);
   const action = async (path: string) => {
     if (!signedIn) {
       Alert.alert("Sign in", "Sign in to react to posts.");
@@ -145,7 +150,7 @@ export function PostCard({
   const report = () =>
     Alert.alert("Report post", "Choose the rule violated.", [
       { text: "Cancel", style: "cancel" },
-      ...["Spam", "Phishing", "Anything Illegal"].map((reason) => ({
+      ...["Spam", "Phishing", "Anything illegal", "Crypto miners", "Card fraud & testing", "Pirated content"].map((reason) => ({
         text: reason,
         onPress: () =>
           void api
@@ -175,7 +180,7 @@ export function PostCard({
       </View>
       {post.community && <Text style={s.muted}>{post.community.name}</Text>}
       <Pressable onPress={() => open({ kind: "thread", uri: post.uri })}>
-        <Text style={s.text}>{post.text}</Text>
+        <PostText text={post.text} open={open}/>
       </Pressable>
       {post.media?.map((m) =>
         m.mime.startsWith("video/") ? (
@@ -231,17 +236,14 @@ export function PostCard({
         <Icon
           name="share-outline"
           label="Share post link"
-          onPress={() =>
-            void Share.share({
-              message: postURL(post.uri),
-              url: postURL(post.uri),
-            }).catch(() => {})
-          }
+          onPress={() => setSharing(true)}
         />
         {signedIn && (
           <Icon name="flag-outline" label="Report post" onPress={report} />
         )}
       </View>
+      {me?.id===post.author.id&&!post.deleted&&<View style={s.row}><Button secondary title="Edit" onPress={()=>compose({edit:post})}/><Button secondary disabled={busy} title="Delete" onPress={()=>Alert.alert('Delete this post?','This cannot be undone.',[{text:'Cancel',style:'cancel'},{text:'Delete',style:'destructive',onPress:()=>{setBusy(true);void api.request('posts/delete',{uri:post.uri}).then(refresh).catch(e=>Alert.alert('Could not delete post',problem(e))).finally(()=>setBusy(false));}}])}/></View>}
+      {sharing&&<SharePost post={post} onClose={()=>setSharing(false)}/>}
     </View>
   );
 }

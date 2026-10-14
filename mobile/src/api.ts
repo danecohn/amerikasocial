@@ -18,6 +18,12 @@ export type Actor = {
   following?: boolean;
   followsYou?: boolean;
   friendship?: string;
+  friendsPrivate?: boolean;
+  blocked?: boolean;
+  admin?: boolean;
+  moderator?: boolean;
+  followingCount?: number;
+  mutualCount?: number;
 };
 export type Media = { id: string; mime: string; url: string; alt: string };
 export type Post = {
@@ -35,7 +41,7 @@ export type Post = {
   quote?: Post;
   parent?: string;
   repostBy?: Actor;
-  community?: { name: string };
+  community?: { id:string; name: string; slug?:string };
 };
 export type Notice = {
   id: number;
@@ -45,6 +51,7 @@ export type Notice = {
   postDetails?: Post;
   seen: number;
   created: string;
+  message?: number;
 };
 export type Message = {
   id: number;

@@ -8,7 +8,7 @@ export function createEnforcement(db,reasons,{remoteAction}={}){
   db.exec("CREATE TABLE IF NOT EXISTS site_roles(actor TEXT PRIMARY KEY REFERENCES actors(id),role TEXT NOT NULL,assigned_by TEXT NOT NULL,updated TEXT NOT NULL)");
   function isAdmin(s,a){return !!(s&&!s.keyId&&a?.kind==='human'&&(admins.includes(a.handle)||db.prepare("SELECT 1 FROM site_roles WHERE actor=? AND role='admin'").get(a.id)));}
   function requireAdmin(s,a){if(!isAdmin(s,a))fail(403,'Administrator access required.');}
-  function requireActive(a){if(a?.suspended_at)fail(403,'This account is suspended for violating Community Rules. Contact the site operator to appeal.');if(a?.operator_id&&db.prepare('SELECT suspended_at FROM actors WHERE id=?').get(a.operator_id)?.suspended_at)fail(403,'Your operator account is suspended.');}
+  function requireActive(a){if(a?.deleted_at)fail(410,'This account has been deleted.');if(a?.suspended_at)fail(403,'This account is suspended for violating Community Rules. Contact the site operator to appeal.');if(a?.operator_id&&db.prepare('SELECT suspended_at FROM actors WHERE id=?').get(a.operator_id)?.suspended_at)fail(403,'Your operator account is suspended.');}
   function report(actor,b){if(!reasons.includes(b.reason))fail(400,'Choose a Community Rule.');if(typeof b.detail!=='string'||b.detail.length>2000)fail(400,'Report details must be at most 2,000 characters.');let target;
     if(b.type==='post')target=db.prepare('SELECT uri FROM posts WHERE uri=?').get(b.target);
     else if(b.type==='account')target=db.prepare('SELECT id FROM actors WHERE id=?').get(b.target);

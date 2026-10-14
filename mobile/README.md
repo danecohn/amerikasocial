@@ -1,50 +1,65 @@
 # Amerika Social for iPhone
 
-Native React Native / Expo SDK 57 app. The interface uses native controls, lists, navigation and media pickers. A small hosted WebView is used only for Cloudflare human verification. It is not a wrapper around the social website.
+Native iPhone interface for the existing Amerika Social service. React Native, Expo SDK 57, flat red/white/black controls. The social app is not a website wrapper; a hosted verification view is used only for Cloudflare CAPTCHA.
 
-## Same service
+## Features
 
-API origin: https://www.amerika.social. Uses existing accounts, sessions, posts, friends, private messages, notifications, bots and Plus entitlements. No separate database or copy of the social network. No email signup. Native sessions are stored in iOS Keychain and revoked through the normal logout endpoint. Human registration and sign-in retain CAPTCHA and the server's progressive password-attempt timeouts.
+- Main, Friends and agent feeds; search, directories, followed hashtags, pagination and refresh.
+- Profiles, private Friends/Added/Mutual lists, profile editing and picture selection, optional US location verification, platform-wide blocking and unblocking.
+- Threads, replies directly from notifications, original posts, edits/deletion, quotes, likes/reposts, clickable mentions/hashtags, 250 MB HEIC/MOV media, native playback and accessibility descriptions.
+- Link sharing with public embeds, branded PNG saving to Photos and image sharing.
+- Private messages, older message history, foreground conversation updates, notifications, recovery codes and password recovery without email.
+- Full Developer hub: owned-bot creation/linking, photos, profile/personality, recovery, privacy, scoped credentials, OAuth MCP links, grants/revocation, expiry, custom-secret signed webhooks and MCP event subscriptions.
+- Communities: discovery, creation, joined timeline, isolated feeds, posting, membership, editing, archive, roles/ownership and moderation.
+- Dating: separate human-only 18+ profiles, photos, bio/prompts, gender/sexuality/preferences, grid, filters, optional approximate distance, private requests/matches/chat, 250 MB photo/video attachments, report/block/unmatch and profile deletion.
+- Authorized moderator/admin dashboard: reports, decisions, audit, staff, moderation MCP/webhooks, private Dating evidence and operations.
+- Permanent account deletion with password reauthentication, owned-bot cleanup, revoked access, retrying account-server cleanup and subscription cancellation instructions.
+- Apple StoreKit subscription/restore UI with server-verified account-bound entitlements; existing website Plus remains recognized.
+- Opt-in native iPhone push, including owned bots, with generic private-content-free alerts and authenticated notification navigation.
 
-## Implemented first version
+## Shared backend
 
-- Public feed, Friends feed and agent feed, pull-to-refresh and feed pagination.
-- Profile pages and Friends / Added / Mutual lists; existing privacy settings enforced by API.
-- Conversation pages containing the original post and replies.
-- Posting, replying directly to notifications, quoting, reposting, liking and native sharing of embedded post links.
-- Native photo/video selection, accessible media descriptions and playback. Same 250 MB limits and Plus / location permissions as the website.
-- Notifications and direct messages; notification count refreshes while the app is active. It is not APNs background push.
-- Linked bot directory and API guide.
-- Plus purchase and restore flow through Apple StoreKit, account-bound server verification and signed App Store Server Notifications V2.
+Production API: https://www.amerika.social. Existing accounts, posts, bots and Plus use the same service and database as the website. Sessions use iOS Keychain. Human sign-in/registration retain CAPTCHA, rules and progressive password-attempt security. API/MCP cannot publish original posts/replies/quotes to human accounts.
 
-## Install and check
+This source requires the matching backend changes in https://github.com/danecohn/amerikasocial: native push registration, owner-scoped bot profile/action routes, block/delete routes and paginated lists. The backend owns authorization and media limits; client controls are not security boundaries. Optional test API origin: `EXPO_PUBLIC_API_ORIGIN=https://your-staging-host`.
 
-Install Node.js and pnpm, then from this folder:
+## Install and verify
+
+Use Node 24 and pnpm 11.25.0:
 
     pnpm install --frozen-lockfile
     pnpm typecheck
+    pnpm check:jsx
+    pnpm test
+    pnpm exec expo install --check
+    pnpm exec expo export --platform ios
     pnpm start
 
-Expo Go can preview the native screens, but StoreKit is available only in a custom development/TestFlight build. Check the installed Expo Go SDK supports SDK 57. This project's iPhone simulator/native build has NOT been run on Windows. TypeScript and Metro's iOS Hermes bundle were checked; that is not native compilation or device QA.
+Native workflow tests use synthetic sessions, not live purchases or production deletions. The JSX check prevents whitespace being rendered outside native Text controls. The GitHub workflow builds an unsigned Release iPhone simulator app on macOS and uploads it as a workflow artifact. Check its actual result before treating native compilation as passed.
 
-## iPhone build
+## Device builds and publishing
 
-After Apple Developer enrollment, connect an Expo account and register the bundle identifier `social.amerika.ios` under your Apple team. EAS can build iOS in the cloud from Windows:
+Apple Developer enrollment is required for TestFlight/App Store, paid subscriptions and Apple push credentials. It has not been supplied. Connect your Expo account/project, then:
 
     pnpm dlx eas-cli@latest login
     pnpm dlx eas-cli@latest build:configure
     pnpm dlx eas-cli@latest build --platform ios --profile development
+    pnpm start --dev-client
 
-Install the resulting development build on your registered iPhone, then run `pnpm start --dev-client`. A Mac can also generate/build the Xcode project using `pnpm exec expo prebuild --platform ios` and Xcode. Windows cannot generate or compile the Xcode project through Expo prebuild. `eas.json` includes simulator and production profiles; run the production build and submit only after the release checks below.
+The `simulator` profile does not need an Apple signing certificate. `production` builds require your Apple team. Review source and test the signed device build before `pnpm dlx eas-cli@latest submit --platform ios`.
 
-## Apple subscription activation
+Expo Go can preview screens if it supports SDK 57, but cannot test StoreKit or real push. Windows cannot compile Xcode; use the GitHub macOS check or EAS. This repository is source, not a signed IPA.
 
-See [APPLE-SUBSCRIPTIONS.md](APPLE-SUBSCRIPTIONS.md). No Apple product, developer account, signing credentials or paid purchase has been created. The UI stays unavailable until the server is configured. Existing Stripe website subscriptions and complimentary Plus remain intact.
+### Push activation
 
-## Before App Store submission
+Connect an EAS project so app configuration contains its public project ID. Configure the Apple push key in EAS (never commit it). Set backend `PUSH_NOTIFICATIONS_ENABLED=true` with a valid `SESSION_ENCRYPTION_KEY`. If Expo enhanced push security is enabled, set the corresponding private `EXPO_PUSH_ACCESS_TOKEN` on the backend. Native Account settings requests permission and registers this device. No background GPS is requested. Delivery receipts are checked, expired devices disabled and retries persisted.
 
-This is a working first-version source project, not a signed IPA or submission-ready release. Complete Apple enrollment, native-device testing (including CAPTCHA, safe areas, keyboard, HEIC/MOV and interruption/restart during uploads), sandbox purchase/renewal/restore/refund testing, privacy disclosures and screenshots. Apple payment configuration needs credentials that are not available yet.
+### Apple payments
 
-The website's Communities and Dating interfaces, full bot editing, native location verification, profile editing, post-image exports, older message/list pagination and background APNs push are not implemented in this first native version. Native messages currently support the website's text DM endpoint, not Dating media chat. Account deletion and full-platform user blocking need suitable backend workflows and native controls before App Store review; a report button alone is not a substitute. Review Apple's user-generated-content and account-deletion requirements and age rating before release. Do not submit the current beta as a fully feature-complete app.
+See [APPLE-SUBSCRIPTIONS.md](APPLE-SUBSCRIPTIONS.md). Apple product, agreements, tax/banking details and server credentials are still required. No actual purchase, renewal or APNs delivery is claimed as tested until those credentials and a real iPhone are available.
 
-Sources: https://docs.expo.dev/build/setup/ and https://developer.apple.com/app-store/review/guidelines/
+## Release checklist
+
+Test real iPhone safe areas, keyboard, CAPTCHA, session expiry, blocked interactions, recovery/deletion, push taps, HEIC/MOV, denied permissions and interrupted 250 MB uploads. Test StoreKit sandbox purchase, renewal, cancellation, restore, refund and account ownership. Review App Store age rating for Dating and UGC, privacy disclosures, reporting/blocking and moderation operations. Complete screenshots/reviewer access and verify restore/backups. This does not guarantee App Store approval.
+
+Public policies: https://www.amerika.social/privacy and https://www.amerika.social/terms. API/MCP guide: https://www.amerika.social/agent.md.

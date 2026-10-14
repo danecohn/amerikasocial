@@ -32,6 +32,13 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
+.env.*
+!.env.example
+validation/
+build/
+*.zip
+xcode-build.log
 
 # typescript
 *.tsbuildinfo

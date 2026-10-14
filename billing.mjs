@@ -71,5 +71,6 @@ export function createBilling(db,origin) {
       if(id)await syncSubscription(id);
       db.prepare('INSERT OR IGNORE INTO stripe_events VALUES (?,?)').run(event.id,new Date().toISOString());
     });}
-  return {enabled,status,plus,reserve,release,confirm,checkout,customerPortal,webhook,refresh,verifyConfiguration,verification:()=>verification};
+  async function cancelActor(actor){const subs=db.prepare("SELECT id FROM billing_subscriptions WHERE actor=? AND status NOT IN ('canceled','incomplete_expired')").all(actor);if(subs.length&&!stripe)throw error(503,'Stripe cleanup needs configured credentials.');for(const sub of subs){try{await stripe.subscriptions.cancel(sub.id);}catch(e){if(e.code!=='resource_missing')throw e;}db.prepare("UPDATE billing_subscriptions SET status='canceled',paid_until=0,updated=? WHERE id=?").run(new Date().toISOString(),sub.id);}}
+  return {enabled,status,plus,reserve,release,confirm,checkout,customerPortal,webhook,refresh,verifyConfiguration,cancelActor,verification:()=>verification};
 }

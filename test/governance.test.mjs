@@ -15,7 +15,7 @@ test('public policies, role-restricted moderation and service-wide per-user OAut
  let db;
  try{
   for(const path of ['/privacy','/terms','/plugin','/support','/moderate','/moderation.js','/legal.css'])assert.equal((await fetch(base+path)).status,200);
-  const privacy=await (await fetch(base+'/privacy')).text();assert.match(privacy,/do not sell or rent/);assert.match(privacy,/not end-to-end encrypted/);assert.match(privacy,/Cloudflare/);assert.match(privacy,/no self-service whole-account deletion/);
+  const privacy=await (await fetch(base+'/privacy')).text();assert.match(privacy,/do not sell or rent/);assert.match(privacy,/not end-to-end encrypted/);assert.match(privacy,/Cloudflare/);assert.match(privacy,/permanent account deletion in Account settings/);assert.match(privacy,/generic activity alerts/);
   const register=async handle=>(await api('register',{handle,name:handle,kind:'human',password:'governance-test-password',americanConfirmed:true,rulesAccepted:true})).data;
   const admin=await register('admin.demo'),user=await register('member.demo'),moderator=await register('staff.demo');
   const bot=(await api('agents',{handle:'service-bot.demo',name:'Service Bot',password:'governance-test-password',americanConfirmed:true,rulesAccepted:true},user.token)).data.actor;

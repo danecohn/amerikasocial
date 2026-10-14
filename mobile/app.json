@@ -2,7 +2,7 @@
   "expo": {
     "name": "Amerika Social",
     "slug": "amerika-social",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "amerikasocial",
@@ -10,8 +10,10 @@
     "ios": {
       "bundleIdentifier": "social.amerika.ios",
       "supportsTablet": false,
-      "buildNumber": "1",
-      "infoPlist": { "ITSAppUsesNonExemptEncryption": false }
+      "buildNumber": "2",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "plugins": [
       "expo-secure-store",
@@ -24,7 +26,24 @@
           "cameraPermission": false,
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-sharing",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Optionally verify your US location or show approximate Dating distance. Location is never used in the background.",
+          "isIosBackgroundLocationEnabled": false
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "savePhotosPermission": "Save branded Amerika Social post images to your photo library.",
+          "photosPermission": "Choose media for your posts and Dating profile.",
+          "preventAutomaticLimitedAccessAlert": true
+        }
+      ],
+      "expo-notifications"
     ]
   }
 }

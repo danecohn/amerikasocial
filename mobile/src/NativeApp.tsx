@@ -36,6 +36,10 @@ import {
 import Auth from "./Auth";
 import Composer from "./Composer";
 import Plus from "./Plus";
+import FeatureHost, {Feature} from "./FeatureHost";
+import {unregisterThisDevice,storedPushDeviceId} from "./PushSettings";
+import * as Notifications from "expo-notifications";
+import {nativePushAvailable,notificationActivity} from "./activity";
 import { colors, styles as s } from "./theme";
 function AppContent() {
   const insets = useSafeAreaInsets();
@@ -50,10 +54,17 @@ function AppContent() {
     [auth, setAuth] = useState(false),
     [draft, setDraft] = useState<Draft>(),
     [plus, setPlus] = useState(false),
+    [feature,setFeature]=useState<Feature|null>(null),
+    [datingThread,setDatingThread]=useState<number|undefined>(),
     [busy, setBusy] = useState(false),
     [sending, setSending] = useState(false),
     [posts, setPosts] = useState<Post[]>([]),
     [cursor, setCursor] = useState<string | null>(null),
+    [listCursor,setListCursor]=useState<number|null>(null),
+    [messageCursor,setMessageCursor]=useState<number|null>(null),
+    [noticeCursor,setNoticeCursor]=useState<number|null>(null),
+    [threadCursor,setThreadCursor]=useState<number|null>(null),
+    [profileTab,setProfileTab]=useState("posts"),
     [people, setPeople] = useState<Actor[]>([]),
     [profile, setProfile] = useState<Actor>(),
     [notices, setNotices] = useState<Notice[]>([]),
@@ -65,9 +76,11 @@ function AppContent() {
     [text, setText] = useState("");
   const requestEpoch = useRef(0);
   const route = stack.at(-1);
+  const updated=async()=>setMe((await api.request<{actor:Actor}>("me")).actor);
+  const showFeature=(name:Feature)=>{if(!me){setAuth(true);return;}setDatingThread(undefined);setFeature(name);};
   const clear = () => {
     requestEpoch.current++;
-    setPosts([]);
+    setPosts([]);setCursor(null);setListCursor(null);setMessageCursor(null);setNoticeCursor(null);setThreadCursor(null);
     setPeople([]);
     setNotices([]);
     setMessages([]);
@@ -76,7 +89,7 @@ function AppContent() {
   };
   const open = (r: Route) => {
     clear();
-    setList("");
+    setList("");setProfileTab("posts");
     setStack((old) => [...old, r]);
   };
   const logged = () => {
@@ -110,6 +123,7 @@ function AppContent() {
     api.onExpired = () => {
       void api.clear();
       setMe(null);
+      setFeature(null);setPlus(false);
       clear();
       setStack([]);
       setDraft(undefined);
@@ -121,6 +135,17 @@ function AppContent() {
       api.onExpired = undefined;
     };
   }, []);
+  useEffect(()=>{
+    if(!me||!nativePushAvailable)return;
+    const receive=async(response:Notifications.NotificationResponse)=>{try{const value=await notificationActivity(me,response.notification.request.content.data||{});if(!value)return;if(value.bot){setFeature('developers');return;}const n=value.notice;if(!n){setFeature(null);setTab('alerts');return;}await api.request('notifications/read',{id:n.id});if(n.type.startsWith('dating_')&&n.message){setDatingThread(n.message);setFeature('dating');}else{setFeature(null);if(n.type==='message')open({kind:'chat',actor:n.sender});else if(n.post)open({kind:'thread',uri:n.post});else open({kind:'profile',actor:n.sender});}await Notifications.clearLastNotificationResponseAsync();}catch{setError('Sign in to open this notification.');}};
+    const listener=Notifications.addNotificationResponseReceivedListener(response=>void receive(response));
+    void Notifications.getLastNotificationResponseAsync().then(response=>{if(response)void receive(response);});
+    return()=>listener.remove();
+  },[me?.id]);
+  useEffect(()=>{
+    const receive=(value:string)=>{try{const url=new URL(value);let uri='';if(url.protocol==='https:'&&url.origin===ORIGIN&&url.pathname.startsWith('/post/'))uri=decodeURIComponent(url.pathname.slice(6));else if(url.protocol==='amerikasocial:'&&url.hostname==='post')uri=decodeURIComponent(url.pathname.slice(1));if(uri&&uri.length<=2048){setFeature(null);open({kind:'thread',uri});}}catch{}};
+    const listener=Linking.addEventListener('url',event=>receive(event.url));void Linking.getInitialURL().then(url=>{if(url)receive(url);});return()=>listener.remove();
+  },[]);
   async function load() {
     if (!ready) return;
     const epoch = ++requestEpoch.current;
@@ -136,10 +161,10 @@ function AppContent() {
         const d = await scoped<{
           post: Post;
           root: Post | null;
-          conversation: Post[];
+          conversation: Post[];conversationCursor:number|null;
         }>("thread?uri=" + encodeURIComponent(route.uri));
         const root = d.root || d.post;
-        setPosts([root, ...d.conversation.filter((p) => p.uri !== root.uri)]);
+        const thread=[root,...d.conversation.filter(p=>p.uri!==root.uri)];if(!thread.some(p=>p.uri===d.post.uri))thread.push(d.post);setPosts(thread);setThreadCursor(d.conversationCursor);
       } else if (route?.kind === "profile") {
         setProfile(
           (
@@ -148,50 +173,33 @@ function AppContent() {
             )
           ).actor,
         );
-        if (list)
-          setPeople(
-            (
-              await scoped<{ actors: Actor[] }>(
-                "profile/friends?id=" +
-                  encodeURIComponent(route.actor.id) +
-                  "&list=" +
-                  list,
-              )
-            ).actors,
-          );
-        else
-          setPosts(
-            (
-              await scoped<{ posts: Post[] }>(
-                "feed?author=" + encodeURIComponent(route.actor.id),
-              )
-            ).posts,
-          );
+        if(list){const d=await scoped<{actors:Actor[];cursor:number|null}>('profile/friends?id='+encodeURIComponent(route.actor.id)+'&list='+list);setPeople(d.actors);setListCursor(d.cursor);}
+        else {const d=await scoped<{posts:Post[];cursor:string|null}>('feed?author='+encodeURIComponent(route.actor.id)+'&tab='+profileTab);setPosts(d.posts);setCursor(d.cursor);}
       } else if (route?.kind === "chat") {
-        const d = await scoped<{ messages: Message[] }>(
+        const d = await scoped<{ messages: Message[];cursor:number|null }>(
           "messages?peer=" + encodeURIComponent(route.actor.id),
         );
-        setMessages(d.messages);
+        setMessages(d.messages);setMessageCursor(d.cursor);
         if (d.messages.length)
           await api.request("messages/read", {
             peer: route.actor.id,
             through: d.messages.at(-1)!.id,
           });
       } else if (route?.kind === "bots")
-        setPeople((await scoped<{ agents: Actor[] }>("agents")).agents);
-      else if (tab === "home") {
+        setFeature("developers");
+      else if (route?.kind==="tag"||tab === "home") {
         const d = await scoped<{ posts: Post[]; cursor: string | null }>(
-          feedPath(),
+          route?.kind==="tag"?"feed?tag="+encodeURIComponent(route.tag):feedPath(),
         );
         setPosts(d.posts);
         setCursor(d.cursor);
       } else if (me && tab === "friends")
         setPeople((await scoped<{ friends: Actor[] }>("friends")).friends);
       else if (me && tab === "alerts") {
-        const d = await scoped<{ notifications: Notice[]; unread: number }>(
+        const d = await scoped<{ notifications: Notice[]; unread: number;cursor:number|null }>(
           "notifications",
         );
-        setNotices(d.notifications);
+        setNotices(d.notifications);setNoticeCursor(d.cursor);
         setUnread(d.unread);
       } else if (me && tab === "inbox")
         setInbox(
@@ -209,7 +217,7 @@ function AppContent() {
   }
   useEffect(() => {
     void load();
-  }, [ready, tab, filter, route, list, me?.id]);
+  }, [ready, tab, filter, route, list, profileTab, me?.id]);
   useEffect(() => {
     if (!me) return;
     const poll = async () => {
@@ -230,24 +238,19 @@ function AppContent() {
       l.remove();
     };
   }, [me?.id]);
-  const more = async () => {
-    if (!cursor || busy || route || tab !== "home") return;
-    setBusy(true);
-    try {
-      const d = await api.request<{ posts: Post[]; cursor: string | null }>(
-        feedPath() + "&cursor=" + encodeURIComponent(cursor),
-      );
-      setPosts((old) => [
-        ...old,
-        ...d.posts.filter((p) => !old.some((o) => o.uri === p.uri)),
-      ]);
-      setCursor(d.cursor);
-    } catch (e) {
-      setError(problem(e));
-    } finally {
-      setBusy(false);
-    }
-  };
+  const more=async()=>{const canMore=route?.kind==='thread'?threadCursor!==null:route?.kind==='profile'&&list?listCursor!==null:route?.kind==='chat'?messageCursor!==null:!route&&tab==='alerts'?noticeCursor!==null:!!cursor;if(busy||!canMore)return;const epoch=requestEpoch.current;setBusy(true);try{
+    if(route?.kind==='thread'&&threadCursor!==null){const d=await api.request<{conversation:Post[];conversationCursor:number|null}>('thread?uri='+encodeURIComponent(route.uri)+'&cursor='+threadCursor);if(epoch!==requestEpoch.current)return;setPosts(old=>[...old,...d.conversation.filter(p=>!old.some(o=>o.uri===p.uri))]);setThreadCursor(d.conversationCursor);}
+    else if(route?.kind==='profile'&&list&&listCursor!==null){const d=await api.request<{actors:Actor[];cursor:number|null}>('profile/friends?id='+encodeURIComponent(route.actor.id)+'&list='+list+'&cursor='+listCursor);if(epoch!==requestEpoch.current)return;setPeople(old=>[...old,...d.actors.filter(a=>!old.some(o=>o.id===a.id))]);setListCursor(d.cursor);}
+    else if(route?.kind==='chat'&&messageCursor!==null){const d=await api.request<{messages:Message[];cursor:number|null}>('messages?peer='+encodeURIComponent(route.actor.id)+'&before='+messageCursor);if(epoch!==requestEpoch.current)return;setMessages(old=>[...d.messages,...old.filter(m=>!d.messages.some(n=>n.id===m.id))]);setMessageCursor(d.cursor);}
+    else if(!route&&tab==='alerts'&&noticeCursor!==null){const d=await api.request<{notifications:Notice[];cursor:number|null}>('notifications?before='+noticeCursor);if(epoch!==requestEpoch.current)return;setNotices(old=>[...old,...d.notifications.filter(n=>!old.some(o=>o.id===n.id))]);setNoticeCursor(d.cursor);}
+    else if(cursor&&(!route&&tab==='home'||route?.kind==='profile'&&!list||route?.kind==='tag')){const path=route?.kind==='profile'?'feed?author='+encodeURIComponent(route.actor.id)+'&tab='+profileTab:route?.kind==='tag'?'feed?tag='+encodeURIComponent(route.tag):feedPath();const d=await api.request<{posts:Post[];cursor:string|null}>(path+'&cursor='+encodeURIComponent(cursor));if(epoch!==requestEpoch.current)return;setPosts(old=>[...old,...d.posts.filter(p=>!old.some(o=>o.uri===p.uri))]);setCursor(d.cursor);}
+  }catch(e){if(epoch===requestEpoch.current)setError(problem(e));}finally{if(epoch===requestEpoch.current)setBusy(false);}};
+  useEffect(()=>{
+    if(!me||route?.kind!=='chat')return;
+    const peer=route.actor.id,epoch=requestEpoch.current;
+    const poll=async()=>{if(AppState.currentState!=='active')return;try{const d=await api.request<{messages:Message[]}>('messages?peer='+encodeURIComponent(peer));if(requestEpoch.current!==epoch)return;setMessages(old=>[...old.filter(m=>!d.messages.some(n=>n.id===m.id)),...d.messages]);if(d.messages.length)await api.request('messages/read',{peer,through:d.messages.at(-1)!.id});}catch{}};
+    const timer=setInterval(()=>void poll(),10000);return()=>clearInterval(timer);
+  },[me?.id,route]);
   const friend = async (a: Actor) => {
     if (!logged()) return;
     try {
@@ -272,11 +275,14 @@ function AppContent() {
   };
   const signOut = async () => {
     try {
-      await api.request("logout", {});
+      const pushDeviceId=await storedPushDeviceId();
+      try{await unregisterThisDevice();}catch{}
+      await api.request("logout", {pushDeviceId});
     } catch {
     } finally {
       await api.clear();
       setMe(null);
+      setFeature(null);setPlus(false);
       clear();
       setStack([]);
       setUnread(0);
@@ -296,6 +302,7 @@ function AppContent() {
       data={people}
       keyExtractor={(a) => a.id}
       refreshControl={rc}
+      ListFooterComponent={route?.kind==="profile"&&list&&listCursor!==null?<Button secondary title="More accounts" disabled={busy} onPress={()=>void more()}/>:null}
       ListEmptyComponent={<Empty text="No accounts in this list yet." />}
       renderItem={({ item }) => (
         <View style={s.card}>
@@ -367,12 +374,12 @@ function AppContent() {
             <Button
               key={value}
               secondary
-              title={value[0].toUpperCase() + value.slice(1)}
+              title={(value==="friends"?profile.followers:value==="added"?profile.followingCount:profile.mutualCount)+" "+value[0].toUpperCase()+value.slice(1)}
               onPress={() => setList(value)}
             />
           ))}
         </View>
-        {profile.id !== me?.id && (
+        {profile.id !== me?.id&&!profile.blocked && (
           <>
             <Button
               title={profile.following ? "Remove friend" : "Add friend"}
@@ -385,8 +392,10 @@ function AppContent() {
             />
           </>
         )}
+        {me&&profile.id!==me.id&&<View style={[s.row,{flexWrap:'wrap'}]}><Button secondary title={profile.blocked?'Unblock account':'Block account'} onPress={()=>Alert.alert(profile.blocked?'Unblock account?':'Block account and linked bots?', 'Blocking hides activity and prevents direct interaction.',[{text:'Cancel',style:'cancel'},{text:'Confirm',onPress:()=>void api.request('account/block',{subject:profile.id,blocked:!profile.blocked}).then(()=>load()).catch(e=>Alert.alert('Update failed',problem(e)))}])}/><Button secondary title="Report account" onPress={()=>Alert.alert('Report account','Choose the prohibited conduct. Profanity and viewpoints are allowed.',[{text:'Cancel',style:'cancel'},...['Spam','Phishing','Card fraud & testing','Anything illegal','Crypto miners','Pirated content'].map(reason=>({text:reason,onPress:()=>void api.request('reports',{target:profile.id,type:'account',reason,detail:'Reported from the native account profile.'}).then(()=>Alert.alert('Report received')).catch(e=>Alert.alert('Report failed',problem(e)))}))])}/></View>}
       </View>
     );
+  if(route?.kind==="tag")header=<View style={s.content}><Text style={s.title}>#{route.tag}</Text>{me&&<Button secondary title="Follow hashtag" onPress={()=>void api.request("hashtags/follow",{tag:route.tag,following:true}).then(()=>Alert.alert("Hashtag followed")).catch(e=>Alert.alert("Could not follow hashtag",problem(e)))}/>}</View>;
   const feed = (
     <FlatList
       data={posts}
@@ -405,7 +414,7 @@ function AppContent() {
           open={open}
           compose={compose}
           refresh={() => void load()}
-          signedIn={!!me}
+          signedIn={!!me} me={me||undefined}
         />
       )}
     />
@@ -444,6 +453,7 @@ function AppContent() {
           data={messages}
           keyExtractor={(m) => String(m.id)}
           refreshControl={rc}
+          ListHeaderComponent={messageCursor!==null?<Button secondary title="Earlier messages" disabled={busy} onPress={()=>void more()}/>:null}
           ListEmptyComponent={<Empty text="Say hello." />}
           renderItem={({ item }) => (
             <View
@@ -503,6 +513,7 @@ function AppContent() {
         data={notices}
         keyExtractor={(n) => String(n.id)}
         refreshControl={rc}
+        ListFooterComponent={noticeCursor!==null?<Button secondary title="Earlier notifications" disabled={busy} onPress={()=>void more()}/>:null}
         ListEmptyComponent={<Empty text="You’re all caught up." />}
         renderItem={({ item }) => (
           <Pressable
@@ -511,7 +522,7 @@ function AppContent() {
               void api
                 .request("notifications/read", { id: item.id })
                 .then(() => {
-                  if (item.type === "message")
+                  if(item.type.startsWith("dating_")&&item.message){setDatingThread(item.message);setFeature("dating");} else if (item.type === "message")
                     open({ kind: "chat", actor: item.sender });
                   else if (item.post) open({ kind: "thread", uri: item.post });
                   else open({ kind: "profile", actor: item.sender });
@@ -563,6 +574,8 @@ function AppContent() {
     content = (
       <ScrollView contentContainerStyle={s.content}>
         <Person actor={me} />
+        {(["developers","communities","dating","explore","account"] as Feature[]).map(name=><Button key={name} secondary title={{developers:"Developer hub",communities:"Amerika Communities",dating:"Amerika Dating",explore:"Discover & hashtags",account:"Account settings",moderation:"Moderation"}[name]} onPress={()=>showFeature(name)}/>)}
+        {(me.admin||me.moderator)&&<Button secondary title="Moderation & administration" onPress={()=>showFeature("moderation")}/>}
         <Text style={s.text}>{me.bio}</Text>
         <Text style={s.muted}>
           {me.plus
@@ -578,7 +591,7 @@ function AppContent() {
         <Button
           secondary
           title="My bots"
-          onPress={() => open({ kind: "bots" })}
+          onPress={() => showFeature("developers")}
         />
         {[
           ["Privacy policy", "/privacy"],
@@ -624,8 +637,9 @@ function AppContent() {
         </View>
       </SafeAreaView>
     );
+  if(feature&&me)return <FeatureHost feature={feature} me={me} initialThread={datingThread} onClose={()=>setFeature(null)} open={route=>{setFeature(null);open(route);}} compose={draft=>{setFeature(null);compose(draft);}} onUpdated={updated} onDeleted={()=>{setMe(null);clear();setStack([]);setFeature(null);setPlus(false);setTab('home');setFilter('everyone');}}/>;
   const title =
-    route?.kind === "thread"
+    route?.kind==="tag"?"#"+route.tag:route?.kind === "thread"
       ? "Conversation"
       : route?.kind === "profile" || route?.kind === "chat"
         ? route.actor.name
@@ -790,6 +804,7 @@ function AppContent() {
           )}
         </SafeAreaView>
       </Modal>
+
     </SafeAreaView>
   );
 }

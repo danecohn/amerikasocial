@@ -1,0 +1,1 @@
+module.exports={preset:'jest-expo',testMatch:['<rootDir>/tests/**/*.test.tsx'],setupFilesAfterEnv:['<rootDir>/tests/setup.ts'],transformIgnorePatterns:['node_modules/(?!((\.pnpm/)?(@react-native|react-native|expo|@expo|@react-navigation|@testing-library|test-renderer|unicode-segmenter|@unimodules|unimodules|sentry-expo|native-base))\/?)'],testTimeout:15000};

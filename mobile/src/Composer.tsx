@@ -14,6 +14,7 @@ import { fetch as uploadFetch } from "expo/fetch";
 import { Actor, api, ORIGIN, shortHandle } from "./api";
 import { Button, Draft, Person, problem } from "./components";
 import { colors, styles as s } from "./theme";
+import {countGraphemes} from 'unicode-segmenter/grapheme';
 export default function Composer({
   draft,
   me,
@@ -25,16 +26,14 @@ export default function Composer({
   onClose: () => void;
   onSent: () => void;
 }) {
-  const [text, setText] = useState(""),
+  const [text, setText] = useState(draft.edit?.text||""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [media, setMedia] = useState<{ id: string; mime: string; alt: string }[]>(
-      [],
+      draft.edit?.media.map(m=>({id:m.id,mime:m.mime,alt:m.alt}))||[],
     );
   const cap = me.plus ? 833 : 300,
-    count = Array.from(
-      new Intl.Segmenter("en", { granularity: "grapheme" }).segment(text),
-    ).length;
+    count = countGraphemes(text);
   const choose = async (video: boolean) => {
     setBusy(true);
     setError("");
@@ -70,11 +69,13 @@ export default function Composer({
     setBusy(true);
     setError("");
     try {
-      await api.request("posts", {
+      await api.request(draft.edit?"posts/edit":"posts", {
+        ...(draft.edit?{uri:draft.edit.uri}:{}),
         text,
         media,
         ...(draft.parent ? { parent: draft.parent.uri } : {}),
         ...(draft.quote ? { quote: draft.quote.uri } : {}),
+        ...(draft.community?{community:draft.community}:{}),
       });
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onSent();
@@ -96,7 +97,7 @@ export default function Composer({
         <View style={s.spread}>
           <Button title="Cancel" secondary disabled={busy} onPress={onClose} />
           <Button
-            title={busy ? "Working…" : draft.parent ? "Reply" : "Post"}
+            title={busy ? "Working…" : draft.edit ? "Save changes" : draft.parent ? "Reply" : "Post"}
             disabled={busy || count > cap || (!text.trim() && !media.length)}
             onPress={() => void send()}
           />
@@ -129,7 +130,7 @@ export default function Composer({
             title="Photo"
             secondary
             disabled={
-              busy ||
+              busy || !!draft.edit ||
               media.length >= 4 ||
               media.some((m) => m.mime.startsWith("video/")) ||
               (!me.plus && me.americanStatus !== "verified")
@@ -139,7 +140,7 @@ export default function Composer({
           <Button
             title="Video"
             secondary
-            disabled={busy || !!media.length || !me.plus}
+            disabled={busy || !!draft.edit || !!media.length || !me.plus}
             onPress={() => void choose(true)}
           />
         </View>
@@ -154,6 +155,7 @@ export default function Composer({
             </Text>
             <TextInput
               style={s.input}
+              editable={!draft.edit}
               value={m.alt}
               maxLength={2000}
               placeholder="Describe this media for accessibility"
@@ -168,7 +170,7 @@ export default function Composer({
             />
             <Button
               secondary
-              disabled={busy}
+              disabled={busy||!!draft.edit}
               title="Remove"
               onPress={() =>
                 setMedia((old) => old.filter((item) => item.id !== m.id))

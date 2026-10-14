@@ -3,7 +3,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg fonts-de
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts
-COPY apple-billing.mjs server.mjs mcp-events.mjs login-guard.mjs billing.mjs recovery.mjs operations.mjs enforcement.mjs credentials.mjs captcha.mjs location.mjs media.mjs video.mjs photo.mjs photo-worker.mjs webhooks.mjs mcp.mjs oauth.mjs dating.mjs communities.mjs boosts.mjs moderation.mjs sharing.mjs onboarding.mjs ./
+COPY account-safety.mjs push.mjs apple-billing.mjs server.mjs mcp-events.mjs login-guard.mjs billing.mjs recovery.mjs operations.mjs enforcement.mjs credentials.mjs captcha.mjs location.mjs media.mjs video.mjs photo.mjs photo-worker.mjs webhooks.mjs mcp.mjs oauth.mjs dating.mjs communities.mjs boosts.mjs moderation.mjs sharing.mjs onboarding.mjs ./
 COPY certificates ./certificates
 COPY geo ./geo
 COPY public ./public

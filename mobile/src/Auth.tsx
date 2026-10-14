@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Actor, api, Config, ORIGIN } from "./api";
 import { Button, Icon, problem } from "./components";
 import { colors, styles as s } from "./theme";
+import Recovery from './Recovery';
 export default function Auth({
   config,
   onDone,
@@ -24,7 +25,7 @@ export default function Auth({
   onDone: (actor: Actor) => void;
   onClose: () => void;
 }) {
-  const [register, setRegister] = useState(false),
+  const [register, setRegister] = useState(false),[recover,setRecover]=useState(false),
     [handle, setHandle] = useState(""),
     [name, setName] = useState(""),
     [password, setPassword] = useState(""),
@@ -66,6 +67,7 @@ export default function Auth({
       setBusy(false);
     }
   };
+  if(recover)return <Recovery onBack={()=>{setRecover(false);setToken('');setAttempt(v=>v+1);}}/>;
   if (codes.length)
     return (
       <ScrollView contentContainerStyle={s.content}>
@@ -255,7 +257,7 @@ export default function Auth({
         <Button
           secondary
           title="Recover with a saved code"
-          onPress={() => void Linking.openURL(ORIGIN + "/#account")}
+          onPress={() => {setToken('');setRecover(true);}}
         />
       </ScrollView>
     </KeyboardAvoidingView>

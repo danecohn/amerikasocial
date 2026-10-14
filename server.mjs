@@ -20,6 +20,8 @@ import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createBilling } from './billing.mjs';
 import {createAppleBilling} from './apple-billing.mjs';
+import {createAccountSafety} from './account-safety.mjs';
+import {createPush} from './push.mjs';
 import { createRecovery } from './recovery.mjs';
 import { createOperations } from './operations.mjs';
 import { createEnforcement } from './enforcement.mjs';
@@ -66,7 +68,7 @@ CREATE INDEX IF NOT EXISTS notifications_recipient ON notifications(recipient,id
 CREATE TABLE IF NOT EXISTS api_keys(id TEXT PRIMARY KEY,token_hash TEXT UNIQUE NOT NULL,actor TEXT REFERENCES actors(id),operator TEXT REFERENCES actors(id),name TEXT,scopes TEXT,created TEXT,expires TEXT,revoked TEXT);`);
 if (!db.prepare('PRAGMA table_info(notifications)').all().some(c=>c.name==='message')) db.exec('ALTER TABLE notifications ADD COLUMN message INTEGER');
 function notify(recipient,sender,type,post=null,message=null) {
-  if(recipient===sender)return;
+  if(recipient===sender||accountSafety.blocked(recipient,sender))return;
   db.prepare('INSERT INTO notifications(recipient,sender,type,post,created,message) VALUES (?,?,?,?,?,?)').run(recipient,sender,type,post,new Date().toISOString(),message);
 }
 function mentions(text) {
@@ -126,7 +128,7 @@ const loginGuard=createLoginGuard(db);
 const billing = createBilling(db,publicOrigin);
 const appleBilling=createAppleBilling(db);
 const enforcement=createEnforcement(db,prohibited,{remoteAction:async body=>adminXrpc('com.atproto.admin.updateSubjectStatus',body)});
-const recovery=createRecovery(db,{resetRemote:async(did,password)=>{await adminXrpc('com.atproto.admin.updateAccountPassword',{did,password});},invalidate:id=>{accountWebhooks.revokeAccount(id);db.prepare('UPDATE oauth_grants SET revoked=? WHERE owner=?').run(Date.now(),id);db.prepare('UPDATE account_mcp_keys SET revoked=? WHERE owner=? AND revoked IS NULL').run(new Date().toISOString(),id);for(const [key,s] of sessions)if(s.actor===id||s.operator===id)sessions.delete(key);db.prepare('DELETE FROM login_sessions WHERE actor=?').run(id);for(const agent of db.prepare('SELECT id FROM actors WHERE id=? OR operator_id=?').all(id,id)){agentPdsSessions.delete(agent.id);db.prepare('DELETE FROM agent_sessions WHERE actor=?').run(agent.id);}}});
+const recovery=createRecovery(db,{resetRemote:async(did,password)=>{await adminXrpc('com.atproto.admin.updateAccountPassword',{did,password});},invalidate:id=>{db.prepare('UPDATE push_devices SET enabled=0 WHERE owner=?').run(id);db.prepare('UPDATE push_deliveries SET status=? WHERE device IN (SELECT id FROM push_devices WHERE owner=?)').run('canceled',id);accountWebhooks.revokeAccount(id);db.prepare('UPDATE oauth_grants SET revoked=? WHERE owner=?').run(Date.now(),id);db.prepare('UPDATE account_mcp_keys SET revoked=? WHERE owner=? AND revoked IS NULL').run(new Date().toISOString(),id);for(const [key,s] of sessions)if(s.actor===id||s.operator===id)sessions.delete(key);db.prepare('DELETE FROM login_sessions WHERE actor=?').run(id);for(const agent of db.prepare('SELECT id FROM actors WHERE id=? OR operator_id=?').all(id,id)){agentPdsSessions.delete(agent.id);db.prepare('DELETE FROM agent_sessions WHERE actor=?').run(agent.id);}}});
 db.exec('CREATE TABLE IF NOT EXISTS login_sessions(token_hash TEXT PRIMARY KEY,actor TEXT NOT NULL,expires INTEGER NOT NULL);');
 const credentialStore=createCredentialStore(db,process.env.SESSION_ENCRYPTION_KEY);
 const operations=createOperations(db,dir);
@@ -220,7 +222,7 @@ async function xrpc(method, data, jwt, get=false) {
   }
   return result;
 }
-async function adminXrpc(method,data){if(!pds||!process.env.PDS_ADMIN_PASSWORD)fail(503,'Account server administrator credentials are not configured.');const response=await fetch(`${pds}/xrpc/${method}`,{method:'POST',headers:{Authorization:'Basic '+Buffer.from('admin:'+process.env.PDS_ADMIN_PASSWORD).toString('base64'),'Content-Type':'application/json'},body:JSON.stringify(data),signal:AbortSignal.timeout(15000),redirect:'error'});if(!response.ok)fail(502,'Account server administrator action failed.');return response.status===200&&response.headers.get('content-type')?.includes('json')?response.json():{};}
+async function adminXrpc(method,data){if(!pds||!process.env.PDS_ADMIN_PASSWORD)fail(503,'Account server administrator credentials are not configured.');const response=await fetch(`${pds}/xrpc/${method}`,{method:'POST',headers:{Authorization:'Basic '+Buffer.from('admin:'+process.env.PDS_ADMIN_PASSWORD).toString('base64'),'Content-Type':'application/json'},body:JSON.stringify(data),signal:AbortSignal.timeout(15000),redirect:'error'});if(!response.ok){let details={};try{details=await response.json();}catch{}throw Object.assign(Error('Account server administrator action failed.'),{status:502,code:details.error,remoteStatus:response.status});}return response.status===200&&response.headers.get('content-type')?.includes('json')?response.json():{};}
 async function jwtFor(s) {
   if(!s.accessJwt)fail(409,'The operator must reconnect this agent to the account server.');
   if (s.jwtExpires > Date.now()) return s.accessJwt;
@@ -231,8 +233,9 @@ async function jwtFor(s) {
   return s.accessJwt;
 }
 async function record(s,collection,value,localOnly=false) {
+  enforcement.requireActive(db.prepare('SELECT * FROM actors WHERE id=?').get(s.actor));
   if (!networkActor(s.actor)||localOnly) return {uri:`preview:${randomUUID()}`,cid:'preview'};
-  return xrpc('com.atproto.repo.createRecord', {repo:s.actor,collection,record:{$type:collection,...value}}, await jwtFor(s));
+  const result=await xrpc('com.atproto.repo.createRecord', {repo:s.actor,collection,record:{$type:collection,...value}}, await jwtFor(s));enforcement.requireActive(db.prepare('SELECT * FROM actors WHERE id=?').get(s.actor));return result;
 }
 async function removeRecord(s,uri,collection) {
   if (networkActor(s.actor)&&uri.startsWith('at://')) await xrpc('com.atproto.repo.deleteRecord',{repo:s.actor,collection,rkey:uri.split('/').at(-1)},await jwtFor(s));
@@ -280,7 +283,9 @@ function oauthTarget(id,user){
 const oauth=createMcpOAuth(db,{origin:()=>publicOrigin||'http://localhost:'+server.address().port,target:oauthTarget,requireOperator:s=>{if(!s)fail(401,'Sign in to authorize this connection.');const a=operatorOnly(s);enforcement.requireActive(a);requireRules(a);},saveDelegation:s=>{if(networkActor(s.actor)&&!process.env.SESSION_ENCRYPTION_KEY)fail(503,'Secure account delegation is not configured.');if(s.accessJwt)credentialStore.saveAgent(s.actor,{accessJwt:s.accessJwt,refreshJwt:s.refreshJwt,jwtExpires:s.jwtExpires});},delegation:c=>agentPdsSessions.get(c.actor)||credentialStore.agent(c.actor)||{}});
 const communities=createCommunities(db,{actor:id=>db.prepare('SELECT * FROM actors WHERE id=?').get(id),active:enforcement.requireActive,rules:requireRules});
 const moderation=createModeration(db,{enforcement,reasons:prohibited,operations,billing,publicActor,viewPost,webhooks:accountWebhooks,origin:()=>publicOrigin||'http://localhost:'+server.address().port});
-const dating=createDating(db,{actor:id=>db.prepare('SELECT * FROM actors WHERE id=?').get(id),active:enforcement.requireActive,rules:requireRules,notify,admin:moderation.requireStaff});
+const dating=createDating(db,{actor:id=>db.prepare('SELECT * FROM actors WHERE id=?').get(id),active:enforcement.requireActive,rules:requireRules,notify,admin:moderation.requireStaff,platformBlocked:(a,b)=>accountSafety.blocked(a,b)});
+const accountSafety=createAccountSafety(db,{cancelBilling:billing.cancelActor,remoteDelete:async id=>{try{await adminXrpc('com.atproto.admin.deleteAccount',{did:id});}catch(e){if(e.remoteStatus!==404&&!['AccountNotFound','RepoNotFound','NotFound'].includes(e.code))throw e;}},invalidate:id=>{accountWebhooks.revokeAccount(id);db.prepare('UPDATE api_keys SET revoked=? WHERE actor=? OR operator=?').run(new Date().toISOString(),id,id);db.prepare('UPDATE oauth_grants SET revoked=? WHERE owner=?').run(Date.now(),id);db.prepare('UPDATE account_mcp_keys SET revoked=? WHERE owner=?').run(new Date().toISOString(),id);for(const [key,s]of sessions)if(s.actor===id||s.operator===id)sessions.delete(key);db.prepare('DELETE FROM login_sessions WHERE actor=?').run(id);db.prepare('DELETE FROM agent_sessions WHERE actor=?').run(id);agentPdsSessions.delete(id);}});
+const push=createPush(db,{blocked:(a,b)=>accountSafety.blocked(a,b)});
 const mcpEvents=createMcpEvents(db,{origin:()=>publicOrigin||'http://localhost:'+server.address().port,activeGrant:oauth.activeGrant});
 const server = http.createServer(async(req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');
@@ -348,33 +353,41 @@ const server = http.createServer(async(req,res)=>{
       if(path==='/api/messages') {
         if(!s)fail(401,'Sign in to see messages.');allow(s,'messages');
         const peer=url.searchParams.get('peer');
-        if(peer){const actor=db.prepare('SELECT * FROM actors WHERE id=?').get(peer);if(!actor)fail(404,'Account not found.');const before=Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER;const rows=db.prepare('SELECT * FROM messages WHERE ((sender=? AND recipient=?) OR (sender=? AND recipient=?)) AND id<? ORDER BY id DESC LIMIT 51').all(me,peer,peer,me,before);return json(res,200,{peer:publicActor(actor),messages:rows.slice(0,50).reverse(),cursor:rows.length>50?rows[49].id:null});}
+        if(peer){accountSafety.allow(me,peer);const actor=db.prepare('SELECT * FROM actors WHERE id=?').get(peer);if(!actor||actor.deleted_at)fail(404,'Account not found.');const before=Number(url.searchParams.get('before'))||Number.MAX_SAFE_INTEGER;const rows=db.prepare('SELECT * FROM messages WHERE ((sender=? AND recipient=?) OR (sender=? AND recipient=?)) AND id<? ORDER BY id DESC LIMIT 51').all(me,peer,peer,me,before);return json(res,200,{peer:publicActor(actor),messages:rows.slice(0,50).reverse(),cursor:rows.length>50?rows[49].id:null});}
         const rows=db.prepare(`SELECT m.*,CASE WHEN sender=? THEN recipient ELSE sender END AS peer FROM messages m WHERE (sender=? OR recipient=?) AND id IN (SELECT MAX(id) FROM messages WHERE sender=? OR recipient=? GROUP BY CASE WHEN sender=? THEN recipient ELSE sender END) ORDER BY id DESC`).all(me,me,me,me,me,me);
-        return json(res,200,{conversations:rows.map(m=>({...m,peer:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(m.peer)),unread:db.prepare('SELECT COUNT(*) AS n FROM messages WHERE recipient=? AND sender=? AND seen=0').get(me,m.peer).n})),unread:db.prepare('SELECT COUNT(*) AS n FROM messages WHERE recipient=? AND seen=0').get(me).n});
+        return json(res,200,{conversations:rows.filter(m=>!accountSafety.blocked(me,m.peer)).map(m=>({...m,peer:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(m.peer)),unread:db.prepare('SELECT COUNT(*) AS n FROM messages WHERE recipient=? AND sender=? AND seen=0').get(me,m.peer).n})),unread:db.prepare('SELECT sender FROM messages WHERE recipient=? AND seen=0').all(me).filter(n=>!accountSafety.blocked(me,n.sender)).length});
       }
       if(path==='/api/config')loginGuard.identity(req,res);
       if(path==='/api/config') return json(res,200,{name:'Amerika Social',tagline:"Why Can't We Be Friends?",americanConfirmationRequired:true,rules:{version:rulesVersion,prohibited},feedOrder:'newest-first',mode:pds?'atproto':'preview',pds:pds||null,handleDomain,managedInvites:!!process.env.PDS_ADMIN_PASSWORD,legacyAccounts:process.env.ALLOW_LEGACY_ACCOUNTS==='true',captcha:{enabled:captcha.required,siteKey:captcha.siteKey}});
       if(path==='/api/me') {const a=me&&db.prepare('SELECT * FROM actors WHERE id=?').get(me);return json(res,200,{actor:a?ownActor(a):null});}
-      if(path==='/api/actors') return json(res,200,{actors:db.prepare(pds?"SELECT * FROM actors WHERE id NOT IN ('preview:atlas','preview:nova','preview:maya') ORDER BY handle LIMIT 100":'SELECT * FROM actors ORDER BY handle LIMIT 100').all().map(a=>({...publicActor(a),...relationship(a.id,me)}))});
+      if(path==='/api/actors'){
+       const cursor=Number(url.searchParams.get('cursor')||0);if(!Number.isSafeInteger(cursor)||cursor<0)fail(400,'Invalid directory cursor.');const params=[];let where='deleted_at IS NULL AND suspended_at IS NULL';if(pds)where+=" AND id NOT IN ('preview:atlas','preview:nova','preview:maya')";
+       const kind=url.searchParams.get('kind');if(['human','agent'].includes(kind)){where+=' AND kind=?';params.push(kind);}const query=(url.searchParams.get('q')||'').slice(0,100);if(query){where+=" AND instr(lower(name||' '||handle),lower(?))>0";params.push(query);}if(me){const owner=accountSafety.operator(me);where+=' AND NOT EXISTS (SELECT 1 FROM account_blocks b WHERE (b.actor=? AND b.subject=COALESCE(actors.operator_id,actors.id)) OR (b.subject=? AND b.actor=COALESCE(actors.operator_id,actors.id)))';params.push(owner,owner);}const rows=db.prepare('SELECT * FROM actors WHERE '+where+' ORDER BY handle LIMIT 101 OFFSET ?').all(...params,cursor);
+       return json(res,200,{actors:rows.slice(0,100).map(a=>({...publicActor(a),...relationship(a.id,me)})),cursor:rows.length>100?cursor+100:null});
+      }
       if(path==='/api/profile') {
         const name=(url.searchParams.get('handle')||'').replace(/^@/,'').toLowerCase();const actor=db.prepare('SELECT * FROM actors WHERE id=? OR handle=?').get(url.searchParams.get('id')||'',name)||(!name.includes('.')&&handleDomain?db.prepare('SELECT * FROM actors WHERE handle=?').get(name+'.'+handleDomain):null);
-        if(!actor)fail(404,'Account not found.');
-        return json(res,200,{actor:{...publicActor(actor),...relationship(actor.id,me),mutualCount:db.prepare('SELECT COUNT(*) AS n FROM follows f JOIN follows r ON r.actor=f.subject AND r.subject=f.actor WHERE f.actor=?').get(actor.id).n,followingCount:db.prepare('SELECT COUNT(*) AS n FROM follows WHERE actor=?').get(actor.id).n}});
+        if(!actor||actor.deleted_at)fail(404,'Account not found.');
+        return json(res,200,{actor:{...publicActor(actor),...relationship(actor.id,me),blocked:accountSafety.blocked(me,actor.id),mutualCount:db.prepare('SELECT COUNT(*) AS n FROM follows f JOIN follows r ON r.actor=f.subject AND r.subject=f.actor WHERE f.actor=?').get(actor.id).n,followingCount:db.prepare('SELECT COUNT(*) AS n FROM follows WHERE actor=?').get(actor.id).n}});
       }
       if(path==='/api/notifications') {
         if(!s)fail(401,'Sign in to see your notifications.');
         allow(s,'read');
-        const rows=db.prepare('SELECT * FROM notifications WHERE recipient=? ORDER BY id DESC LIMIT 100').all(me);
-        return json(res,200,{notifications:rows.map(n=>({...n,postDetails:n.post?(()=>{const p=db.prepare('SELECT * FROM posts WHERE uri=?').get(n.post);return p?viewPost(p,me):null;})():null,sender:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(n.sender))})),unread:db.prepare('SELECT COUNT(*) AS n FROM notifications WHERE recipient=? AND seen=0').get(me).n});
+        const before=Number(url.searchParams.get('before')||Number.MAX_SAFE_INTEGER);if(!Number.isSafeInteger(before)||before<1)fail(400,'Invalid notification cursor.');const notificationRows=db.prepare('SELECT * FROM notifications WHERE recipient=? AND id<? ORDER BY id DESC LIMIT 101').all(me,before);const rows=notificationRows.slice(0,100);
+        return json(res,200,{notifications:rows.filter(n=>!accountSafety.blocked(me,n.sender)).map(n=>({...n,postDetails:n.post?(()=>{const p=db.prepare('SELECT * FROM posts WHERE uri=?').get(n.post);return p?viewPost(p,me):null;})():null,sender:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(n.sender))})),cursor:notificationRows.length>100?rows[rows.length-1].id:null,unread:db.prepare('SELECT sender FROM notifications WHERE recipient=? AND seen=0').all(me).filter(n=>!accountSafety.blocked(me,n.sender)).length});
       }
       if(path==='/api/account-mcp'){if(!s)fail(401,'Sign in to manage account MCP.');operatorOnly(s);return json(res,200,{keys:db.prepare('SELECT id,name,created,expires,revoked FROM account_mcp_keys WHERE owner=? ORDER BY created DESC').all(me).map(k=>({...k,mcpUrl:mcpUrl(k.id)}))});}
       if(path==='/api/profile/friends'){const id=url.searchParams.get('id');const target=db.prepare('SELECT * FROM actors WHERE id=?').get(id);if(!target)fail(404,'Account not found.');const own=!!s&&(me===id||(!s.keyId&&me===target.operator_id));if(target.friends_private&&!own)fail(403,'This account keeps its friends lists private.');if(own)allow(s,'read');if(target.suspended_at&&!own)fail(404,'Account not found.');const list=url.searchParams.get('list')||'friends';if(!['friends','added','mutual'].includes(list))fail(400,'Choose Friends, Added, or Mutual.');const cursor=Number(url.searchParams.get('cursor')||0);if(!Number.isSafeInteger(cursor)||cursor<0)fail(400,'Invalid list cursor.');const condition=list==='friends'?'f.subject=? AND f.actor=a.id':list==='added'?'f.actor=? AND f.subject=a.id':'f.actor=? AND f.subject=a.id AND EXISTS (SELECT 1 FROM follows r WHERE r.actor=a.id AND r.subject=f.actor)';const rows=db.prepare(`SELECT DISTINCT a.* FROM actors a JOIN follows f ON ${condition} WHERE a.suspended_at IS NULL ORDER BY a.handle LIMIT 51 OFFSET ?`).all(id,cursor);return json(res,200,{account:publicActor(target),list,actors:rows.slice(0,50).map(a=>({...publicActor(a),...relationship(a.id,me)})),cursor:rows.length>50?cursor+50:null});}
       if(path==='/api/friends'){if(!s)fail(401,'Sign in to see friends.');allow(s,'read');return json(res,200,{friends:db.prepare('SELECT DISTINCT a.* FROM actors a JOIN follows f ON (f.actor=a.id AND f.subject=?) OR (f.subject=a.id AND f.actor=?) WHERE a.suspended_at IS NULL').all(me,me).map(a=>({...publicActor(a),...relationship(a.id,me)}))});}
+      if(path==='/api/push'){if(!s)fail(401,'Sign in to manage notifications.');operatorOnly(s);return json(res,200,push.list(me));}
+      if(path==='/api/account/blocks'){if(!s)fail(401,'Sign in to see blocked accounts.');operatorOnly(s);return json(res,200,accountSafety.list(me));}
+      if(path==='/api/admin/deletions'){if(!s)fail(401,'Sign in to manage deletions.');enforcement.requireAdmin(s,db.prepare('SELECT * FROM actors WHERE id=?').get(me));return json(res,200,{jobs:accountSafety.jobs()});}
       if(path==='/api/mcp-events'){if(!s)fail(401,'Sign in to manage MCP event subscriptions.');const owner=operatorOnly(s);return json(res,200,mcpEvents.list(owner.id));}
       if(path==='/api/webhooks'){if(!s)fail(401,'Sign in to manage webhooks.');const owner=operatorOnly(s);return json(res,200,accountWebhooks.list(owner.id));}
       if(path==='/api/agents') {if(!s)fail(401,'Sign in to manage agents.');operatorOnly(s);return json(res,200,{agents:db.prepare('SELECT * FROM actors WHERE operator_id=? ORDER BY handle').all(me).map(a=>({...publicActor(a),...relationship(a.id,me),personality:a.agent_instructions,welcome:welcome.status(a.id)})),keys:db.prepare('SELECT id,actor,name,scopes,created,expires,revoked FROM api_keys WHERE operator=? ORDER BY created DESC').all(me).map(k=>({...k,mcpUrl:mcpUrl(k.id),scopes:JSON.parse(k.scopes)}))});}
       if(path==='/api/feed') {
         let where='p.deleted=0 AND p.removed_at IS NULL AND a.suspended_at IS NULL AND sharer.suspended_at IS NULL';if(pds)where+=" AND p.author NOT IN ('preview:atlas','preview:nova','preview:maya')"; const args=[];
+        if(me){const owner=accountSafety.operator(me);where+=' AND NOT EXISTS (SELECT 1 FROM account_blocks b WHERE (b.actor=? AND b.subject IN (COALESCE(a.operator_id,a.id),COALESCE(sharer.operator_id,sharer.id))) OR (b.subject=? AND b.actor IN (COALESCE(a.operator_id,a.id),COALESCE(sharer.operator_id,sharer.id))))';args.push(owner,owner);}
         const kind=url.searchParams.get('kind');
         if(['agent','human'].includes(kind)) { where+=' AND sharer.kind=?'; args.push(kind); }
         if(url.searchParams.get('following')==='1') { where+=' AND e.actor IN (SELECT subject FROM follows WHERE actor=?)'; args.push(me||''); }
@@ -392,7 +405,11 @@ const server = http.createServer(async(req,res)=>{
         const rows=db.prepare(`WITH candidates AS (SELECT p.*,original.id AS sequence,e.type AS event_type,e.actor AS event_actor,ROW_NUMBER() OVER (PARTITION BY p.uri ORDER BY CASE WHEN e.type='post' THEN 0 ELSE 1 END,e.id) AS position FROM feed_events e JOIN posts p ON p.uri=e.post JOIN feed_events original ON original.post=p.uri AND original.type='post' AND original.actor=p.author JOIN actors a ON a.id=p.author JOIN actors sharer ON sharer.id=e.actor WHERE ${where}) SELECT * FROM candidates WHERE position=1 ORDER BY sequence DESC LIMIT 31`).all(...args);
         return json(res,200,{posts:rows.slice(0,30).map(p=>({...viewPost(p,me),repostBy:p.event_type==='repost'?publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(p.event_actor)):null})),cursor:rows.length>30?String(rows[29].sequence):null});
       }
-      if(path==='/api/thread') {const parent=url.searchParams.get('uri'); const p=db.prepare('SELECT * FROM posts WHERE uri=?').get(parent); if(!p)fail(404,'Post not found.');const root=p.root||p.uri;return json(res,200,{post:viewPost(p,me),root:p.root?viewPost(db.prepare('SELECT * FROM posts WHERE uri=?').get(root),me):null,replies:db.prepare('SELECT * FROM posts WHERE parent=? ORDER BY rowid LIMIT 100').all(parent).map(p=>viewPost(p,me)),totalReplies:db.prepare('SELECT COUNT(*) AS n FROM posts WHERE root=?').get(root).n,conversation:db.prepare('SELECT * FROM posts WHERE root=? ORDER BY rowid LIMIT 500').all(root).map(p=>viewPost(p,me))});}
+      if(path==='/api/thread') {
+       const p=db.prepare('SELECT * FROM posts WHERE uri=?').get(url.searchParams.get('uri'));if(!p)fail(404,'Post not found.');if(me)accountSafety.allow(me,p.author);const root=p.root||p.uri;
+       const cursor=Number(url.searchParams.get('cursor')||0);if(!Number.isSafeInteger(cursor)||cursor<0)fail(400,'Invalid conversation cursor.');const all=db.prepare('SELECT rowid AS conversationSequence,* FROM posts WHERE root=? AND rowid>? ORDER BY rowid LIMIT 501').all(root,cursor);
+       return json(res,200,{post:viewPost(p,me),root:p.root?viewPost(db.prepare('SELECT * FROM posts WHERE uri=?').get(root),me):null,replies:db.prepare('SELECT * FROM posts WHERE parent=? ORDER BY rowid LIMIT 100').all(p.uri).filter(reply=>!accountSafety.blocked(me,reply.author)).map(reply=>viewPost(reply,me)),totalReplies:db.prepare('SELECT COUNT(*) AS n FROM posts WHERE root=?').get(root).n,conversation:all.slice(0,500).filter(reply=>!accountSafety.blocked(me,reply.author)).map(reply=>viewPost(reply,me)),conversationCursor:all.length>500?all[499].conversationSequence:null});
+      }
       fail(404,'Not found.');
     }
     if(req.method!=='POST') fail(405,'Method not allowed.');
@@ -409,6 +426,7 @@ const server = http.createServer(async(req,res)=>{
       if(mediaUploadBusy)fail(503,'Another photo or video is uploading or processing. Please retry shortly.');mediaUploadBusy=true;try{
       const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>maxMediaBytes)fail(413,'Each photo or video must be at most 250 MB (0.25 GB).');chunks.push(chunk);}let bytes=Buffer.concat(chunks);chunks.length=0;media.checkQuota(me,bytes.length);if(mime.startsWith('video/')){bytes=await normalizeVideo(bytes,mime);mime='video/mp4';}else{bytes=await normalizePhoto(bytes,mime);mime='image/webp';}
       let blob=null;if(networkActor(me)){const response=await fetch(`${pds}/xrpc/com.atproto.repo.uploadBlob`,{method:'POST',headers:{Authorization:`Bearer ${await jwtFor(s)}`,'Content-Type':mime},body:bytes,signal:AbortSignal.timeout(180000),redirect:'error'});if(!response.ok)fail(502,'Your account server could not save this media.');blob=(await response.json()).blob;if(!blob?.ref)fail(502,'Account server returned an invalid media reference.');}
+      enforcement.requireActive(db.prepare('SELECT * FROM actors WHERE id=?').get(me));
       return json(res,201,{...media.save(me,mime,bytes,blob),...(mime==='image/webp'?{preview:'data:image/webp;base64,'+bytes.toString('base64')}:{})});
       }finally{mediaUploadBusy=false;}
     }
@@ -435,14 +453,15 @@ const server = http.createServer(async(req,res)=>{
         if(pds) {
           const inviteCode=b.inviteCode||(process.env.PDS_ADMIN_PASSWORD?(await adminXrpc('com.atproto.server.createInviteCode',{useCount:1})).code:null);
           auth=await xrpc('com.atproto.server.createAccount',{handle,password,email:'account-'+randomUUID()+'@accounts.amerika.social',...(inviteCode?{inviteCode}:{})});
+          if(creatingAgent&&db.prepare('SELECT deleted_at FROM actors WHERE id=?').get(owner.id)?.deleted_at){accountSafety.orphan(auth.did);fail(410,'Your operator account has been deleted.');}
           a={id:auth.did,handle:auth.handle,name,kind,bio};
-          db.prepare('INSERT INTO actors(id,handle,name,kind,bio) VALUES (?,?,?,?,?)').run(a.id,a.handle,name,kind,bio);
+          db.prepare('INSERT INTO actors(id,handle,name,kind,bio) VALUES (?,?,?,?,?)').run(a.id,a.handle,name,kind,bio);if(creatingAgent)db.prepare('UPDATE actors SET operator_id=? WHERE id=?').run(owner.id,a.id);
           // Account creation remains successful if optional profile publication fails.
           try { await xrpc('com.atproto.repo.putRecord',{repo:a.id,collection:'app.bsky.actor.profile',rkey:'self',record:{$type:'app.bsky.actor.profile',displayName:name,description:bio}},auth.accessJwt); } catch { a.profileWarning='Account created; AT profile publication needs retry.'; }
         } else {
           const salt=randomBytes(16).toString('hex'); const digest=scryptSync(password,salt,64).toString('hex');
           a={id:`preview:${randomUUID()}`,handle,name,kind,bio};
-          db.prepare('INSERT INTO actors(id,handle,name,kind,bio,password,salt) VALUES (?,?,?,?,?,?,?)').run(a.id,handle,name,kind,bio,digest,salt);
+          db.prepare('INSERT INTO actors(id,handle,name,kind,bio,password,salt) VALUES (?,?,?,?,?,?,?)').run(a.id,handle,name,kind,bio,digest,salt);if(creatingAgent)db.prepare('UPDATE actors SET operator_id=? WHERE id=?').run(owner.id,a.id);
         }
       } else {
         const loginIdentity=loginGuard.identity(req,res),releaseLogin=loginGuard.begin(loginIdentity);
@@ -463,11 +482,12 @@ const server = http.createServer(async(req,res)=>{
       }
       if(path==='/api/register'||creatingAgent)welcome.schedule(a);
       if(creatingAgent) {
+        enforcement.requireActive(db.prepare('SELECT * FROM actors WHERE id=?').get(owner.id));enforcement.requireActive(db.prepare('SELECT * FROM actors WHERE id=?').get(a.id));
         db.prepare('UPDATE actors SET operator_id=? WHERE id=?').run(owner.id,a.id);
         if(auth){const delegation={accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000};agentPdsSessions.set(a.id,delegation);credentialStore.saveAgent(a.id,delegation);}
         await welcome.complete(a.id,{actor:a.id,operator:owner.id,keyId:'welcome',...(auth?{accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000}:{})});return json(res,201,{actor:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(a.id)),welcome:welcome.status(a.id),recoveryCodes:recovery.issue(a.id)});
       }
-      enforcement.requireActive(a);
+      a=db.prepare('SELECT * FROM actors WHERE id=?').get(a.id);enforcement.requireActive(a);
       const newToken=randomBytes(32).toString('base64url');
       sessions.set(hash(newToken),{tokenHash:hash(newToken),actor:a.id,expires:Date.now()+24*3600000,...(auth?{accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000}:{})});
       credentialStore.saveLogin(hash(newToken),sessions.get(hash(newToken)));if(auth&&path==='/api/register')credentialStore.saveAgent(a.id,{accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000});await welcome.complete(a.id,sessions.get(hash(newToken)));
@@ -491,16 +511,19 @@ const server = http.createServer(async(req,res)=>{
     if(path==='/api/recovery/codes'){const target=billingActor(s,b.actor);const password=textField(b.password,256,'your current password');if(networkActor(target.id)){const auth=await xrpc('com.atproto.server.createSession',{identifier:target.handle,password});if(auth.did!==target.id)fail(403,'Account identity mismatch.');}else if(!target.password||!timingSafeEqual(Buffer.from(target.password,'hex'),scryptSync(password,target.salt,64)))fail(401,'Incorrect password.');return json(res,200,{recoveryCodes:recovery.issue(target.id),handle:target.handle});}
     if(path==='/api/reports')return json(res,201,enforcement.report(me,b));
     if(path.startsWith('/api/moderation/'))return json(res,200,await moderation.post(path.slice(16),b,s));
-    if(path==='/api/admin/action'){enforcement.requireAdmin(s,currentActor);if(['suspend','unsuspend'].includes(b.action)&&typeof b.target==='string'){const handle=b.target.replace(/^@/,'').toLowerCase();const actor=db.prepare('SELECT id FROM actors WHERE id=? OR handle=?').get(b.target,handle);if(!actor)fail(404,'Account not found.');b.target=actor.id;}if(b.target===me&&b.action==='suspend')fail(400,'You cannot suspend your own admin account.');return json(res,200,await enforcement.action(me,b));}
+    if(path==='/api/admin/action'){enforcement.requireAdmin(s,currentActor);if(['suspend','unsuspend'].includes(b.action)&&typeof b.target==='string'){const handle=b.target.replace(/^@/,'').toLowerCase();const actor=db.prepare('SELECT id FROM actors WHERE id=? OR handle=?').get(b.target,handle);if(!actor||actor.deleted_at)fail(404,'Account not found.');b.target=actor.id;}if(b.target===me&&b.action==='suspend')fail(400,'You cannot suspend your own admin account.');return json(res,200,await enforcement.action(me,b));}
     if(path==='/api/admin/backup'){enforcement.requireAdmin(s,currentActor);return json(res,200,await operations.take());}
     if(path==='/api/agents/link') {
       if(b.americanConfirmed!==true)fail(400,'Confirm that you are the American operator of this agent.');
       if(b.rulesAccepted!==true)fail(400,'Agree to the Community Rules for this agent.');
       operatorOnly(s);const handle=textField(b.handle,253,'the agent handle').toLowerCase();const password=textField(b.password,256,'the agent password');const a=db.prepare('SELECT * FROM actors WHERE handle=?').get(handle);
       if(!a||a.kind!=='agent')fail(404,'Agent account not found.');if(a.operator_id&&a.operator_id!==me)fail(403,'This agent is already linked to another operator.');
-      if(networkActor(a.id)){const auth=await xrpc('com.atproto.server.createSession',{identifier:handle,password});if(auth.did!==a.id)fail(403,'Agent identity mismatch.');{const delegation={accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000};agentPdsSessions.set(a.id,delegation);credentialStore.saveAgent(a.id,delegation);}}
+      let delegation;
+      if(networkActor(a.id)){const auth=await xrpc('com.atproto.server.createSession',{identifier:handle,password});if(auth.did!==a.id)fail(403,'Agent identity mismatch.');delegation={accessJwt:auth.accessJwt,refreshJwt:auth.refreshJwt,jwtExpires:Date.now()+90*60000};}
       else if(!a.password||!timingSafeEqual(Buffer.from(a.password,'hex'),scryptSync(password,a.salt,64)))fail(401,'Incorrect agent credentials.');
-      db.prepare('UPDATE actors SET operator_id=?,american_confirmed_at=COALESCE(american_confirmed_at,?) WHERE id=?').run(me,new Date().toISOString(),a.id);
+      enforcement.requireActive(db.prepare('SELECT * FROM actors WHERE id=?').get(me));enforcement.requireActive(db.prepare('SELECT * FROM actors WHERE id=?').get(a.id));
+      if(!db.prepare('UPDATE actors SET operator_id=?,american_confirmed_at=COALESCE(american_confirmed_at,?) WHERE id=? AND (operator_id IS NULL OR operator_id=?) AND deleted_at IS NULL').run(me,new Date().toISOString(),a.id,me).changes)fail(409,'This bot was linked or deleted while you signed in.');
+      if(delegation){agentPdsSessions.set(a.id,delegation);credentialStore.saveAgent(a.id,delegation);}
       if(a.rules_version!==rulesVersion||!a.rules_accepted_at)acceptRules(a.id);
       return json(res,200,{actor:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(a.id))});
     }
@@ -508,6 +531,12 @@ const server = http.createServer(async(req,res)=>{
     if(['/api/webhooks','/api/webhooks/test','/api/webhooks/secret','/api/webhooks/disable'].includes(path)){const owner=operatorOnly(s);if(path==='/api/webhooks')return json(res,201,await accountWebhooks.create(owner.id,b));if(path==='/api/webhooks/test')return json(res,202,accountWebhooks.test(owner.id,b.id));if(path==='/api/webhooks/secret')return json(res,200,accountWebhooks.setSecret(owner.id,b.id,b.signingSecret));accountWebhooks.disable(owner.id,b.id);return json(res,200,{ok:true});}
     if(path==='/api/welcome/accept'||path==='/api/welcome/dismiss'){const target=billingActor(s,b.actor);enforcement.requireActive(target);requireRules(target);const acting=target.id===me?s:{actor:target.id,operator:me,keyId:'welcome',...(agentPdsSessions.get(target.id)||credentialStore.agent(target.id)||{})};if(path.endsWith('/accept'))await welcome.accept(target.id,b.subject,acting);else welcome.dismiss(target.id,b.subject);return json(res,200,welcome.status(target.id));}
     if(path==='/api/profile/privacy'){const target=billingActor(s,b.actor);enforcement.requireActive(target);if(typeof b.friendsPrivate!=='boolean')fail(400,'Choose a privacy setting.');db.prepare('UPDATE actors SET friends_private=? WHERE id=?').run(Number(b.friendsPrivate),target.id);return json(res,200,{actor:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(target.id))});}
+    if(path==='/api/agents/profile'){operatorOnly(s);if(typeof b.actor!=='string')fail(400,'Choose a bot you own.');return json(res,200,await mcpRequest('update_profile',{botId:b.actor,name:b.name,bio:b.bio},{kind:'operator',actor:me,scopes:[],delegation:s}));}
+    if(path==='/api/push/register'){operatorOnly(s);return json(res,200,push.register(me,b.token,b.includeBots===true));}
+    if(path==='/api/push/disable'){operatorOnly(s);return json(res,200,push.disable(me,b.id));}
+    if(path==='/api/agents/action'){operatorOnly(s);if(typeof b.actor!=='string'||!b.args||typeof b.args!=='object'||Array.isArray(b.args)||!['read_posts','read_notifications','read_messages','read_friends','read_feed','publish_post','edit_post','delete_post','send_message','like_post','repost','toggle_bot_friendship','join_community'].includes(b.action))fail(400,'Choose a supported owned-bot action.');return json(res,200,await mcpRequest(b.action,{...b.args,botId:b.actor},{kind:'operator',actor:me,scopes:[],delegation:s}));}
+    if(path==='/api/account/block'){operatorOnly(s);return json(res,200,accountSafety.block(me,b.subject,b.blocked));}
+    if(path==='/api/account/delete'){operatorOnly(s);if(b.actor!==undefined&&typeof b.actor!=='string')fail(400,'Choose an account you own.');const password=textField(b.password,256,'your current password');const identity=loginGuard.identity(req,res),release=loginGuard.begin(identity);try{if(networkActor(me)){const auth=await xrpc('com.atproto.server.createSession',{identifier:currentActor.handle,password});if(auth.did!==me)fail(403,'Account identity mismatch.');}else if(!currentActor.password||!timingSafeEqual(Buffer.from(currentActor.password,'hex'),scryptSync(password,currentActor.salt,64)))fail(401,'Incorrect password.');loginGuard.success(identity);}catch(e){if(e.status===401||e.code==='AuthenticationRequired')loginGuard.failure(identity);throw e;}finally{release();}return json(res,202,accountSafety.request(me,b.actor,b.confirmation));}
     if(path==='/api/agents/photo'){
       operatorOnly(s);if(typeof b.actor!=='string'||!b.actor)fail(400,'Choose a bot you own.');
       if(b.photo!==null&&typeof b.photo!=='string')fail(400,'Choose a profile picture or remove the current one.');
@@ -527,12 +556,12 @@ const server = http.createServer(async(req,res)=>{
       return json(res,201,{id,...(path==='/api/agent-keys'?{token:secret}:{}),expires,scopes:b.scopes,mcpUrl:mcpUrl(id)});
     }
     if(path==='/api/agent-keys/revoke') {operatorOnly(s);const key=db.prepare('SELECT id FROM api_keys WHERE id=? AND operator=?').get(b.id,me);if(!key)fail(404,'Credential not found.');db.prepare('UPDATE api_keys SET revoked=? WHERE id=?').run(new Date().toISOString(),b.id);return json(res,200,{ok:true});}
-    if(path==='/api/logout'){sessions.delete(hash(token));db.prepare('DELETE FROM login_sessions WHERE token_hash=?').run(hash(token));return json(res,200,{ok:true});}
+    if(path==='/api/logout'){if(typeof b.pushDeviceId==='string'&&db.prepare('SELECT 1 FROM push_devices WHERE id=? AND owner=?').get(b.pushDeviceId,me))push.disable(me,b.pushDeviceId);sessions.delete(hash(token));db.prepare('DELETE FROM login_sessions WHERE token_hash=?').run(hash(token));return json(res,200,{ok:true});}
     if(path==='/api/billing/apple/verify'){const owner=operatorOnly(s);const verified=await appleBilling.verify(owner.id,b.transactionId);return json(res,200,{...verified,plus:billing.plus(owner.id)});}
     if(path==='/api/billing/checkout'||path==='/api/billing/portal'||path==='/api/billing/refresh'){if(s.keyId)fail(403,'Sign in to manage billing.');const actor=billingActor(s,b.actor);requireRules(actor);if(path.endsWith('/refresh')){if(billing.enabled)await billing.refresh(actor.id);return json(res,200,billing.status(actor.id));}return json(res,200,await (path.endsWith('/checkout')?billing.checkout(actor):billing.customerPortal(actor)));}
     if(path==='/api/hashtags/follow'){const tag=tagName(b.tag);if(typeof b.following!=='boolean')fail(400,'Choose follow or unfollow.');if(b.following)db.prepare('INSERT OR IGNORE INTO tag_follows VALUES (?,?)').run(me,tag);else db.prepare('DELETE FROM tag_follows WHERE actor=? AND tag=?').run(me,tag);return json(res,200,{tag,following:b.following});}
     if(path==='/api/messages') {
-      if(typeof b.recipient!=='string'||!db.prepare('SELECT id FROM actors WHERE id=?').get(b.recipient))fail(404,'Recipient not found.');if(b.recipient===me)fail(400,'Choose another account.');if(dating.blocked(db.prepare('SELECT operator_id FROM actors WHERE id=?').get(me)?.operator_id||me,db.prepare('SELECT operator_id FROM actors WHERE id=?').get(b.recipient)?.operator_id||b.recipient))fail(403,'This account is blocked.');
+      if(typeof b.recipient!=='string'||!db.prepare('SELECT id FROM actors WHERE id=?').get(b.recipient))fail(404,'Recipient not found.');if(b.recipient===me)fail(400,'Choose another account.');accountSafety.allow(me,b.recipient);if(dating.blocked(db.prepare('SELECT operator_id FROM actors WHERE id=?').get(me)?.operator_id||me,db.prepare('SELECT operator_id FROM actors WHERE id=?').get(b.recipient)?.operator_id||b.recipient))fail(403,'This account is blocked.');
       const text=textField(b.text,2000,'a message');const created=new Date().toISOString();
       db.exec('BEGIN');try{const result=db.prepare('INSERT INTO messages(sender,recipient,text,created) VALUES (?,?,?,?)').run(me,b.recipient,text,created);notify(b.recipient,me,'message',null,Number(result.lastInsertRowid));db.exec('COMMIT');return json(res,201,{message:{id:Number(result.lastInsertRowid),sender:me,recipient:b.recipient,text,created,seen:0}});}catch(e){if(db.isTransaction)db.exec('ROLLBACK');throw e;}
     }
@@ -562,6 +591,7 @@ const server = http.createServer(async(req,res)=>{
         if(b.photo===null)delete profile.avatar;else if(blob)profile.avatar=blob;
         await xrpc('com.atproto.repo.putRecord',{repo:me,collection:'app.bsky.actor.profile',rkey:'self',record:profile},await jwtFor(s));
       }
+      enforcement.requireActive(db.prepare('SELECT * FROM actors WHERE id=?').get(me));
       db.prepare('UPDATE actors SET name=?,bio=?,photo=?,avatar_blob=? WHERE id=?').run(name,b.bio,photo,blob?JSON.stringify(blob):null,me);
       return json(res,200,{actor:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(me))});
     }
@@ -570,19 +600,20 @@ const server = http.createServer(async(req,res)=>{
       if(attachments.length)requireMediaAccess(currentActor,attachments.some(m=>m.mime==='video/mp4'));
       const text=attachments.length&&b.text===''?'':postText(b.text,me);const created=new Date().toISOString();
       const quote=b.quote?db.prepare('SELECT * FROM posts WHERE uri=?').get(b.quote):null;
-      if(b.quote&&!quote)fail(404,'Quote target not found.');
+      if(b.quote&&!quote)fail(404,'Quote target not found.');if(quote)accountSafety.allow(me,quote.author);
       if(quote&&(quote.deleted||quote.removed_at||quote.community_removed_at||db.prepare('SELECT suspended_at FROM actors WHERE id=?').get(quote.author).suspended_at))fail(410,'This quote target is unavailable.');
       if(b.quote&&b.parent)fail(400,'Choose a quote post or a reply.');
       const mediaEmbed=media.embed(attachments);
       const quoteEmbed=quote?.uri.startsWith('at://')?{$type:'app.bsky.embed.record',record:{uri:quote.uri,cid:quote.cid}}:null;
       const embed=quoteEmbed&&mediaEmbed?{$type:'app.bsky.embed.recordWithMedia',record:quoteEmbed,media:mediaEmbed}:quoteEmbed||mediaEmbed;
       const parent=b.parent?db.prepare('SELECT * FROM posts WHERE uri=?').get(b.parent):null;
-      if(b.parent&&!parent)fail(404,'Reply target not found.');
+      if(b.parent&&!parent)fail(404,'Reply target not found.');if(parent)accountSafety.allow(me,parent.author);
       if(parent?.deleted||parent?.removed_at||parent?.community_removed_at)fail(410,'This post is unavailable. Choose another reply in the thread.');
       const communityId=communities.posting(s,b.community,parent);
       const rootPost=parent?(parent.root?db.prepare('SELECT * FROM posts WHERE uri=?').get(parent.root):parent):null;
       const reservation=parent?null:billing.reserve(me);let result;
       try{result=await record(s,'app.bsky.feed.post',{...postRecord(text,parent,rootPost),createdAt:created,...(communityId?{'social.amerika.community':communityId}:{}),...(embed?{embed}:{})},!!parent&&!parent.uri.startsWith('at://')||!!quote&&!quote.uri.startsWith('at://'));}catch(e){billing.release(reservation);throw e;}
+      enforcement.requireActive(db.prepare('SELECT * FROM actors WHERE id=?').get(me));if(parent)accountSafety.allow(me,parent.author);if(quote)accountSafety.allow(me,quote.author);
       db.prepare('INSERT INTO posts(uri,cid,author,text,created,parent,root,quote_uri,embed,community_id) VALUES (?,?,?,?,?,?,?,?,?,?)').run(result.uri,result.cid,me,text,created,parent?.uri||null,rootPost?.uri||null,quote?.uri||null,embed?JSON.stringify(embed):null,communityId);
       media.link(result.uri,attachments);
       billing.confirm(reservation,result.uri);
@@ -592,16 +623,16 @@ const server = http.createServer(async(req,res)=>{
       return json(res,201,{post:viewPost(db.prepare('SELECT * FROM posts WHERE uri=?').get(result.uri),me)});
     }
     if(path==='/api/reposts'){
-      const post=db.prepare('SELECT * FROM posts WHERE uri=?').get(b.uri);if(!post)fail(404,'Post not found.');if(post.deleted||post.removed_at||db.prepare('SELECT suspended_at FROM actors WHERE id=?').get(post.author).suspended_at)fail(410,'This post is unavailable.');
+      const post=db.prepare('SELECT * FROM posts WHERE uri=?').get(b.uri);if(!post)fail(404,'Post not found.');accountSafety.allow(me,post.author);if(post.deleted||post.removed_at||db.prepare('SELECT suspended_at FROM actors WHERE id=?').get(post.author).suspended_at)fail(410,'This post is unavailable.');
       const lock='repost '+boosts.operator(me)+' '+post.uri;if(repostWrites.has(lock))fail(409,'A repost change is already in progress.');repostWrites.add(lock);
       try{const existing=db.prepare('SELECT * FROM reposts WHERE actor=? AND post=?').get(me,post.uri);
       if(existing){await removeRecord(s,existing.uri,'app.bsky.feed.repost');db.prepare('DELETE FROM reposts WHERE actor=? AND post=?').run(me,post.uri);db.prepare("DELETE FROM feed_events WHERE type='repost' AND actor=? AND post=?").run(me,post.uri);}
-      else{boosts.reserve(me,'repost');const notifyBoost=boosts.operator(me)!==boosts.operator(post.author)&&boosts.firstReaction(me,post.uri,'repost');const created=new Date().toISOString();const r=await record(s,'app.bsky.feed.repost',{subject:{uri:post.uri,cid:post.cid},createdAt:created},!post.uri.startsWith('at://'));db.prepare('INSERT INTO reposts VALUES (?,?,?,?)').run(me,post.uri,r.uri,created);db.prepare("INSERT INTO feed_events(type,post,actor) VALUES ('repost',?,?)").run(post.uri,me);if(notifyBoost)notify(post.author,me,'repost',post.uri);}
+      else{boosts.reserve(me,'repost');const notifyBoost=boosts.operator(me)!==boosts.operator(post.author)&&boosts.firstReaction(me,post.uri,'repost');const created=new Date().toISOString();const r=await record(s,'app.bsky.feed.repost',{subject:{uri:post.uri,cid:post.cid},createdAt:created},!post.uri.startsWith('at://'));accountSafety.allow(me,post.author);db.prepare('INSERT INTO reposts VALUES (?,?,?,?)').run(me,post.uri,r.uri,created);db.prepare("INSERT INTO feed_events(type,post,actor) VALUES ('repost',?,?)").run(post.uri,me);if(notifyBoost)notify(post.author,me,'repost',post.uri);}
       return json(res,200,{reposted:!existing});}finally{repostWrites.delete(lock);}
     }
     if(path==='/api/posts/edit'||path==='/api/posts/delete') {
       const post=db.prepare('SELECT * FROM posts WHERE uri=?').get(b.uri);
-      if(!post)fail(404,'Post not found.');if(post.author!==me)fail(403,'You can change only your own posts.');if(post.deleted)fail(410,'This post was already deleted.');
+      if(!post)fail(404,'Post not found.');accountSafety.allow(me,post.author);if(post.author!==me)fail(403,'You can change only your own posts.');if(post.deleted)fail(410,'This post was already deleted.');
       if(path.endsWith('/delete')) {
         await removeRecord(s,post.uri,'app.bsky.feed.post');
         db.prepare("UPDATE posts SET deleted=1,text='' WHERE uri=?").run(post.uri);
@@ -610,28 +641,29 @@ const server = http.createServer(async(req,res)=>{
       }
       const text=b.text===''&&media.view(post.uri).length?'':postText(b.text,me);let cid=post.cid;
       if(networkActor(me)&&post.uri.startsWith('at://')){const parent=post.parent?db.prepare('SELECT * FROM posts WHERE uri=?').get(post.parent):null;const root=post.root?db.prepare('SELECT * FROM posts WHERE uri=?').get(post.root):null;const updated=await xrpc('com.atproto.repo.putRecord',{repo:me,collection:'app.bsky.feed.post',rkey:post.uri.split('/').at(-1),swapRecord:post.cid,record:{$type:'app.bsky.feed.post',...postRecord(text,parent,root),createdAt:post.created,...(post.community_id?{'social.amerika.community':post.community_id}:{}),...(post.embed?{embed:JSON.parse(post.embed)}:{})}},await jwtFor(s));cid=updated.cid;}
+      enforcement.requireActive(db.prepare('SELECT * FROM actors WHERE id=?').get(me));
       const before=new Set(mentions(post.text).map(m=>m.actor.id));
       db.prepare('UPDATE posts SET text=?,cid=?,edited_at=? WHERE uri=?').run(text,cid,new Date().toISOString(),post.uri);
       for(const id of new Set(mentions(text).map(m=>m.actor.id)))if(!before.has(id))notify(id,me,'mention',post.uri);
       return json(res,200,{post:viewPost(db.prepare('SELECT * FROM posts WHERE uri=?').get(post.uri),me)});
     }
     if(path==='/api/likes') {
-      const post=db.prepare('SELECT * FROM posts WHERE uri=?').get(b.uri);if(!post)fail(404,'Post not found.');
+      const post=db.prepare('SELECT * FROM posts WHERE uri=?').get(b.uri);if(!post)fail(404,'Post not found.');accountSafety.allow(me,post.author);
       if(post.deleted||post.removed_at||post.community_removed_at)fail(410,'This post is unavailable.');
       const lock='like '+boosts.operator(me)+' '+post.uri;if(repostWrites.has(lock))fail(409,'A like change is already in progress.');repostWrites.add(lock);
       try{
       const existing=db.prepare('SELECT * FROM likes WHERE actor=? AND post=?').get(me,b.uri);
       if(existing){await removeRecord(s,existing.uri,'app.bsky.feed.like');db.prepare('DELETE FROM likes WHERE actor=? AND post=?').run(me,b.uri);}
-      else{boosts.reserve(me,'like');const notifyBoost=boosts.operator(me)!==boosts.operator(post.author)&&boosts.firstReaction(me,post.uri,'like');const r=await record(s,'app.bsky.feed.like',{subject:{uri:post.uri,cid:post.cid},createdAt:new Date().toISOString()},!post.uri.startsWith('at://'));db.prepare('INSERT INTO likes VALUES (?,?,?)').run(me,b.uri,r.uri);if(notifyBoost)notify(post.author,me,'like',post.uri);}
+      else{boosts.reserve(me,'like');const notifyBoost=boosts.operator(me)!==boosts.operator(post.author)&&boosts.firstReaction(me,post.uri,'like');const r=await record(s,'app.bsky.feed.like',{subject:{uri:post.uri,cid:post.cid},createdAt:new Date().toISOString()},!post.uri.startsWith('at://'));accountSafety.allow(me,post.author);db.prepare('INSERT INTO likes VALUES (?,?,?)').run(me,b.uri,r.uri);if(notifyBoost)notify(post.author,me,'like',post.uri);}
       return json(res,200,{liked:!existing});
       }finally{repostWrites.delete(lock);}
     }
     if(path==='/api/follows') {
-      if(b.subject===me)fail(400,'You cannot follow yourself.');
+      accountSafety.allow(me,b.subject);if(b.subject===me)fail(400,'You cannot follow yourself.');
       if(!db.prepare('SELECT id FROM actors WHERE id=?').get(b.subject))fail(404,'Account not found.');
       const existing=db.prepare('SELECT * FROM follows WHERE actor=? AND subject=?').get(me,b.subject);
       if(existing){await removeRecord(s,existing.uri,'app.bsky.graph.follow');db.prepare('DELETE FROM follows WHERE actor=? AND subject=?').run(me,b.subject);}
-      else{const r=await record(s,'app.bsky.graph.follow',{subject:b.subject,createdAt:new Date().toISOString()},!networkActor(b.subject));db.prepare('INSERT INTO follows VALUES (?,?,?)').run(me,b.subject,r.uri);notify(b.subject,me,'follow');}
+      else{const r=await record(s,'app.bsky.graph.follow',{subject:b.subject,createdAt:new Date().toISOString()},!networkActor(b.subject));accountSafety.allow(me,b.subject);db.prepare('INSERT INTO follows VALUES (?,?,?)').run(me,b.subject,r.uri);notify(b.subject,me,'follow');}
       return json(res,200,relationship(b.subject,me));
     }
     fail(404,'Not found.');

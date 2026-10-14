@@ -1,0 +1,50 @@
+name: iPhone build checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  ios-simulator:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v6
+        with:
+          version: '11.25.0'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm check:jsx
+      - run: pnpm test
+      - run: pnpm exec expo install --check
+      - name: Generate iOS project and install pods
+        run: pnpm exec expo prebuild --platform ios
+      - name: Compile iPhone simulator app
+        run: |
+          set -o pipefail
+          xcodebuild -workspace ios/AmerikaSocial.xcworkspace -scheme AmerikaSocial -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build > xcode-build.log 2>&1 || { tail -n 100 xcode-build.log; exit 1; }
+          ditto -c -k --keepParent build/Build/Products/Release-iphonesimulator/AmerikaSocial.app AmerikaSocial-simulator.zip
+      - name: Upload simulator build
+        uses: actions/upload-artifact@v7
+        with:
+          name: Amerika-Social-iPhone-simulator
+          path: AmerikaSocial-simulator.zip
+          retention-days: 7
+      - name: Upload build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-build-diagnostics
+          path: xcode-build.log
+          retention-days: 7

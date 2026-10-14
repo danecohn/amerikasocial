@@ -88,12 +88,12 @@ function ApplePurchase({
     try {
       if (!purchase.transactionId)
         throw Error("Apple did not return a transaction ID.");
-      await api.request("billing/apple/verify", {
+      const verified = await api.request<{plus:boolean}>("billing/apple/verify", {
         transactionId: purchase.transactionId,
       });
       await iap.finishTransaction({ purchase, isConsumable: false });
       await onUpdated();
-      setComplete(true);
+      setComplete(verified.plus);
     } catch (e) {
       setError(problem(e));
     } finally {

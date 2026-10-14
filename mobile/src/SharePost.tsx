@@ -1,0 +1,9 @@
+import React,{useState} from 'react';
+import {Alert,Modal,Share,Text} from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import {ORIGIN,Post,postURL} from './api';
+import {Button,problem} from './components';
+import {Page,Status} from './ui';
+import {exportPost} from './device';
+import {styles as s} from './theme';
+export default function SharePost({post,onClose}:{post:Post;onClose:()=>void}){const [busy,setBusy]=useState(false),[error,setError]=useState('');const run=async(action:()=>Promise<unknown>,message?:string)=>{setBusy(true);setError('');try{await action();if(message)Alert.alert(message);onClose();}catch(e){setError(problem(e));}finally{setBusy(false);}};return <Modal visible animationType="slide" onRequestClose={()=>!busy&&onClose()}><Page title="Share Amerika post" onClose={()=>!busy&&onClose()}><Text style={s.text}>{post.author.name}</Text><Text style={s.muted}>{post.text}</Text><Status loading={busy} error={error}/><Button disabled={busy} title="Share link" onPress={()=>void run(()=>Share.share({url:postURL(post.uri),message:postURL(post.uri)}))}/><Button secondary disabled={busy} title="Copy link" onPress={()=>void run(()=>Clipboard.setStringAsync(postURL(post.uri)),'Link copied')}/><Button secondary disabled={busy} title="Save branded image to Photos" onPress={()=>void run(()=>exportPost(post.uri,true),'Saved to Photos')}/><Button secondary disabled={busy} title="Share branded image" onPress={()=>void run(()=>exportPost(post.uri,false))}/><Button secondary disabled={busy} title="Copy website embed code" onPress={()=>void run(()=>Clipboard.setStringAsync('<iframe src="'+ORIGIN+'/embed?uri='+encodeURIComponent(post.uri)+'" width="550" height="550" title="Amerika Social post" loading="lazy" style="max-width:100%;border:0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"></iframe>'),'Embed code copied')}/></Page></Modal>;}

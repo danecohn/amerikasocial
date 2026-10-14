@@ -1,5 +1,6 @@
 import { createCommunities } from './communities.mjs';
 import { createBoosts } from './boosts.mjs';
+import { createModeration } from './moderation.mjs';
 import { createDating } from './dating.mjs';
 import { createMcpOAuth } from './oauth.mjs';
 import { createOnboarding } from './onboarding.mjs';
@@ -114,7 +115,7 @@ const rulesVersion = '2026-10-11-v1';
 const prohibited = ['Crypto miners','Phishing','Card fraud & testing','Spam','Pirated content','Anything illegal'];
 function requireRules(actor) {if(!actor||actor.rules_version!==rulesVersion||!actor.rules_accepted_at)fail(403,'Sign in and agree to the current Community Rules before continuing.');}
 function acceptRules(actor) {db.prepare('UPDATE actors SET rules_version=?,rules_accepted_at=? WHERE id=?').run(rulesVersion,new Date().toISOString(),actor);}
-function ownActor(a) {return {...publicActor(a),...(a.kind==='agent'?{personality:a.agent_instructions,welcome:welcome.status(a.id)}:{}),rulesAccepted:a.rules_version===rulesVersion&&!!a.rules_accepted_at,admin:enforcement.isAdmin({actor:a.id},a)};}
+function ownActor(a) {return {...publicActor(a),...(a.kind==='agent'?{personality:a.agent_instructions,welcome:welcome.status(a.id)}:{}),rulesAccepted:a.rules_version===rulesVersion&&!!a.rules_accepted_at,admin:enforcement.isAdmin({actor:a.id},a),moderator:moderation.role(a.id)==='moderator'};}
 // Cache delegation credentials; encrypted persistent copies survive restarts.
 const agentPdsSessions = new Map();
 const limits = new Map();
@@ -173,6 +174,7 @@ function relationship(id,me) {
 }
 function mcpUrl(id){return `${publicOrigin||'http://localhost:'+server.address().port}/mcp/${id}`;}
 async function mcpRequest(name,args,auth){
+ if(auth.kind==='moderation')return moderation.request(name,args,auth);
  let actor=auth.actor,scopes=auth.scopes;
  if(auth.kind==='operator'&&args.botId){const bot=db.prepare('SELECT * FROM actors WHERE id=? AND operator_id=? AND kind=?').get(args.botId,auth.actor,'agent');if(!bot)fail(403,'Choose a bot you currently own.');enforcement.requireActive(bot);requireRules(bot);actor=bot.id;scopes=['read','post','like','follow','profile','messages'];}
  if(auth.kind==='operator'&&name==='list_bots')return {bots:db.prepare("SELECT * FROM actors WHERE operator_id=? AND kind='agent'").all(auth.actor).map(a=>({...publicActor(a),personality:a.agent_instructions,welcome:welcome.status(a.id)}))};
@@ -258,7 +260,13 @@ function viewPost(p,me,depth=0) {
 function json(res,status,data) { res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'}); res.end(JSON.stringify(data)); }
 const welcome=createOnboarding(db,{handleDomain,publicActor,addFriend:async(actor,subject,supplied)=>{const a=db.prepare('SELECT * FROM actors WHERE id=?').get(actor),target=db.prepare('SELECT * FROM actors WHERE id=?').get(subject);enforcement.requireActive(a);enforcement.requireActive(target);requireRules(a);if(a.operator_id){const owner=db.prepare('SELECT * FROM actors WHERE id=?').get(a.operator_id);enforcement.requireActive(owner);requireRules(owner);}if(actor===subject)return;if(db.prepare('SELECT 1 FROM follows WHERE actor=? AND subject=?').get(actor,subject))return;const acting=supplied||{actor,operator:a.operator_id,keyId:'welcome',...(agentPdsSessions.get(actor)||credentialStore.agent(actor)||{})};const r=await record(acting,'app.bsky.graph.follow',{subject,createdAt:new Date().toISOString()},!networkActor(subject));db.prepare('INSERT OR IGNORE INTO follows VALUES (?,?,?)').run(actor,subject,r.uri);notify(subject,actor,'follow');}});
 const sharing=createSharing({origin:()=>publicOrigin||`http://localhost:${server.address().port}`,handleDomain,getPost:uri=>{const row=db.prepare('SELECT * FROM posts WHERE uri=?').get(uri);if(!row)fail(404,'Post not found.');const p=viewPost(row,null);if(p.deleted)fail(410,'This post is unavailable.');return p;},getImages:uri=>db.prepare("SELECT m.bytes FROM post_media pm JOIN media m ON m.id=pm.media WHERE pm.post=? AND m.mime!='video/mp4' ORDER BY pm.position").all(uri).map(m=>Buffer.from(m.bytes))});
-function oauthTarget(id){
+function oauthTarget(id,user){
+ if(id==='service'){
+  if(!user)return {kind:'operator',owner:null,actor:null,name:'Amerika Social',actorName:'Your account and owned bots',scopes:['mcp'],expires:null};
+  const a=db.prepare('SELECT * FROM actors WHERE id=?').get(user);if(!a||a.kind!=='human'||a.suspended_at||a.rules_version!==rulesVersion||!a.rules_accepted_at)return null;
+  return {kind:'operator',owner:a.id,actor:a.id,name:'Amerika Social',actorName:a.name,scopes:['mcp'],expires:null};
+ }
+ const staffConnection=moderation.connection(id);if(staffConnection)return staffConnection;
  const current=new Date().toISOString();
  const key=db.prepare('SELECT * FROM api_keys WHERE id=? AND revoked IS NULL AND (expires IS NULL OR expires>?)').get(id,current);
  if(key){const a=db.prepare('SELECT * FROM actors WHERE id=?').get(key.actor),owner=db.prepare('SELECT * FROM actors WHERE id=?').get(key.operator);if(!a||a.kind!=='agent'||a.operator_id!==key.operator||a.suspended_at||!owner||owner.suspended_at||a.rules_version!==rulesVersion||owner.rules_version!==rulesVersion||!a.rules_accepted_at||!owner.rules_accepted_at)return null;return {kind:'bot',actor:a.id,owner:key.operator,name:key.name,actorName:a.name,scopes:JSON.parse(key.scopes),expires:key.expires,personality:a.agent_instructions};}
@@ -266,7 +274,8 @@ function oauthTarget(id){
 }
 const oauth=createMcpOAuth(db,{origin:()=>publicOrigin||'http://localhost:'+server.address().port,target:oauthTarget,requireOperator:s=>{if(!s)fail(401,'Sign in to authorize this connection.');const a=operatorOnly(s);enforcement.requireActive(a);requireRules(a);},saveDelegation:s=>{if(networkActor(s.actor)&&!process.env.SESSION_ENCRYPTION_KEY)fail(503,'Secure account delegation is not configured.');if(s.accessJwt)credentialStore.saveAgent(s.actor,{accessJwt:s.accessJwt,refreshJwt:s.refreshJwt,jwtExpires:s.jwtExpires});},delegation:c=>agentPdsSessions.get(c.actor)||credentialStore.agent(c.actor)||{}});
 const communities=createCommunities(db,{actor:id=>db.prepare('SELECT * FROM actors WHERE id=?').get(id),active:enforcement.requireActive,rules:requireRules});
-const dating=createDating(db,{actor:id=>db.prepare('SELECT * FROM actors WHERE id=?').get(id),active:enforcement.requireActive,rules:requireRules,notify,admin:enforcement.requireAdmin});
+const moderation=createModeration(db,{enforcement,reasons:prohibited,operations,billing,publicActor,viewPost,origin:()=>publicOrigin||'http://localhost:'+server.address().port});
+const dating=createDating(db,{actor:id=>db.prepare('SELECT * FROM actors WHERE id=?').get(id),active:enforcement.requireActive,rules:requireRules,notify,admin:moderation.requireStaff});
 const server = http.createServer(async(req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');
   res.setHeader('Referrer-Policy','same-origin');
@@ -297,9 +306,9 @@ const server = http.createServer(async(req,res)=>{
     }
     if (!path.startsWith('/api/')) {
       if(req.method!=='GET') fail(405,'Method not allowed.');
-      const files={'/':['index.html','text/html'],'/app.js':['app.js','text/javascript'],'/dating.js':['dating.js','text/javascript'],'/communities.js':['communities.js','text/javascript'],'/features.css':['features.css','text/css'],'/style.css':['style.css','text/css'],'/agent.md':['agent.md','text/plain'],'/logo.svg':['logo.svg','image/svg+xml'],'/manifest.webmanifest':['manifest.webmanifest','application/manifest+json'],'/icon-32.png':['icon-32.png','image/png'],'/icon-180.png':['icon-180.png','image/png'],'/icon-192.png':['icon-192.png','image/png'],'/icon-512.png':['icon-512.png','image/png'],'/icon-maskable-512.png':['icon-maskable-512.png','image/png']};
+      const files={'/':['index.html','text/html'],'/moderate':['index.html','text/html'],'/privacy':['privacy.html','text/html'],'/terms':['terms.html','text/html'],'/legal.css':['legal.css','text/css'],'/moderation.js':['moderation.js','text/javascript'],'/app.js':['app.js','text/javascript'],'/dating.js':['dating.js','text/javascript'],'/communities.js':['communities.js','text/javascript'],'/features.css':['features.css','text/css'],'/style.css':['style.css','text/css'],'/agent.md':['agent.md','text/plain'],'/logo.svg':['logo.svg','image/svg+xml'],'/manifest.webmanifest':['manifest.webmanifest','application/manifest+json'],'/icon-32.png':['icon-32.png','image/png'],'/icon-180.png':['icon-180.png','image/png'],'/icon-192.png':['icon-192.png','image/png'],'/icon-512.png':['icon-512.png','image/png'],'/icon-maskable-512.png':['icon-maskable-512.png','image/png']};
       const f=files[path]; if(!f) fail(404,'Not found.');
-      res.setHeader('Content-Type',f[1]); if(['index.html','app.js','style.css','dating.js','communities.js','features.css'].includes(f[0]))res.setHeader('Cache-Control','no-store'); res.end(await readFile(join(root,'public',f[0]))); return;
+      res.setHeader('Content-Type',f[1]); if(['index.html','app.js','style.css','dating.js','communities.js','features.css','privacy.html','terms.html','legal.css','moderation.js'].includes(f[0]))res.setHeader('Cache-Control','no-store'); res.end(await readFile(join(root,'public',f[0]))); return;
     }
     const token=req.headers.authorization?.replace(/^Bearer /,'');
     const s=session(token); const me=s?.actor;
@@ -317,6 +326,7 @@ const server = http.createServer(async(req,res)=>{
       if(path==='/api/share'){const uri=url.searchParams.get('uri');sharing.page('<head></head>',uri);return json(res,200,{url:sharing.url(uri),image:(publicOrigin||`http://localhost:${server.address().port}`)+'/share-image?uri='+encodeURIComponent(uri)});}
       if(path==='/api/oembed'){let shared;try{shared=new URL(url.searchParams.get('url'));}catch{fail(400,'Choose a post URL.');}if(shared.origin!==(publicOrigin||`http://localhost:${server.address().port}`)||!shared.pathname.startsWith('/post/'))fail(400,'Choose an Amerika Social post URL.');let uri;try{uri=decodeURIComponent(shared.pathname.slice(6));}catch{fail(400,'Invalid post URL.');}sharing.page('<head></head>',uri);const src=(publicOrigin||`http://localhost:${server.address().port}`)+'/embed?uri='+encodeURIComponent(uri);return json(res,200,{version:'1.0',type:'rich',provider_name:'Amerika Social',provider_url:publicOrigin||`http://localhost:${server.address().port}`,width:550,height:550,html:`<iframe src="${escapeHtml(src)}" width="550" height="550" title="Amerika Social post" loading="lazy" style="max-width:100%;border:0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"></iframe>`});}
       if(path==='/api/health'){db.prepare('SELECT 1').get();return json(res,200,{ok:true});}
+      if(path.startsWith('/api/moderation/'))return json(res,200,moderation.get(path.slice(16),url,s));
       if(path==='/api/admin'){const a=me&&db.prepare('SELECT * FROM actors WHERE id=?').get(me);enforcement.requireAdmin(s,a);return json(res,200,{...enforcement.queue(),operations:operations.status(),billingConfigured:billing.enabled,billingVerification:billing.verification()});}
       if(path==='/api/billing'){if(!s)fail(401,'Sign in to see your plan.');const actor=billingActor(s,url.searchParams.get('actor'));return json(res,200,billing.status(actor.id));}
       if(path==='/api/hashtags') {if(!s)fail(401,'Sign in to see followed hashtags.');allow(s,'read');return json(res,200,{tags:db.prepare('SELECT tag FROM tag_follows WHERE actor=? ORDER BY tag').all(me).map(r=>r.tag)});}
@@ -459,6 +469,7 @@ const server = http.createServer(async(req,res)=>{
     }
     if(path==='/api/recovery/codes'){const target=billingActor(s,b.actor);const password=textField(b.password,256,'your current password');if(networkActor(target.id)){const auth=await xrpc('com.atproto.server.createSession',{identifier:target.handle,password});if(auth.did!==target.id)fail(403,'Account identity mismatch.');}else if(!target.password||!timingSafeEqual(Buffer.from(target.password,'hex'),scryptSync(password,target.salt,64)))fail(401,'Incorrect password.');return json(res,200,{recoveryCodes:recovery.issue(target.id),handle:target.handle});}
     if(path==='/api/reports')return json(res,201,enforcement.report(me,b));
+    if(path.startsWith('/api/moderation/'))return json(res,200,await moderation.post(path.slice(16),b,s));
     if(path==='/api/admin/action'){enforcement.requireAdmin(s,currentActor);if(['suspend','unsuspend'].includes(b.action)&&typeof b.target==='string'){const handle=b.target.replace(/^@/,'').toLowerCase();const actor=db.prepare('SELECT id FROM actors WHERE id=? OR handle=?').get(b.target,handle);if(!actor)fail(404,'Account not found.');b.target=actor.id;}if(b.target===me&&b.action==='suspend')fail(400,'You cannot suspend your own admin account.');return json(res,200,await enforcement.action(me,b));}
     if(path==='/api/admin/backup'){enforcement.requireAdmin(s,currentActor);return json(res,200,await operations.take());}
     if(path==='/api/agents/link') {

@@ -5,7 +5,8 @@ export function createEnforcement(db,reasons,{remoteAction}={}){
   if(!db.prepare('PRAGMA table_info(posts)').all().some(c=>c.name==='removed_at'))db.exec('ALTER TABLE posts ADD COLUMN removed_at TEXT');
   db.exec(`CREATE TABLE IF NOT EXISTS reports(id TEXT PRIMARY KEY,reporter TEXT NOT NULL,target_type TEXT NOT NULL,target TEXT NOT NULL,reason TEXT NOT NULL,detail TEXT NOT NULL,status TEXT NOT NULL DEFAULT 'open',created TEXT NOT NULL); CREATE UNIQUE INDEX IF NOT EXISTS duplicate_open_report ON reports(reporter,target_type,target) WHERE status='open'; CREATE TABLE IF NOT EXISTS admin_audit(id TEXT PRIMARY KEY,admin TEXT NOT NULL,action TEXT NOT NULL,target TEXT NOT NULL,reason TEXT NOT NULL,created TEXT NOT NULL);`);
   const admins=(process.env.ADMIN_HANDLES||'').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
-  function isAdmin(s,a){return !!(s&&!s.keyId&&a?.kind==='human'&&admins.includes(a.handle));}
+  db.exec("CREATE TABLE IF NOT EXISTS site_roles(actor TEXT PRIMARY KEY REFERENCES actors(id),role TEXT NOT NULL,assigned_by TEXT NOT NULL,updated TEXT NOT NULL)");
+  function isAdmin(s,a){return !!(s&&!s.keyId&&a?.kind==='human'&&(admins.includes(a.handle)||db.prepare("SELECT 1 FROM site_roles WHERE actor=? AND role='admin'").get(a.id)));}
   function requireAdmin(s,a){if(!isAdmin(s,a))fail(403,'Administrator access required.');}
   function requireActive(a){if(a?.suspended_at)fail(403,'This account is suspended for violating Community Rules. Contact the site operator to appeal.');if(a?.operator_id&&db.prepare('SELECT suspended_at FROM actors WHERE id=?').get(a.operator_id)?.suspended_at)fail(403,'Your operator account is suspended.');}
   function report(actor,b){if(!reasons.includes(b.reason))fail(400,'Choose a Community Rule.');if(typeof b.detail!=='string'||b.detail.length>2000)fail(400,'Report details must be at most 2,000 characters.');let target;

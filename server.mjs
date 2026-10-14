@@ -283,6 +283,12 @@ const server = http.createServer(async(req,res)=>{
   try {
     const url=new URL(req.url,'http://localhost');
     const path=url.pathname;
+    if(path==='/.well-known/openai-apps-challenge'){
+      if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');
+      const challenge=await readFile(join(root,'public','.well-known','openai-apps-challenge'));
+      res.setHeader('Content-Type','text/plain; charset=utf-8');res.setHeader('Cache-Control','no-store');res.setHeader('Content-Length',challenge.length);
+      return res.end(req.method==='HEAD'?undefined:challenge);
+    }
     if(await oauth.handle(req,res,url))return;
     if(path.startsWith('/post/')||path==='/share-image'||path==='/embed'){
       if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');

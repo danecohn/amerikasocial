@@ -128,7 +128,9 @@ html/canvas_resize_policy=2
 html/focus_canvas_on_start=true
 progressive_web_app/enabled=false
 ''',encoding='utf-8')
- if slug=='pickles-pickle-shop':subprocess.run([sys.executable,str(repo/'scripts/optimize-gaming.py'),str(dest)],check=True)
+ if slug=='pickles-pickle-shop':
+  subprocess.run([sys.executable,str(repo/'scripts/patch-pickles.py'),str(dest)],check=True)
+  subprocess.run([sys.executable,str(repo/'scripts/optimize-gaming.py'),str(dest)],check=True)
  log=work/(slug+'-export.log')
  with log.open('w',encoding='utf-8') as stream:
   for command in [[args.godot,'--headless','--path',str(dest),'--editor','--import'],[args.godot,'--headless','--path',str(dest),'--export-release','Amerika Web',str(output/'index.html')]]:

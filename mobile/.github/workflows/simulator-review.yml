@@ -1,0 +1,59 @@
+name: Review an existing iPhone simulator build
+on:
+  workflow_dispatch:
+    inputs:
+      build_run_id:
+        description: Successful iPhone build run to review
+        required: true
+        default: '38637438079'
+permissions:
+  actions: read
+  contents: read
+jobs:
+  review:
+    runs-on: macos-latest
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BUILD_RUN_ID: ${{ inputs.build_run_id }}
+    steps:
+      - name: Download the compiled app
+        run: |
+          [[ "$BUILD_RUN_ID" =~ ^[0-9]+$ ]] || exit 1
+          gh run download "$BUILD_RUN_ID" --repo "$GITHUB_REPOSITORY" --name Amerika-Social-iPhone-simulator --dir source-build
+          unzip -q source-build/AmerikaSocial-simulator.zip -d simulator-build
+      - name: Sign for isolated simulator Keychain access
+        run: |
+          plutil -create xml1 simulator-entitlements.plist
+          plutil -insert application-identifier -string SIMULATOR0.social.amerika.ios simulator-entitlements.plist
+          plutil -insert keychain-access-groups -json '["SIMULATOR0.social.amerika.ios"]' simulator-entitlements.plist
+          codesign --force --sign - --entitlements simulator-entitlements.plist simulator-build/AmerikaSocial.app
+          codesign --display --entitlements - simulator-build/AmerikaSocial.app
+      - name: Boot iPhone and capture the running app
+        timeout-minutes: 6
+        run: |
+          xcrun simctl list devices available -j > simulators.json
+          DEVICE_ID=$(node -e 'const all=Object.entries(require("./simulators.json").devices).filter(([key,rows])=>key.includes("iOS")&&rows.some(d=>d.isAvailable&&d.name.startsWith("iPhone"))).sort(([a],[b])=>b.localeCompare(a,"en",{numeric:true}));process.stdout.write(all[0][1].find(d=>d.isAvailable&&d.name.startsWith("iPhone")).udid);')
+          xcrun simctl boot "$DEVICE_ID"
+          xcrun simctl bootstatus "$DEVICE_ID" -b > boot.log 2>&1 &
+          boot_wait_pid=$!
+          for attempt in {1..40}; do
+            if ! kill -0 "$boot_wait_pid" 2>/dev/null; then break; fi
+            sleep 4
+          done
+          if kill -0 "$boot_wait_pid" 2>/dev/null; then kill "$boot_wait_pid"; cat boot.log; exit 1; fi
+          wait "$boot_wait_pid"
+          xcrun simctl install "$DEVICE_ID" simulator-build/AmerikaSocial.app
+          xcrun simctl launch --terminate-running-process "$DEVICE_ID" social.amerika.ios
+          sleep 15
+          xcrun simctl io "$DEVICE_ID" screenshot simulator-review.png
+      - name: Upload review and diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: Amerika-Social-simulator-review
+          path: |
+            simulator-review.png
+            boot.log
+            simulators.json
+          retention-days: 7

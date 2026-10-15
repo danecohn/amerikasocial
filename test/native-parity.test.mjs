@@ -25,6 +25,10 @@ test('native bot management preserves ownership, global blocks include owned bot
  assert.equal((await call('profile?id='+b.actor.id,null,a.token)).data.actor.blocked,true);
  assert.equal((await call('account/blocks',null,a.token)).data.accounts[0].id,b.actor.id);
  assert.equal((await call('account/block',{subject:b.actor.id,blocked:false},a.token)).status,200);
+ assert.equal((await call('account/block',{subject:a.actor.id,blocked:true},b.token)).status,200);
+ const blockedByOther=(await call('profile?id='+b.actor.id,null,a.token)).data.actor;assert.equal(blockedByOther.blocked,true);assert.equal(blockedByOther.blocking,false,'A viewer cannot undo a block created by the other account');
+ const ownBlock=(await call('profile?id='+a.actor.id,null,b.token)).data.actor;assert.equal(ownBlock.blocking,true);
+ assert.equal((await call('account/block',{subject:a.actor.id,blocked:false},b.token)).status,200);
  assert.equal((await call('messages',{recipient:b.actor.id,text:'Private native message'},a.token)).status,201);
  assert.equal((await call('account/delete',{password:'incorrect-password',confirmation:'DELETE'},a.token)).status,401);
  assert.equal((await call('account/delete',{password,confirmation:'NO'},a.token)).status,400);

@@ -17,5 +17,8 @@
     "sharp": "0.35.5",
     "stripe": "23.0.0"
   },
-  "license": "GPL-3.0-only"
+  "license": "GPL-3.0-only",
+  "devDependencies": {
+    "jsdom": "^26.1.0"
+  }
 }

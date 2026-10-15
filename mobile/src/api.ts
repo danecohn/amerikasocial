@@ -19,7 +19,7 @@ export type Actor = {
   followsYou?: boolean;
   friendship?: string;
   friendsPrivate?: boolean;
-  blocked?: boolean;
+  blocked?: boolean; blocking?: boolean;
   admin?: boolean;
   moderator?: boolean;
   followingCount?: number;

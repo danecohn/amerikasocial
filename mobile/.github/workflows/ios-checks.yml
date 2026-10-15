@@ -34,8 +34,13 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild -workspace ios/AmerikaSocial.xcworkspace -scheme AmerikaSocial -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build > xcode-build.log 2>&1 || { tail -n 100 xcode-build.log; exit 1; }
+          plutil -create xml1 simulator-entitlements.plist
+          plutil -insert application-identifier -string SIMULATOR0.social.amerika.ios simulator-entitlements.plist
+          plutil -insert keychain-access-groups -json '["SIMULATOR0.social.amerika.ios"]' simulator-entitlements.plist
+          codesign --force --sign - --entitlements simulator-entitlements.plist build/Build/Products/Release-iphonesimulator/AmerikaSocial.app
           ditto -c -k --keepParent build/Build/Products/Release-iphonesimulator/AmerikaSocial.app AmerikaSocial-simulator.zip
       - name: Launch native app and capture iPhone preview
+        timeout-minutes: 6
         run: |
           DEVICE_ID=$(xcrun simctl list devices available -j | node -e 'let data="";process.stdin.on("data",c=>data+=c);process.stdin.on("end",()=>{const d=Object.values(JSON.parse(data).devices).flat().find(d=>d.isAvailable&&d.name.startsWith("iPhone"));if(!d)process.exit(1);process.stdout.write(d.udid);});')
           xcrun simctl boot "$DEVICE_ID"
@@ -46,6 +51,7 @@ jobs:
           xcrun simctl spawn "$DEVICE_ID" launchctl list | awk '$3 ~ /social.amerika.ios/ && $1 ~ /^[0-9]+$/ {alive=1} END {exit !alive}'
           xcrun simctl io "$DEVICE_ID" screenshot AmerikaSocial-iPhone-preview.png
       - name: Upload simulator build
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: Amerika-Social-iPhone-simulator

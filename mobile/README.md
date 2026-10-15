@@ -35,7 +35,7 @@ Use Node 24 and pnpm 11.25.0:
     pnpm exec expo export --platform ios
     pnpm start
 
-Native workflow tests use synthetic sessions, not live purchases or production deletions. The JSX check prevents whitespace being rendered outside native Text controls. The GitHub workflow builds an unsigned Release iPhone simulator app on macOS launches it and captures an iPhone preview, then uploads the app and preview as workflow artifacts. Check its actual result before treating native compilation as passed.
+Native workflow tests use synthetic sessions, not live purchases or production deletions. The JSX check prevents whitespace being rendered outside native Text controls. The GitHub workflow builds a Release iPhone simulator app with an isolated ad hoc signing identity for Keychain testing on macOS launches it and captures an iPhone preview, then uploads the app and preview as workflow artifacts. Check its actual result before treating native compilation as passed.
 
 ## Device builds and publishing
 

@@ -1,5 +1,5 @@
 """Build isolated web editions; never modifies the supplied desktop projects."""
-import argparse,json,re,shutil,subprocess,zipfile,hashlib,sys,sys
+import argparse,json,re,shutil,subprocess,zipfile,hashlib,sys
 from pathlib import Path
 
 parser=argparse.ArgumentParser();parser.add_argument('--godot',required=True);parser.add_argument('--work',required=True);parser.add_argument('--variety',required=True);parser.add_argument('--pickles',required=True);parser.add_argument('--only');args=parser.parse_args()
@@ -102,6 +102,8 @@ for slug,title,folder in games:
  text=re.sub(r'config/features=.*', 'config/features=PackedStringArray("4.7", "GL Compatibility")',text)
  if 'AmerikaCloud=' not in text:text=text.replace('[autoload]','[autoload]\n\nAmerikaCloud="*res://amerika_cloud.gd"')
  text=re.sub(r'config/company=.*','config/company="Amerika LLC"',text)
+ if slug=='pickles-pickle-shop':
+  text=text.replace('config/name=', 'run/max_fps=30\nconfig/name=',1) if 'run/max_fps=' not in text else text
  if '[rendering]' not in text:text+='\n[rendering]\n'
  text=re.sub(r'^renderer/rendering_method(?:\.mobile)?=.*\n?','',text,flags=re.M)
  text=text.replace('[rendering]','[rendering]\nrenderer/rendering_method="gl_compatibility"\nrenderer/rendering_method.mobile="gl_compatibility"',1)
@@ -126,7 +128,6 @@ html/canvas_resize_policy=2
 html/focus_canvas_on_start=true
 progressive_web_app/enabled=false
 ''',encoding='utf-8')
- if slug=='pickles-pickle-shop':subprocess.run([sys.executable,str(repo/'scripts/optimize-gaming.py'),str(dest)],check=True)
  if slug=='pickles-pickle-shop':subprocess.run([sys.executable,str(repo/'scripts/optimize-gaming.py'),str(dest)],check=True)
  log=work/(slug+'-export.log')
  with log.open('w',encoding='utf-8') as stream:

@@ -41,7 +41,7 @@
     "description": "Survive the night shift in Pickle’s strange shop. Watch the cameras, manage the doors, and discover the story.",
     "controls": "Keyboard / mouse · Q/E doors · In-game controls and camera panel · Esc pause",
     "cover": "/gaming/covers/pickles-pickle-shop.png",
-    "archive": "https://github.com/danecohn/amerikasocial/releases/download/gaming-web-v1/pickles-pickle-shop-web.zip",
-    "sha256": "0113cdbfbf88f139186d87a2f2d5b3e014b23b0181b463574af57f645cdf001b"
+    "archive": "https://github.com/danecohn/amerikasocial/releases/download/gaming-web-v1/pickles-pickle-shop-web-optimized.zip",
+    "sha256": "41d49aa28b18e7d86b1c074beaf2fc155aac1236820601457baf6a562b455289"
   }
 ]

@@ -6,6 +6,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
 import {JSDOM,VirtualConsole} from 'jsdom';
+import sharp from 'sharp';
 
 test('desktop browser pairing creates an independent session and bot media delegation is owner-bound',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'amerika-desktop-integration-'));
@@ -24,6 +25,11 @@ test('desktop browser pairing creates an independent session and bot media deleg
   assert.equal((await call('desktop/exchange',{id,verifier})).status,400);
   await call('logout',{},human.token);assert.equal((await call('me',null,exchange.data.token)).data.actor.id,human.actor.id);
   const upload=await fetch(base+'/api/media/upload?actor='+encodeURIComponent(bot.actor.id),{method:'POST',headers:{'Content-Type':'image/png',Authorization:'Bearer '+other.token},body:Buffer.from('bad')});assert.equal(upload.status,403);
+  assert.equal((await call('location/verify',{latitude:38.8977,longitude:-77.0365,accuracy:10,timestamp:Date.now(),consent:true},exchange.data.token)).status,200);
+  const photo=await sharp({create:{width:8,height:8,channels:3,background:'#c82433'}}).png().toBuffer();
+  const ownedUpload=await fetch(base+'/api/media/upload?actor='+encodeURIComponent(bot.actor.id),{method:'POST',headers:{'Content-Type':'image/png',Authorization:'Bearer '+exchange.data.token},body:photo});assert.equal(ownedUpload.status,201);
+  const savedPhoto=await ownedUpload.json();assert.ok(savedPhoto.id);
+  const published=await call('agents/action',{actor:bot.actor.id,action:'publish_post',args:{text:'Native owned-bot photo test',media:[{id:savedPhoto.id,alt:'A red test image'}]}},exchange.data.token);assert.equal(published.status,200);assert.equal(published.data.post.author.id,bot.actor.id);assert.equal(published.data.post.media[0].id,savedPhoto.id);
   const markup=await(await fetch(base+'/desktop-connect')).text();assert.ok(markup.includes('desktop-connect.js'));assert.ok(!markup.includes(exchange.data.token));
   const browserRequest=await call('desktop/start',{challenge});
   const errors=[],console=new VirtualConsole();console.on('jsdomError',error=>errors.push(error.message));

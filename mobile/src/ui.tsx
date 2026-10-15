@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Modal, Pressable, RefreshControl, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import { api } from './api';
 import { Button, Icon, problem } from './components';
 import { colors, styles as s } from './theme';
+import { PageRefreshContext, usePageRefresh } from './refresh';
 export function Field({
   label,
   value,
@@ -101,33 +102,34 @@ export function Secret({
 export function useResource<T>(path: string | null) {
   const [data, setData] = useState<T>(),
     [error, setError] = useState(''),
-    [loading, setLoading] = useState(false),
-    [revision, setRevision] = useState(0);
+    [loading, setLoading] = useState(false);
   const generation = useRef(0),
     previous = useRef<string | null | undefined>(undefined);
-  useEffect(() => {
+  const reload = useCallback(async () => {
     const g = ++generation.current;
     if (previous.current !== path) setData(undefined);
     previous.current = path;
     setError('');
-    if (!path) return;
+    if (!path) { setLoading(false); return; }
     setLoading(true);
-    void api.request<T>(path).then(result => {
+    await api.request<T>(path).then(result => {
       if (g === generation.current) setData(result);
     }).catch(e => {
       if (g === generation.current) setError(problem(e));
     }).finally(() => {
       if (g === generation.current) setLoading(false);
     });
-    return () => {
-      generation.current++;
-    };
-  }, [path, revision]);
+  }, [path]);
+  usePageRefresh(reload);
+  useEffect(() => {
+    void reload();
+    return () => { generation.current++; };
+  }, [reload]);
   return {
     data,
     error,
     loading,
-    reload: () => setRevision(v => v + 1)
+    reload
   };
 }
 export function Status({
@@ -244,14 +246,26 @@ export function Action({
 export function Page({
   title,
   onClose,
+  onRefresh,
   children
 }: {
   title: string;
   onClose: () => void;
+  onRefresh?: () => Promise<unknown>;
   children: React.ReactNode;
 }) {
-  return <SafeAreaView style={s.screen}><View style={[s.header, s.spread]}><Text style={[s.title, {
+  const tasks = useRef(new Set<() => Promise<unknown> | unknown>()).current;
+  const running = useRef(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const refresh = async () => {
+    if (running.current) return;
+    running.current = true;
+    setRefreshing(true);
+    try { await Promise.allSettled([...tasks, ...(onRefresh ? [onRefresh] : [])].map(task => Promise.resolve().then(task))); }
+    finally { running.current = false; setRefreshing(false); }
+  };
+  return <PageRefreshContext.Provider value={tasks}><SafeAreaView style={s.screen}><View style={[s.header, s.spread]}><Text style={[s.title, {
         fontSize: 22,
         flex: 1
-      }]}>{title}</Text><Icon name="close" label="Close" onPress={onClose} /></View><ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.content}>{children}</ScrollView></SafeAreaView>;
+      }]}>{title}</Text><Icon name="refresh" label="Refresh page" onPress={() => void refresh()} /><Icon name="close" label="Close" onPress={onClose} /></View><ScrollView testID="feature-page-scroll" alwaysBounceVertical refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void refresh()} tintColor={colors.red} />} keyboardShouldPersistTaps="handled" contentContainerStyle={s.content}>{children}</ScrollView></SafeAreaView></PageRefreshContext.Provider>;
 }

@@ -6,6 +6,7 @@ import { Actor, api, absolute, Post, postURL, shortHandle } from "./api";
 import { colors, styles as s } from "./theme";
 import PostText from './PostText';
 import SharePost from './SharePost';
+import Photo from './Photo';
 export const problem = (e: unknown) =>
   e instanceof Error ? e.message : "Please try again.";
 export type Route =
@@ -186,11 +187,10 @@ export function PostCard({
         m.mime.startsWith("video/") ? (
           <Video key={m.id} url={absolute(m.url)!} />
         ) : (
-          <Image
+          <Photo
             key={m.id}
-            source={{ uri: absolute(m.url) }}
-            accessibilityLabel={m.alt || "Post photo"}
-            style={{ width: "100%", height: 260, borderRadius: 12 }}
+            uri={absolute(m.url)!}
+            alt={m.alt || "Post photo"}
           />
         ),
       )}

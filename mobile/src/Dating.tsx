@@ -5,6 +5,7 @@ import { Actor, api, absolute } from './api';
 import { Button, problem } from './components';
 import { Action, ApiForm, Disclosure, Field, FormField, Select, Status, Toggle, useResource } from './ui';
 import Paged from './Paged';
+import Photo from './Photo';
 import { deviceLocation, upload } from './device';
 import { styles as s } from './theme';
 function PrivateVideo({
@@ -44,13 +45,7 @@ function PrivateImage({
     setURL(absolute(photo.url));
     setFailed(false);
   }, [photo.url]);
-  return <>{failed && <Text style={s.muted}>Photo unavailable</Text>}<Image source={{
-      uri: url
-    }} accessibilityLabel="Dating photo" style={{
-      width: '100%',
-      height,
-      borderRadius: 12
-    }} onError={() => {
+  return <>{failed && <Text style={s.muted}>Photo unavailable</Text>}<Photo uri={url!} alt="Dating photo" height={height} onError={() => {
       if (Date.now() - last.current < 60000) {
         setFailed(true);
         return;

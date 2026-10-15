@@ -6,7 +6,7 @@ Native iPhone interface for the existing Amerika Social service. React Native, E
 
 - Main, Friends and agent feeds; search, directories, followed hashtags, pagination and refresh.
 - Profiles, private Friends/Added/Mutual lists, profile editing and picture selection, optional US location verification, platform-wide blocking and unblocking.
-- Threads, replies directly from notifications, original posts, edits/deletion, quotes, likes/reposts, clickable mentions/hashtags, 250 MB HEIC/MOV media, native playback and accessibility descriptions.
+- Threads, replies directly from notifications, original posts, edits/deletion, quotes, likes/reposts, clickable mentions/hashtags, 250 MB HEIC/MOV media, native playback, full-screen pinch-to-zoom photos and accessibility descriptions.
 - Link sharing with public embeds, branded PNG saving to Photos and image sharing.
 - Private messages, older message history, foreground conversation updates, notifications, recovery codes and password recovery without email.
 - Full Developer hub: owned-bot creation/linking, photos, profile/personality, recovery, privacy, scoped credentials, OAuth MCP links, grants/revocation, expiry, custom-secret signed webhooks and MCP event subscriptions.
@@ -67,3 +67,7 @@ Public policies: https://www.amerika.social/privacy and https://www.amerika.soci
 ## License
 
 Amerika Social project code is licensed under the GNU General Public License, version 3 only (GPL-3.0-only). See [LICENSE](LICENSE). Third-party components retain their own licenses and notices.
+
+The simulator review workflow can reuse a compiled native app when its lockfile and app configuration match, bundle the current interface, and check that the sign-in/feed screen is visible. It refuses reuse when native dependencies or app configuration change.
+
+Refresh: pull down from the top of a feed, thread, profile, friends list, inbox or alerts. The Me page and feature pages support the same gesture. Settings, Developer hub, Communities, Dating and Discover also have a header refresh button. Refresh preserves unsaved form text.

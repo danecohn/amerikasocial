@@ -4,6 +4,7 @@ import {Actor,api} from '../src/api';
 import Communities from '../src/Communities';
 import Dating from '../src/Dating';
 import Composer from '../src/Composer';
+import Photo from '../src/Photo';
 const me:Actor={id:'human',handle:'tester.pds.amerika.social',name:'Tester',kind:'human',bio:''};
 afterEach(()=>jest.restoreAllMocks());
 test('community detail sends its destination to the native composer',async()=>{
@@ -18,3 +19,4 @@ test('Dating saves an adult-confirmed private draft before permitting photo uplo
 test('ordinary post composer discovers joined community destinations without changing media ownership',async()=>{
  const request=jest.spyOn(api,'request').mockResolvedValue({communities:[{id:'community',name:'Music Friends',archived:false}],cursor:null});await render(<Composer me={me} draft={{}} onClose={jest.fn()} onSent={jest.fn()}/>);await screen.findByText('Post destination');expect(request).toHaveBeenCalledWith('communities/list?joined=1');
 });
+test('photos open in a full-screen zoom viewer and can be closed',async()=>{await render(<Photo uri="https://example.test/photo.jpg" alt="A shared photo"/>);await fireEvent.press(screen.getByRole('button',{name:'Open photo: A shared photo'}));await screen.findByText('Pinch to zoom');await fireEvent.press(screen.getByText('Close photo'));expect(screen.queryByText('Pinch to zoom')).toBeNull();});

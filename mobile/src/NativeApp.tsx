@@ -209,6 +209,8 @@ function AppContent() {
             }>("messages")
           ).conversations,
         );
+      else if (me && tab === "me")
+        setMe((await scoped<{ actor: Actor }>("me")).actor);
     } catch (e) {
       if (epoch === requestEpoch.current) setError(problem(e));
     } finally {
@@ -572,7 +574,7 @@ function AppContent() {
     );
   else if (!route && tab === "me" && me)
     content = (
-      <ScrollView contentContainerStyle={s.content}>
+        <ScrollView alwaysBounceVertical refreshControl={rc} contentContainerStyle={s.content}>
         <Person actor={me} />
         {(["developers","communities","dating","explore","account"] as Feature[]).map(name=><Button key={name} secondary title={{developers:"Developer hub",communities:"Amerika Communities",dating:"Amerika Dating",explore:"Discover & hashtags",account:"Account settings",moderation:"Moderation"}[name]} onPress={()=>showFeature(name)}/>)}
         {(me.admin||me.moderator)&&<Button secondary title="Moderation & administration" onPress={()=>showFeature("moderation")}/>}

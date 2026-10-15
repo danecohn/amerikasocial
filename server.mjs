@@ -1,4 +1,5 @@
 import {createMcpEvents} from './mcp-events.mjs';
+import {createDesktopAuth} from './desktop-auth.mjs';
 import {createLoginGuard} from './login-guard.mjs';
 import { createCommunities } from './communities.mjs';
 import { createBoosts } from './boosts.mjs';
@@ -286,6 +287,7 @@ const moderation=createModeration(db,{enforcement,reasons:prohibited,operations,
 const dating=createDating(db,{actor:id=>db.prepare('SELECT * FROM actors WHERE id=?').get(id),active:enforcement.requireActive,rules:requireRules,notify,admin:moderation.requireStaff,platformBlocked:(a,b)=>accountSafety.blocked(a,b)});
 const accountSafety=createAccountSafety(db,{cancelBilling:billing.cancelActor,remoteDelete:async id=>{try{await adminXrpc('com.atproto.admin.deleteAccount',{did:id});}catch(e){if(e.remoteStatus!==404&&!['AccountNotFound','RepoNotFound','NotFound'].includes(e.code))throw e;}},invalidate:id=>{accountWebhooks.revokeAccount(id);db.prepare('UPDATE api_keys SET revoked=? WHERE actor=? OR operator=?').run(new Date().toISOString(),id,id);db.prepare('UPDATE oauth_grants SET revoked=? WHERE owner=?').run(Date.now(),id);db.prepare('UPDATE account_mcp_keys SET revoked=? WHERE owner=?').run(new Date().toISOString(),id);for(const [key,s]of sessions)if(s.actor===id||s.operator===id)sessions.delete(key);db.prepare('DELETE FROM login_sessions WHERE actor=?').run(id);db.prepare('DELETE FROM agent_sessions WHERE actor=?').run(id);agentPdsSessions.delete(id);}});
 const push=createPush(db,{blocked:(a,b)=>accountSafety.blocked(a,b)});
+const desktopAuth=createDesktopAuth(db,{readSession:session,mintSession:sourceHash=>{const source=credentialStore.login(sourceHash);if(!source||source.expires<=Date.now())fail(401,'Your browser session expired. Sign in again.');const actor=db.prepare('SELECT * FROM actors WHERE id=?').get(source.actor);enforcement.requireActive(actor);requireRules(actor);const token=randomBytes(32).toString('base64url');const delegated={...source,tokenHash:hash(token)};sessions.set(hash(token),delegated);credentialStore.saveLogin(hash(token),delegated);return {token,actor:ownActor(actor)};}});
 const mcpEvents=createMcpEvents(db,{origin:()=>publicOrigin||'http://localhost:'+server.address().port,activeGrant:oauth.activeGrant});
 const server = http.createServer(async(req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');
@@ -294,6 +296,8 @@ const server = http.createServer(async(req,res)=>{
   try {
     const url=new URL(req.url,'http://localhost');
     const path=url.pathname;
+    if(path.startsWith('/api/desktop/')){if(req.method!=='POST')fail(405,'Use POST.');if(req.headers.origin&&req.headers.origin!==(publicOrigin||`http://${req.headers.host}`))fail(403,'Cross-origin requests are disabled.');const b=await body(req);res.setHeader('Cache-Control','no-store');if(path==='/api/desktop/start')return json(res,201,desktopAuth.start(b.challenge,loginGuard.clientIp(req)));if(path==='/api/desktop/approve')return json(res,200,desktopAuth.approve(b.id,req.headers.authorization?.replace(/^Bearer /,'')));if(path==='/api/desktop/exchange')return json(res,200,desktopAuth.exchange(b.id,b.verifier));fail(404,'Not found.');}
+    if(path==='/desktop-connect'||path==='/desktop-connect.js'){if(req.method!=='GET')fail(405,'Use GET.');res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('Content-Type',path.endsWith('.js')?'text/javascript':'text/html');return res.end(await readFile(join(root,'public',path.endsWith('.js')?'desktop-connect.js':'desktop-connect.html')));}
     if(path==='/.well-known/openai-apps-challenge'){
       if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');
       const challenge=await readFile(join(root,'public','.well-known','openai-apps-challenge'));
@@ -420,14 +424,18 @@ const server = http.createServer(async(req,res)=>{
     if(limit.until<Date.now()){limit.n=0;limit.until=Date.now()+60000;}
     limit.n++;limits.set(key,limit);if(limit.n>30)fail(429,'Too many requests. Try again in a minute.');
     if(path==='/api/media/upload'){
-      if(!s)fail(401,'Sign in to upload media.');allow(s,'post');const actor=db.prepare('SELECT * FROM actors WHERE id=?').get(me);enforcement.requireActive(actor);requireRules(actor);if(s.operator)requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(s.operator));
+      if(!s)fail(401,'Sign in to upload media.');
+      let uploadSession=s,uploadActor=me;
+      const requestedActor=url.searchParams.get('actor');
+      if(requestedActor&&requestedActor!==me){const owner=operatorOnly(s);const bot=db.prepare("SELECT * FROM actors WHERE id=? AND operator_id=? AND kind='agent'").get(requestedActor,owner.id);if(!bot)fail(403,'Choose a bot you own.');const delegated=agentPdsSessions.get(bot.id)||credentialStore.agent(bot.id)||{};uploadActor=bot.id;uploadSession={actor:bot.id,operator:me,...delegated};}
+      allow(uploadSession,'post');const actor=db.prepare('SELECT * FROM actors WHERE id=?').get(uploadActor);enforcement.requireActive(actor);requireRules(actor);if(uploadSession.operator)requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(uploadSession.operator));
       let mime=req.headers['content-type'];if(!['image/png','image/jpeg','image/webp','image/heic','image/heif','video/mp4','video/quicktime'].includes(mime))fail(400,'Use JPEG, PNG, WebP, iPhone HEIC/HEIF photos, MP4 or iPhone MOV videos.');
-      requireMediaAccess(actor,mime.startsWith('video/'));media.checkQuota(me);
+      requireMediaAccess(actor,mime.startsWith('video/'));media.checkQuota(uploadActor);
       if(mediaUploadBusy)fail(503,'Another photo or video is uploading or processing. Please retry shortly.');mediaUploadBusy=true;try{
-      const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>maxMediaBytes)fail(413,'Each photo or video must be at most 250 MB (0.25 GB).');chunks.push(chunk);}let bytes=Buffer.concat(chunks);chunks.length=0;media.checkQuota(me,bytes.length);if(mime.startsWith('video/')){bytes=await normalizeVideo(bytes,mime);mime='video/mp4';}else{bytes=await normalizePhoto(bytes,mime);mime='image/webp';}
-      let blob=null;if(networkActor(me)){const response=await fetch(`${pds}/xrpc/com.atproto.repo.uploadBlob`,{method:'POST',headers:{Authorization:`Bearer ${await jwtFor(s)}`,'Content-Type':mime},body:bytes,signal:AbortSignal.timeout(180000),redirect:'error'});if(!response.ok)fail(502,'Your account server could not save this media.');blob=(await response.json()).blob;if(!blob?.ref)fail(502,'Account server returned an invalid media reference.');}
-      enforcement.requireActive(db.prepare('SELECT * FROM actors WHERE id=?').get(me));
-      return json(res,201,{...media.save(me,mime,bytes,blob),...(mime==='image/webp'?{preview:'data:image/webp;base64,'+bytes.toString('base64')}:{})});
+      const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>maxMediaBytes)fail(413,'Each photo or video must be at most 250 MB (0.25 GB).');chunks.push(chunk);}let bytes=Buffer.concat(chunks);chunks.length=0;media.checkQuota(uploadActor,bytes.length);if(mime.startsWith('video/')){bytes=await normalizeVideo(bytes,mime);mime='video/mp4';}else{bytes=await normalizePhoto(bytes,mime);mime='image/webp';}
+      let blob=null;if(networkActor(uploadActor)){const response=await fetch(`${pds}/xrpc/com.atproto.repo.uploadBlob`,{method:'POST',headers:{Authorization:`Bearer ${await jwtFor(uploadSession)}`,'Content-Type':mime},body:bytes,signal:AbortSignal.timeout(180000),redirect:'error'});if(!response.ok)fail(502,'Your account server could not save this media.');blob=(await response.json()).blob;if(!blob?.ref)fail(502,'Account server returned an invalid media reference.');}
+      enforcement.requireActive(db.prepare('SELECT * FROM actors WHERE id=?').get(uploadActor));if(requestedActor&&requestedActor!==me){const current=db.prepare('SELECT operator_id FROM actors WHERE id=?').get(uploadActor);if(current?.operator_id!==me)fail(403,'Bot ownership changed during upload.');enforcement.requireActive(db.prepare('SELECT * FROM actors WHERE id=?').get(me));}
+      return json(res,201,{...media.save(uploadActor,mime,bytes,blob),...(mime==='image/webp'?{preview:'data:image/webp;base64,'+bytes.toString('base64')}:{})});
       }finally{mediaUploadBusy=false;}
     }
     const b=await body(req);

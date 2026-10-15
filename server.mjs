@@ -1,3 +1,4 @@
+import {createGaming} from './gaming.mjs';
 import {createMcpEvents} from './mcp-events.mjs';
 import {createDesktopAuth} from './desktop-auth.mjs';
 import {createLoginGuard} from './login-guard.mjs';
@@ -287,7 +288,8 @@ const oauth=createMcpOAuth(db,{origin:()=>publicOrigin||'http://localhost:'+serv
 const communities=createCommunities(db,{actor:id=>db.prepare('SELECT * FROM actors WHERE id=?').get(id),active:enforcement.requireActive,rules:requireRules});
 const moderation=createModeration(db,{enforcement,reasons:prohibited,operations,billing,publicActor,viewPost,webhooks:accountWebhooks,origin:()=>publicOrigin||'http://localhost:'+server.address().port});
 const dating=createDating(db,{actor:id=>db.prepare('SELECT * FROM actors WHERE id=?').get(id),active:enforcement.requireActive,rules:requireRules,notify,admin:moderation.requireStaff,platformBlocked:(a,b)=>accountSafety.blocked(a,b)});
-const accountSafety=createAccountSafety(db,{cancelBilling:billing.cancelActor,remoteDelete:async id=>{try{await adminXrpc('com.atproto.admin.deleteAccount',{did:id});}catch(e){if(e.remoteStatus!==404&&!['AccountNotFound','RepoNotFound','NotFound'].includes(e.code))throw e;}},invalidate:id=>{accountWebhooks.revokeAccount(id);db.prepare('UPDATE api_keys SET revoked=? WHERE actor=? OR operator=?').run(new Date().toISOString(),id,id);db.prepare('UPDATE oauth_grants SET revoked=? WHERE owner=?').run(Date.now(),id);db.prepare('UPDATE account_mcp_keys SET revoked=? WHERE owner=?').run(new Date().toISOString(),id);for(const [key,s]of sessions)if(s.actor===id||s.operator===id)sessions.delete(key);db.prepare('DELETE FROM login_sessions WHERE actor=?').run(id);db.prepare('DELETE FROM agent_sessions WHERE actor=?').run(id);agentPdsSessions.delete(id);}});
+const gaming=await createGaming(db,{dir,root,origin:req=>publicOrigin||'http://'+req.headers.host,plus:billing.plus,blocked:(a,b)=>accountSafety.blocked(a,b),staff:id=>['admin','moderator'].includes(moderation.role(id)),localPackages:process.env.GAMING_LOCAL_PACKAGES,originals:JSON.parse(await readFile(join(root,'gaming-originals.json'),'utf8'))});
+const accountSafety=createAccountSafety(db,{cancelBilling:billing.cancelActor,remoteDelete:async id=>{try{await adminXrpc('com.atproto.admin.deleteAccount',{did:id});}catch(e){if(e.remoteStatus!==404&&!['AccountNotFound','RepoNotFound','NotFound'].includes(e.code))throw e;}},invalidate:id=>{gaming.purge(id);accountWebhooks.revokeAccount(id);db.prepare('UPDATE api_keys SET revoked=? WHERE actor=? OR operator=?').run(new Date().toISOString(),id,id);db.prepare('UPDATE oauth_grants SET revoked=? WHERE owner=?').run(Date.now(),id);db.prepare('UPDATE account_mcp_keys SET revoked=? WHERE owner=?').run(new Date().toISOString(),id);for(const [key,s]of sessions)if(s.actor===id||s.operator===id)sessions.delete(key);db.prepare('DELETE FROM login_sessions WHERE actor=?').run(id);db.prepare('DELETE FROM agent_sessions WHERE actor=?').run(id);agentPdsSessions.delete(id);}});
 const push=createPush(db,{blocked:(a,b)=>accountSafety.blocked(a,b)});
 const desktopAuth=createDesktopAuth(db,{readSession:session,mintSession:sourceHash=>{const source=credentialStore.login(sourceHash);if(!source||source.expires<=Date.now())fail(401,'Your browser session expired. Sign in again.');const actor=db.prepare('SELECT * FROM actors WHERE id=?').get(source.actor);enforcement.requireActive(actor);requireRules(actor);const token=randomBytes(32).toString('base64url');const delegated={...source,tokenHash:hash(token)};sessions.set(hash(token),delegated);credentialStore.saveLogin(hash(token),delegated);return {token,actor:ownActor(actor)};}});
 const mcpEvents=createMcpEvents(db,{origin:()=>publicOrigin||'http://localhost:'+server.address().port,activeGrant:oauth.activeGrant});
@@ -298,6 +300,27 @@ const server = http.createServer(async(req,res)=>{
   try {
     const url=new URL(req.url,'http://localhost');
     const path=url.pathname;
+    const gameAsset=/^\/gaming\/content\/([A-Za-z0-9_-]{43})\/(.+)$/.exec(path);
+    if(gameAsset){if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');return await gaming.content(gameAsset[1],decodeURIComponent(gameAsset[2]),req,res);}
+    if(path.startsWith('/gaming/covers/')){const name=path.slice(15);if(!/^(last-lamp|saint-marrows|salt-mine-9|ward-seven|pickles-pickle-shop)\.png$/.test(name))fail(404,'Not found.');if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');res.setHeader('Content-Type','image/png');res.setHeader('Cache-Control','public,max-age=3600');return res.end(req.method==='HEAD'?undefined:await readFile(join(root,'public','gaming-covers',name)));}
+    if(path==='/gaming'||path==='/gaming/')res.setHeader('Content-Security-Policy',"default-src 'self'; style-src 'self'; script-src 'self'; frame-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'");
+    if(path.startsWith('/api/gaming/')){
+      const credential=req.headers.authorization?.replace(/^Bearer /,''),signed=session(credential);const route=path.slice(12);
+      if(req.method==='GET'&&route==='catalog')return json(res,200,gaming.catalog(signed?.actor));
+      if(!signed)fail(401,'Sign in to Amerika Social to play and save progress.');enforcement.requireActive(db.prepare('SELECT * FROM actors WHERE id=?').get(signed.actor));requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(signed.actor));const owner=operatorOnly(signed);
+      const key='gaming:'+owner.id,bucket=limits.get(key)||{n:0,until:Date.now()+60000};if(bucket.until<Date.now()){bucket.n=0;bucket.until=Date.now()+60000;}limits.set(key,bucket);if(++bucket.n>180)fail(429,'Too many gaming requests. Retry shortly.');
+      if(req.method==='GET'&&route==='mine')return json(res,200,gaming.mine(owner.id));
+      if(req.method==='GET'&&route==='reports')return json(res,200,gaming.reports(owner.id));
+      if(!['POST','PUT'].includes(req.method))fail(405,'Method not allowed.');if(req.headers.origin&&req.headers.origin!==(publicOrigin||`http://${req.headers.host}`))fail(403,'Cross-origin requests are disabled.');
+      const target=/^games\/([a-z0-9-]{1,80})\/(archive|launch|save|manage|report)$/.exec(route);
+      if(target&&target[2]==='archive'&&req.method==='PUT')return json(res,201,await gaming.upload(owner.id,target[1],req));
+      if(req.method!=='POST')fail(405,'Method not allowed.');const payload=await body(req);
+      if(route==='games')return json(res,201,gaming.create(owner.id,payload));
+      if(route==='heartbeat'){gaming.lease(owner.id,payload.ticket);return json(res,200,{ok:true});}
+      if(target){const [_,id,action]=target;if(action==='launch')return json(res,200,gaming.launch(owner.id,id));if(action==='save')return json(res,200,gaming.commit(owner.id,id,payload));if(action==='manage')return json(res,200,gaming.manage(owner.id,id,payload));if(action==='report')return json(res,201,gaming.report(owner.id,id,payload));}
+      fail(404,'Gaming endpoint not found.');
+    }
+
     if(path.startsWith('/api/desktop/')){if(req.method!=='POST')fail(405,'Use POST.');if(req.headers.origin&&req.headers.origin!==(publicOrigin||`http://${req.headers.host}`))fail(403,'Cross-origin requests are disabled.');const b=await body(req);res.setHeader('Cache-Control','no-store');if(path==='/api/desktop/start')return json(res,201,desktopAuth.start(b.challenge,loginGuard.clientIp(req)));if(path==='/api/desktop/approve')return json(res,200,desktopAuth.approve(b.id,req.headers.authorization?.replace(/^Bearer /,'')));if(path==='/api/desktop/exchange')return json(res,200,desktopAuth.exchange(b.id,b.verifier));fail(404,'Not found.');}
     if(path==='/desktop-connect'||path==='/desktop-connect.js'){if(req.method!=='GET')fail(405,'Use GET.');res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('Content-Type',path.endsWith('.js')?'text/javascript':'text/html');return res.end(await readFile(join(root,'public',path.endsWith('.js')?'desktop-connect.js':'desktop-connect.html')));}
     if(path==='/.well-known/openai-apps-challenge'){
@@ -329,10 +352,10 @@ const server = http.createServer(async(req,res)=>{
     }
     if (!path.startsWith('/api/')) {
       if(req.method!=='GET') fail(405,'Method not allowed.');
-      const files={'/downloads':['downloads.html','text/html'],'/downloads/':['downloads.html','text/html'],'/downloads.css':['downloads.css','text/css'],'/':['index.html','text/html'],'/moderate':['index.html','text/html'],'/privacy':['privacy.html','text/html'],'/terms':['terms.html','text/html'],'/plugin':['plugin.html','text/html'],'/support':['support.html','text/html'],'/legal.css':['legal.css','text/css'],'/moderation-webhooks.md':['moderation-webhooks.md','text/plain'],'/webhook-receivers.md':['webhook-receivers.md','text/plain'],'/moderation.js':['moderation.js','text/javascript'],'/app.js':['app.js','text/javascript'],'/account.js':['account.js','text/javascript'],'/dating.js':['dating.js','text/javascript'],'/communities.js':['communities.js','text/javascript'],'/features.css':['features.css','text/css'],'/style.css':['style.css','text/css'],'/agent.md':['agent.md','text/plain'],'/logo.svg':['logo.svg','image/svg+xml'],'/manifest.webmanifest':['manifest.webmanifest','application/manifest+json'],'/icon-32.png':['icon-32.png','image/png'],'/icon-180.png':['icon-180.png','image/png'],'/icon-192.png':['icon-192.png','image/png'],'/icon-512.png':['icon-512.png','image/png'],'/icon-maskable-512.png':['icon-maskable-512.png','image/png']};
+      const files={'/gaming':['gaming.html','text/html'],'/gaming/':['gaming.html','text/html'],'/gaming.js':['gaming.js','text/javascript'],'/gaming.css':['gaming.css','text/css'],'/gaming/developers':['gaming-guide.html','text/html'],'/gaming/sdk.js':['gaming-bridge.js','text/javascript'],'/downloads':['downloads.html','text/html'],'/downloads/':['downloads.html','text/html'],'/downloads.css':['downloads.css','text/css'],'/':['index.html','text/html'],'/moderate':['index.html','text/html'],'/privacy':['privacy.html','text/html'],'/terms':['terms.html','text/html'],'/plugin':['plugin.html','text/html'],'/support':['support.html','text/html'],'/legal.css':['legal.css','text/css'],'/moderation-webhooks.md':['moderation-webhooks.md','text/plain'],'/webhook-receivers.md':['webhook-receivers.md','text/plain'],'/moderation.js':['moderation.js','text/javascript'],'/app.js':['app.js','text/javascript'],'/account.js':['account.js','text/javascript'],'/dating.js':['dating.js','text/javascript'],'/communities.js':['communities.js','text/javascript'],'/features.css':['features.css','text/css'],'/style.css':['style.css','text/css'],'/agent.md':['agent.md','text/plain'],'/logo.svg':['logo.svg','image/svg+xml'],'/manifest.webmanifest':['manifest.webmanifest','application/manifest+json'],'/icon-32.png':['icon-32.png','image/png'],'/icon-180.png':['icon-180.png','image/png'],'/icon-192.png':['icon-192.png','image/png'],'/icon-512.png':['icon-512.png','image/png'],'/icon-maskable-512.png':['icon-maskable-512.png','image/png']};
       files['/mobile-verification']=['mobile-verification.html','text/html'];
       const f=files[path]; if(!f) fail(404,'Not found.');
-      res.setHeader('Content-Type',f[1]); if(['downloads.html','downloads.css','index.html','app.js','account.js','style.css','dating.js','communities.js','features.css','privacy.html','terms.html','plugin.html','support.html','legal.css','moderation.js'].includes(f[0]))res.setHeader('Cache-Control','no-store'); res.end(await readFile(join(root,'public',f[0]))); return;
+      res.setHeader('Content-Type',f[1]); if(['gaming.html','gaming.js','gaming.css','gaming-guide.html','gaming-bridge.js','downloads.html','downloads.css','index.html','app.js','account.js','style.css','dating.js','communities.js','features.css','privacy.html','terms.html','plugin.html','support.html','legal.css','moderation.js'].includes(f[0]))res.setHeader('Cache-Control','no-store'); res.end(await readFile(join(root,'public',f[0]))); return;
     }
     const token=req.headers.authorization?.replace(/^Bearer /,'');
     const s=session(token); const me=s?.actor;
@@ -681,8 +704,11 @@ const server = http.createServer(async(req,res)=>{
     }
     fail(404,'Not found.');
   } catch(error) {
+    if(res.headersSent){res.destroy();return;}
     if(error.retryAfter)res.setHeader('Retry-After',String(error.retryAfter));
     json(res,error.status||500,{error:error.status?error.message:'Something went wrong. Please try again.',...(error.retryAfter?{retryAfter:error.retryAfter}:{})});
   }
 });
+server.requestTimeout=30*60000;
+void gaming.bootstrap();
 server.listen(Number(process.env.PORT||3000),process.env.HOST||'127.0.0.1',()=>console.log(`Amerika Social ${pds?'AT Protocol':'local preview'} listening on ${JSON.stringify(server.address())}`));

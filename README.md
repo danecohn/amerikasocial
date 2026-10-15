@@ -85,3 +85,11 @@ Account notification webhooks are available in Developer hub for human accounts 
 ## License
 
 Amerika Social project code is licensed under the GNU General Public License, version 3 only (GPL-3.0-only). See [LICENSE](LICENSE). Third-party components retain their own licenses and notices.
+
+## Amerika Gaming
+
+`/gaming` is a browser-only game library: no player installer is required. An active human Social session is required for launch and cloud saves. Plus owners may upload self-contained HTML5 game ZIPs smaller than 1,000,000,000 bytes; extracted contents must also remain below that limit. Uploads are streamed, paths and file types validated, and games run in opaque sandboxed frames without access to Social credentials or external network services. Owners can replace, withdraw or delete games; moderators can disable them and review game reports.
+
+Game versions, upload staging and SQLite game saves live under the persistent `DATA_DIR`. Each save is account/game scoped, limited to 1 MB and uses compare-and-swap revisions to prevent another window silently overwriting newer progress. The SDK exposes confirmed saves and restores localStorage before community scripts execute. Originals additionally restore Godot save files and room checkpoints. See `/gaming/developers` for the package contract and SDK. SQLite backups include game saves; game files remain on the Railway volume and need the volume’s own backup policy.
+
+`gaming-originals.json` pins five official web packages by SHA-256. Background startup installs them from the project’s GitHub release, retries unavailable assets and upgrades changed packages while preserving saves. Hidden or disabled games remain withdrawn. The build tool `scripts/build-gaming.py` creates isolated copies of the supplied Godot projects, adds the cloud-save adapter and Amerika LLC startup branding, and exports single-threaded WebGL 2 editions. Original source folders are untouched. Pickle’s copied texture assets are optimized with Pillow by `scripts/optimize-gaming.py`. Build outputs and user-submitted game content are separate from the platform-code license.

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "last-lamp",
+    "title": "THE LAST LAMP",
+    "description": "A lighthouse. A fading light. A roguelike descent through grief, monsters and memories.",
+    "controls": "WASD move · Mouse / arrows attack · Space ability · Esc pause",
+    "cover": "/gaming/covers/last-lamp.png",
+    "archive": "https://github.com/danecohn/amerikasocial/releases/download/gaming-web-v1/last-lamp-web.zip",
+    "sha256": "e4b96a55442e89df1e10a0cd427ab10bd3af536d05e419e3535accbb3a44a0ad"
+  },
+  {
+    "id": "saint-marrows",
+    "title": "SAINT MARROW’S",
+    "description": "An abandoned orphanage, ghost children and a haunting that changes with every run.",
+    "controls": "WASD move · Mouse / arrows attack · Space ability · Esc pause",
+    "cover": "/gaming/covers/saint-marrows.png",
+    "archive": "https://github.com/danecohn/amerikasocial/releases/download/gaming-web-v1/saint-marrows-web.zip",
+    "sha256": "6cd19abcac46c177d4e1ec6e944f06b0aac634b265c3992ad2f5877040681c0f"
+  },
+  {
+    "id": "salt-mine-9",
+    "title": "SALT MINE 9",
+    "description": "The mine has collapsed. The radio is still talking. Find your way through the dark.",
+    "controls": "WASD move · Mouse / arrows attack · Space ability · Esc pause",
+    "cover": "/gaming/covers/salt-mine-9.png",
+    "archive": "https://github.com/danecohn/amerikasocial/releases/download/gaming-web-v1/salt-mine-9-web.zip",
+    "sha256": "6eb1ea4f830134409dd02db55ab6441eff2cb57d8914d69435ffd596baf81d94"
+  },
+  {
+    "id": "ward-seven",
+    "title": "WARD SEVEN",
+    "description": "A hospital that remembers you. Survive its wards and uncover who you really are.",
+    "controls": "WASD move · Mouse / arrows attack · Space ability · Esc pause",
+    "cover": "/gaming/covers/ward-seven.png",
+    "archive": "https://github.com/danecohn/amerikasocial/releases/download/gaming-web-v1/ward-seven-web.zip",
+    "sha256": "09bdc00c489e9a97f74aa938d18296c7141f63c13c81a35424bbb29bfda04b4e"
+  },
+  {
+    "id": "pickles-pickle-shop",
+    "title": "Pickle’s Pickle Shop",
+    "description": "Survive the night shift in Pickle’s strange shop. Watch the cameras, manage the doors, and discover the story.",
+    "controls": "Keyboard / mouse · Q/E doors · In-game controls and camera panel · Esc pause",
+    "cover": "/gaming/covers/pickles-pickle-shop.png",
+    "archive": "https://github.com/danecohn/amerikasocial/releases/download/gaming-web-v1/pickles-pickle-shop-web.zip",
+    "sha256": "0113cdbfbf88f139186d87a2f2d5b3e014b23b0181b463574af57f645cdf001b"
+  }
+]

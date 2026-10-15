@@ -5,6 +5,7 @@ import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHash} from 'node:crypto';
+import {JSDOM,VirtualConsole} from 'jsdom';
 
 test('desktop browser pairing creates an independent session and bot media delegation is owner-bound',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'amerika-desktop-integration-'));
@@ -24,5 +25,20 @@ test('desktop browser pairing creates an independent session and bot media deleg
   await call('logout',{},human.token);assert.equal((await call('me',null,exchange.data.token)).data.actor.id,human.actor.id);
   const upload=await fetch(base+'/api/media/upload?actor='+encodeURIComponent(bot.actor.id),{method:'POST',headers:{'Content-Type':'image/png',Authorization:'Bearer '+other.token},body:Buffer.from('bad')});assert.equal(upload.status,403);
   const markup=await(await fetch(base+'/desktop-connect')).text();assert.ok(markup.includes('desktop-connect.js'));assert.ok(!markup.includes(exchange.data.token));
+  const browserRequest=await call('desktop/start',{challenge});
+  const errors=[],console=new VirtualConsole();console.on('jsdomError',error=>errors.push(error.message));
+  const dom=await JSDOM.fromURL(base+'/desktop-connect#'+browserRequest.data.id,{runScripts:'dangerously',resources:'usable',virtualConsole:console,beforeParse(window){window.fetch=(path,options)=>fetch(new URL(path,base),options);}});
+  try{
+   const wait=async check=>{for(let i=0;i<150;i++){if(check())return;await new Promise(resolve=>setTimeout(resolve,20));}throw Error('Browser approval timeout: '+dom.window.document.body.textContent);};
+   await wait(()=>typeof dom.window.document.querySelector('#switch').onclick==='function');
+   const document=dom.window.document;document.querySelector('#switch').click();
+   assert.equal(document.querySelector('#name-label').hidden,false);
+   const form=document.querySelector('#form');form.elements.handle.value='desktop-browser.demo';form.elements.name.value='Desktop browser reviewer';form.elements.password.value=password;form.elements.americanConfirmed.checked=true;form.elements.rulesAccepted.checked=true;
+   form.dispatchEvent(new dom.window.Event('submit',{cancelable:true,bubbles:true}));
+   await wait(()=>!document.querySelector('#codes').hidden);assert.ok(document.querySelector('#code-list').textContent.length>20);
+   document.querySelector('#saved').click();await wait(()=>document.body.textContent.includes('Connected. Return to Amerika Social'));
+   assert.deepEqual(errors,[]);assert.ok(!dom.window.location.href.includes('token='));
+   const fromBrowser=await call('desktop/exchange',{id:browserRequest.data.id,verifier});assert.equal(fromBrowser.status,200);assert.equal(fromBrowser.data.actor.name,'Desktop browser reviewer');
+  }finally{dom.window.close();}
  }finally{const stopped=new Promise(resolve=>child.once('exit',resolve));child.kill();await stopped;await rm(dir,{recursive:true,force:true});}
 });

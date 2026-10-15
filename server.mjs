@@ -21,6 +21,7 @@ import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createBilling } from './billing.mjs';
 import {createAppleBilling} from './apple-billing.mjs';
+import {createGoogleBilling} from './google-billing.mjs';
 import {createAccountSafety} from './account-safety.mjs';
 import {createPush} from './push.mjs';
 import { createRecovery } from './recovery.mjs';
@@ -128,6 +129,7 @@ const limits = new Map();
 const loginGuard=createLoginGuard(db);
 const billing = createBilling(db,publicOrigin);
 const appleBilling=createAppleBilling(db);
+const googleBilling=createGoogleBilling(db);
 const enforcement=createEnforcement(db,prohibited,{remoteAction:async body=>adminXrpc('com.atproto.admin.updateSubjectStatus',body)});
 const recovery=createRecovery(db,{resetRemote:async(did,password)=>{await adminXrpc('com.atproto.admin.updateAccountPassword',{did,password});},invalidate:id=>{db.prepare('UPDATE push_devices SET enabled=0 WHERE owner=?').run(id);db.prepare('UPDATE push_deliveries SET status=? WHERE device IN (SELECT id FROM push_devices WHERE owner=?)').run('canceled',id);accountWebhooks.revokeAccount(id);db.prepare('UPDATE oauth_grants SET revoked=? WHERE owner=?').run(Date.now(),id);db.prepare('UPDATE account_mcp_keys SET revoked=? WHERE owner=? AND revoked IS NULL').run(new Date().toISOString(),id);for(const [key,s] of sessions)if(s.actor===id||s.operator===id)sessions.delete(key);db.prepare('DELETE FROM login_sessions WHERE actor=?').run(id);for(const agent of db.prepare('SELECT id FROM actors WHERE id=? OR operator_id=?').all(id,id)){agentPdsSessions.delete(agent.id);db.prepare('DELETE FROM agent_sessions WHERE actor=?').run(agent.id);}}});
 db.exec('CREATE TABLE IF NOT EXISTS login_sessions(token_hash TEXT PRIMARY KEY,actor TEXT NOT NULL,expires INTEGER NOT NULL);');
@@ -339,6 +341,7 @@ const server = http.createServer(async(req,res)=>{
     if(path.startsWith('/api/dating/')){const action=path.slice(12);if(req.method==='GET')return json(res,200,action==='admin/reports'?dating.reports(s):dating.get(action,url,s));if(req.method!=='POST')fail(405,'Method not allowed.');if(req.headers.origin&&req.headers.origin!==(publicOrigin||`http://${req.headers.host}`))fail(403,'Cross-origin requests are disabled.');const key='dating:'+me+':'+action;const l=limits.get(key)||{n:0,until:Date.now()+60000};if(l.until<Date.now()){l.n=0;l.until=Date.now()+60000;}limits.set(key,l);if(++l.n>(action==='upload'?20:60))fail(429,'Too many Dating requests. Retry shortly.');if(action==='upload')return json(res,201,await dating.upload(req,s,url));const b=await body(req);return json(res,200,action==='admin/action'?dating.action(s,b):dating.post(action,b,s));}
 
     if(path==='/api/media'&&req.method==='GET')return media.serve(url.searchParams.get('id'),req,res);
+    if(path==='/api/google/notifications'&&req.method==='POST')return json(res,200,await googleBilling.notification(req.headers.authorization?.replace(/^Bearer /,''),await body(req)));
     if(path==='/api/apple/notifications'&&req.method==='POST')return json(res,200,await appleBilling.notification((await body(req)).signedPayload));
     if(path==='/api/stripe/webhook'&&req.method==='POST'){let raw=Buffer.alloc(0);for await(const chunk of req){raw=Buffer.concat([raw,chunk]);if(raw.length>1000000)fail(413,'Request is too large.');}await billing.webhook(raw,req.headers['stripe-signature']);return json(res,200,{received:true});}
     if(req.method==='GET') {
@@ -351,6 +354,7 @@ const server = http.createServer(async(req,res)=>{
       if(path==='/api/health'){db.prepare('SELECT 1').get();return json(res,200,{ok:true});}
       if(path.startsWith('/api/moderation/'))return json(res,200,moderation.get(path.slice(16),url,s));
       if(path==='/api/admin'){const a=me&&db.prepare('SELECT * FROM actors WHERE id=?').get(me);enforcement.requireAdmin(s,a);return json(res,200,{...enforcement.queue(),operations:operations.status(),billingConfigured:billing.enabled,billingVerification:billing.verification()});}
+      if(path==='/api/billing/google'){if(!s)fail(401,'Sign in to manage Google subscriptions.');const owner=operatorOnly(s);return json(res,200,googleBilling.enabled?{...googleBilling.account(owner.id),alreadyPlus:billing.plus(owner.id)}:{enabled:false,productId:googleBilling.product});}
       if(path==='/api/billing/apple'){if(!s)fail(401,'Sign in to manage Apple subscriptions.');const owner=operatorOnly(s);return json(res,200,appleBilling.enabled?{...appleBilling.account(owner.id),alreadyPlus:billing.plus(owner.id)}:{enabled:false,productId:appleBilling.product});}
       if(path==='/api/billing'){if(!s)fail(401,'Sign in to see your plan.');const actor=billingActor(s,url.searchParams.get('actor'));return json(res,200,billing.status(actor.id));}
       if(path==='/api/hashtags') {if(!s)fail(401,'Sign in to see followed hashtags.');allow(s,'read');return json(res,200,{tags:db.prepare('SELECT tag FROM tag_follows WHERE actor=? ORDER BY tag').all(me).map(r=>r.tag)});}
@@ -565,6 +569,7 @@ const server = http.createServer(async(req,res)=>{
     }
     if(path==='/api/agent-keys/revoke') {operatorOnly(s);const key=db.prepare('SELECT id FROM api_keys WHERE id=? AND operator=?').get(b.id,me);if(!key)fail(404,'Credential not found.');db.prepare('UPDATE api_keys SET revoked=? WHERE id=?').run(new Date().toISOString(),b.id);return json(res,200,{ok:true});}
     if(path==='/api/logout'){if(typeof b.pushDeviceId==='string'&&db.prepare('SELECT 1 FROM push_devices WHERE id=? AND owner=?').get(b.pushDeviceId,me))push.disable(me,b.pushDeviceId);sessions.delete(hash(token));db.prepare('DELETE FROM login_sessions WHERE token_hash=?').run(hash(token));return json(res,200,{ok:true});}
+    if(path==='/api/billing/google/verify'){const owner=operatorOnly(s);const verified=await googleBilling.verify(owner.id,b.purchaseToken);return json(res,200,{...verified,plus:billing.plus(owner.id)});}
     if(path==='/api/billing/apple/verify'){const owner=operatorOnly(s);const verified=await appleBilling.verify(owner.id,b.transactionId);return json(res,200,{...verified,plus:billing.plus(owner.id)});}
     if(path==='/api/billing/checkout'||path==='/api/billing/portal'||path==='/api/billing/refresh'){if(s.keyId)fail(403,'Sign in to manage billing.');const actor=billingActor(s,b.actor);requireRules(actor);if(path.endsWith('/refresh')){if(billing.enabled)await billing.refresh(actor.id);return json(res,200,billing.status(actor.id));}return json(res,200,await (path.endsWith('/checkout')?billing.checkout(actor):billing.customerPortal(actor)));}
     if(path==='/api/hashtags/follow'){const tag=tagName(b.tag);if(typeof b.following!=='boolean')fail(400,'Choose follow or unfollow.');if(b.following)db.prepare('INSERT OR IGNORE INTO tag_follows VALUES (?,?)').run(me,tag);else db.prepare('DELETE FROM tag_follows WHERE actor=? AND tag=?').run(me,tag);return json(res,200,{tag,following:b.following});}

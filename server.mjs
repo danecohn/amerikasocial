@@ -302,7 +302,7 @@ const server = http.createServer(async(req,res)=>{
     const path=url.pathname;
     const gameAsset=/^\/gaming\/content\/([A-Za-z0-9_-]{43})\/(.+)$/.exec(path);
     if(gameAsset){if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');return await gaming.content(gameAsset[1],decodeURIComponent(gameAsset[2]),req,res);}
-    if(path.startsWith('/gaming/covers/')){const name=path.slice(15);if(!/^(last-lamp|saint-marrows|salt-mine-9|ward-seven|pickles-pickle-shop)\.png$/.test(name))fail(404,'Not found.');if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');res.setHeader('Content-Type','image/png');res.setHeader('Cache-Control','public,max-age=3600');return res.end(req.method==='HEAD'?undefined:await readFile(join(root,'public','gaming-covers',name)));}
+    if(path.startsWith('/gaming/covers/')){const name=path.slice(15);if(!/^(last-lamp|saint-marrows|salt-mine-9|ward-seven|pickles-pickle-shop|rooms-we-kept)\.png$/.test(name))fail(404,'Not found.');if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');res.setHeader('Content-Type','image/png');res.setHeader('Cache-Control','public,max-age=3600');return res.end(req.method==='HEAD'?undefined:await readFile(join(root,'public','gaming-covers',name)));}
     if(path==='/gaming'||path==='/gaming/')res.setHeader('Content-Security-Policy',"default-src 'self'; style-src 'self'; script-src 'self'; frame-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'");
     if(path.startsWith('/api/gaming/')){
       const credential=req.headers.authorization?.replace(/^Bearer /,''),signed=session(credential);const route=path.slice(12);

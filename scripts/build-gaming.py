@@ -2,9 +2,10 @@
 import argparse,json,re,shutil,subprocess,zipfile,hashlib,sys
 from pathlib import Path
 
-parser=argparse.ArgumentParser();parser.add_argument('--godot',required=True);parser.add_argument('--work',required=True);parser.add_argument('--variety',required=True);parser.add_argument('--pickles',required=True);parser.add_argument('--only');args=parser.parse_args()
+parser=argparse.ArgumentParser();parser.add_argument('--godot',required=True);parser.add_argument('--work',required=True);parser.add_argument('--variety',required=True);parser.add_argument('--pickles',required=True);parser.add_argument('--only');parser.add_argument('--neuroscience');args=parser.parse_args()
 repo=Path(__file__).resolve().parent.parent;work=Path(args.work);work.mkdir(parents=True,exist_ok=True)
 games=[('last-lamp','THE LAST LAMP','The_Last_Lamp'),('saint-marrows',"SAINT MARROW'S",'Saint_Marrows'),('salt-mine-9','SALT MINE 9','Salt_Mine_9'),('ward-seven','WARD SEVEN','Ward_Seven'),('pickles-pickle-shop',"Pickle’s Pickle Shop",'Godot')]
+if args.neuroscience:games.append(('rooms-we-kept','The Rooms We Kept',''))
 cloud='''extends Node
 var elapsed := 0.0
 var previous := ""
@@ -52,7 +53,9 @@ for slug,title,folder in games:
  if args.only and slug!=args.only:continue
  dest=work/'projects'/slug;output=work/'exports'/slug;output.mkdir(parents=True,exist_ok=True)
  if not (dest/'project.godot').exists():
-  if slug=='pickles-pickle-shop':
+  if slug=='rooms-we-kept':
+   shutil.copytree(Path(args.neuroscience),dest,ignore=shutil.ignore_patterns('.godot','.git','*.import','builds','packages','reference','evidence','*.zip','*.exe','*.pck'),dirs_exist_ok=True)
+  elif slug=='pickles-pickle-shop':
    shutil.copytree(Path(args.pickles)/'Godot',dest,ignore=shutil.ignore_patterns('.godot','.git','*.import','*.part*','*.zip','*.exe','*.pck','*.log','exports'),dirs_exist_ok=True)
    source=Path(args.pickles)/'Godot'
    for first in source.rglob('*.part00'):
@@ -70,7 +73,7 @@ for slug,title,folder in games:
      relative=Path(entry.filename[len(prefix):])
      if any(p in ['..','.godot','.git','generator'] for p in relative.parts) or relative.suffix in ['.import','.zip']:continue
      target=dest/relative;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(z.read(entry))
- if slug!='pickles-pickle-shop':
+ if slug in ['last-lamp','saint-marrows','salt-mine-9','ward-seven']:
   game=dest/'kit/game.gd';source=game.read_text()
   source=source.replace('return int(save.get("runs", 0)) > 0 or bool(save.get("seen_intro", false))','return not (save.get("amerika_checkpoint", {}) as Dictionary).is_empty() or int(save.get("runs", 0)) > 0 or bool(save.get("seen_intro", false))');game.write_text(source)
   title_script=dest/'kit/title.gd';source=title_script.read_text()
@@ -100,15 +103,18 @@ for slug,title,folder in games:
    run_script.write_text(source)
  text=(dest/'project.godot').read_text(encoding='utf-8')
  text=re.sub(r'config/features=.*', 'config/features=PackedStringArray("4.7", "GL Compatibility")',text)
+ if '[autoload]' not in text:text+='\n[autoload]\n'
  if 'AmerikaCloud=' not in text:text=text.replace('[autoload]','[autoload]\n\nAmerikaCloud="*res://amerika_cloud.gd"')
  text=re.sub(r'config/company=.*','config/company="Amerika LLC"',text)
  if slug=='pickles-pickle-shop':
   text=text.replace('config/name=', 'run/max_fps=30\nconfig/name=',1) if 'run/max_fps=' not in text else text
  if '[rendering]' not in text:text+='\n[rendering]\n'
+ for setting in ['textures/vram_compression/import_etc2_astc','textures/vram_compression/import_s3tc_bptc']:
+  if setting+'=' not in text:text=text.replace('[rendering]','[rendering]\n'+setting+'=true',1)
  text=re.sub(r'^renderer/rendering_method(?:\.mobile)?=.*\n?','',text,flags=re.M)
  text=text.replace('[rendering]','[rendering]\nrenderer/rendering_method="gl_compatibility"\nrenderer/rendering_method.mobile="gl_compatibility"',1)
- (dest/'project.godot').write_text(text,encoding='utf-8');(dest/'amerika_cloud.gd').write_text(cloud,encoding='utf-8')
- (dest/'amerika_shell.html').write_text(shell.replace('GAME_TITLE',title.replace('&','&amp;').replace('<','&lt;')),encoding='utf-8')
+ (dest/'project.godot').write_text(text,encoding='utf-8');(dest/'amerika_cloud.gd').write_text(cloud if slug!='rooms-we-kept' else cloud.replace('create_callback(_flush)','create_callback(_force_flush)')+'\nfunc _force_flush(arguments: Array) -> void:\n var scene := get_tree().current_scene\n if scene and scene.has_method("save_game") and scene.get("mode") != "title": scene.call("save_game")\n _flush(arguments)\n',encoding='utf-8')
+ (dest/'amerika_shell.html').write_text(shell.replace('GAME_TITLE',title.replace('&','&amp;').replace('<','&lt;')).replace('Original game by Forgotten Woods Studios','Developed by Forgotten Woods Studios and Amerika LLC · Theory by Spook Nukem' if slug=='rooms-we-kept' else 'Original game by Forgotten Woods Studios'),encoding='utf-8')
  (dest/'export_presets.cfg').write_text('''[preset.0]
 name="Amerika Web"
 platform="Web"

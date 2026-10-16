@@ -43,5 +43,15 @@
     "cover": "/gaming/covers/pickles-pickle-shop.png",
     "archive": "https://github.com/danecohn/amerikasocial/releases/download/gaming-web-v1/pickles-pickle-shop-web-clarity-v2.zip",
     "sha256": "d06e01a724d12020cb768ee7fe09b0b88ceb8db1255b5ea30950fc7dcc3b6478"
+  },
+  {
+    "id": "rooms-we-kept",
+    "title": "The Rooms We Kept",
+    "description": "A seven-room narrative about memory, attention, dissociation and finding a way back. Explore the house, solve gentle puzzles and discover 27 field notes. Developed by Forgotten Woods Studios and Amerika LLC; theory by Spook Nukem.",
+    "controls": "WASD / arrows move · E / Enter interact · Q change attention · Hold Space steady · J notes · G guidance · Esc pause",
+    "genre": "Narrative / exploration",
+    "cover": "/gaming/covers/rooms-we-kept.png",
+    "archive": "https://github.com/danecohn/amerikasocial/releases/download/gaming-web-v1/rooms-we-kept-web.zip",
+    "sha256": "bcb2c207947bb36a3a59a2900870a5327706b5ab3aec2da02f3f7b31556a44ba"
   }
 ]

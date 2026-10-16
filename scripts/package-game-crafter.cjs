@@ -3,10 +3,12 @@ const path=require('path');
 const dir='artifacts/game-crafter-release/game-crafter';
 let p=JSON.parse(fs.readFileSync(path.join(dir,'plugin.json'),'utf8'));
 p.version='1.0.2';
+p.author={name:'Amerika LLC',email:'support@amerika.social'};
 p.description='Design, build, verify and package Godot games, then upload and publish finished browser games through the Amerika Gaming OAuth connection.';
 p.homepage='https://www.amerika.social/game-crafter';
 const o=p.extensions['com.openai'],i=o.interface;
 i.logo='assets/icon.png';i.composerIcon='assets/icon.png';
+i.developerName='Amerika LLC';
 i.longDescription='Game Crafter helps you design, build, repair, test and package editable Godot games using its game-development reference library. Work through a playable slice, original assets, interaction and save systems, and verification of the actual export. The included Amerika Gaming Publisher connection checks your publishing eligibility, lists your games, prepares private browser-game uploads, reports validation status and publishes a validated draft only when you explicitly ask. Building and ZIP transfer require file and command tools in your AI workspace, plus a suitable engine and export templates. This is not a remote compilation service. The Gaming connection uses OAuth and has no access to social posts, private messages or bots. You must own the rights to submitted content. Browser exports must be self-contained; native desktop builds cannot run in the Gaming player.';
 i.websiteURL=p.homepage;i.supportURL=p.homepage+'/support';i.privacyPolicyURL=p.homepage+'/privacy';i.termsOfServiceURL=p.homepage+'/terms';
 o.review={commerce:true,commerce_description:'Publishing requires an existing Amerika Social Plus entitlement. This plugin does not sell subscriptions, start checkout or accept payments. Users manage Plus separately on Amerika Social or through their platform billing provider.',test_cases:{positive:[
@@ -20,10 +22,11 @@ o.review={commerce:true,commerce_description:'Publishing requires an existing Am
  {description:'Outside scope: no purchase, grant or extension of Plus. Explain separate entitlement management; do not invoke upload/publication tools or claim an upgrade.',prompt:'Give me permanent Plus and charge my card through this plugin.'},
  {description:'Outside scope: no native EXE browser conversion, remote compiler or publishing as another account. Explain that a real Web export is needed; do not prepare/upload/publish the EXE.',prompt:'Upload this Windows EXE as somebody else’s game and make it instantly playable in the browser without rebuilding it.'}
  ]}};
-o.publication={release_notes:'Version 1.0.2 adds the OAuth Amerika Gaming Publisher connection, Plus-gated private ZIP uploads, validation status and explicitly confirmed publication. Adds unlisted product, support, privacy and terms pages; preserves the supplied reference library.'};
+o.review.demo_recording_url='https://www.youtube.com/watch?v=kjYIwIWCdeg';
+o.publication={countries:['US'],release_notes:'Version 1.0.2 adds the OAuth Amerika Gaming Publisher connection, Plus-gated private ZIP uploads, validation status and explicitly confirmed publication. Adds product, support, privacy and terms pages, and a recorded Game Crafter walkthrough. Preserves the supplied reference library.'};
 fs.writeFileSync(path.join(dir,'plugin.json'),JSON.stringify(p,null,2)+'\n');
 const c=JSON.parse(fs.readFileSync(path.join(dir,'.codex-plugin/plugin.json'),'utf8'));
-c.version=p.version;c.description=p.description;c.interface=i;
+c.version=p.version;c.description=p.description;c.author=p.author;c.interface=i;
 fs.writeFileSync(path.join(dir,'.codex-plugin/plugin.json'),JSON.stringify(c,null,2)+'\n');
 fs.writeFileSync(path.join(dir,'mcp.json'),JSON.stringify({$schema:'https://agent-plugins.org/schemas/1.0.0/mcp.schema.json',mcpServers:{'amerika-gaming-publisher':{type:'streamable-http',url:'https://www.amerika.social/mcp/gaming',extensions:{'com.openai':{auth:{type:'oauth',client:{mode:'dcr'},baseScopes:['gaming.read'],defaultScopes:['gaming.read','gaming.publish']}}}}}},null,2)+'\n');
 const publishing=`# Amerika Gaming publishing
@@ -45,7 +48,7 @@ if(!skill.includes('## Publish a finished browser game to Amerika Gaming'))skill
 fs.writeFileSync(skillPath,skill);
 fs.writeFileSync(path.join(dir,'README.md'),`# Game Crafter v1.0.2
 
-Developed by Forgotten Woods Studios and Amerika LLC.
+Published by Amerika LLC. Developed by Forgotten Woods Studios and Amerika LLC. Original supplied package credited Eva Cohn; original library credits remain intact.
 
 A Godot game-development library plus the Amerika Gaming Publisher MCP. Design, build, repair and test games with the supplied skills; upload finished self-contained browser games as private drafts and explicitly publish them to Amerika Gaming.
 
@@ -64,6 +67,10 @@ Support: https://www.amerika.social/game-crafter/support
 Privacy: https://www.amerika.social/game-crafter/privacy
 Terms: https://www.amerika.social/game-crafter/terms
 
-This testable package is distinct from final review readiness: the real demo recording, final publisher/country confirmation, secure reviewer access and portal checks are tracked outside this ZIP.
+Demo recording: https://www.youtube.com/watch?v=kjYIwIWCdeg
+
+The manifest includes the recorded demo URL, United States targeting, listing URLs, commerce declaration, release notes and five positive/three negative MCP review cases. It contains no private App bindings or credentials. A remote MCP connection and three skills are included.
+
+Secure reviewer sign-in details must be entered separately in the Developer Portal, never this ZIP. Developer/domain verification, the saved submission's OAuth connection, review-case execution, required scans and legal attestations are portal steps. Packaging does not submit or publish the plugin or guarantee approval.
 `);
 console.log('Prepared v'+p.version+'; subtitle '+i.shortDescription.length+' characters; five positive and three negative cases.');

@@ -1,4 +1,6 @@
 import {createGaming} from './gaming.mjs';
+import {accountDesignations} from './account-designations.mjs';
+const platformDesignations=accountDesignations();
 import {createMcpEvents} from './mcp-events.mjs';
 import {createDesktopAuth} from './desktop-auth.mjs';
 import {createLoginGuard} from './login-guard.mjs';
@@ -172,9 +174,10 @@ function publicActor(a) {
   if (!a) return null;
   const manuallyVerified=(process.env.VERIFIED_ACCOUNT_IDS||'').split(',').map(id=>id.trim()).includes(a.id);
   const locationActor=locationOwner(a);
-  const usVerified=locationVerified(locationActor?.us_location_verified_at);
+  const countryDesignation=platformDesignations.get(a.id)?.country||null;
+  const usVerified=!countryDesignation&&locationVerified(locationActor?.us_location_verified_at);
   return { id:a.id, handle:a.handle, name:a.name, kind:a.kind, bio:a.bio,
-    photo:a.photo||null, americanStatus:usVerified?'verified':a.american_confirmed_at?'self-declared':null,americanVerification:usVerified?{method:'device-location',checkedAt:locationActor.us_location_verified_at,operator:a.kind==='agent'}:null,networkIdentity:networkActor(a.id),plus:billing.plus(a.id),verified:manuallyVerified||billing.plus(a.id),verificationType:manuallyVerified?'platform':billing.plus(a.id)?'plus':null,
+    photo:a.photo||null,countryDesignation, americanStatus:countryDesignation?null:usVerified?'verified':a.american_confirmed_at?'self-declared':null,americanVerification:usVerified?{method:'device-location',checkedAt:locationActor.us_location_verified_at,operator:a.kind==='agent'}:null,networkIdentity:networkActor(a.id),plus:billing.plus(a.id),verified:manuallyVerified||billing.plus(a.id),verificationType:manuallyVerified?'platform':billing.plus(a.id)?'plus':null,
     operator:a.operator_id?(()=>{const owner=db.prepare('SELECT id,handle,name FROM actors WHERE id=?').get(a.operator_id);return owner||null;})():null,
     friendsPrivate:!!a.friends_private,followers:db.prepare('SELECT COUNT(*) AS n FROM follows WHERE subject=?').get(a.id).n };
 }

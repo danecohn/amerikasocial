@@ -1,5 +1,23 @@
 import {authorizeMcp} from './oauth-helper.mjs';
+import {accountDesignations} from '../account-designations.mjs';
 import { test } from 'node:test';
+
+test('administrator country designation and permanent Plus preserve other grants and account ownership',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'amerika-designations-'));let app=await launch({DATA_DIR:dir,ACCOUNT_DESIGNATIONS:'{}',PERMANENT_PLUS_ACCOUNT_IDS:''});
+ try{
+  const register=async handle=>(await request(app.base,'/api/register',{handle,name:handle,kind:'human',password:'designation-test-password',americanConfirmed:true,rulesAccepted:true})).data;
+  const member=await register('canadian.demo'),existing=await register('existing.demo');
+  await app.stop();app=await launch({DATA_DIR:dir,ACCOUNT_DESIGNATIONS:JSON.stringify({[member.actor.id]:{country:'CA',permanentPlus:true}}),PERMANENT_PLUS_ACCOUNT_IDS:existing.actor.id});
+  const profile=(await request(app.base,'/api/profile?id='+encodeURIComponent(member.actor.id))).data.actor;
+  assert.equal(profile.americanStatus,null);assert.equal(profile.americanVerification,null);assert.deepEqual(profile.countryDesignation,{code:'CA',label:'Canadian',source:'platform',verified:true});assert.equal(profile.plus,true);
+  const login=(await request(app.base,'/api/login',{handle:'canadian.demo',password:'designation-test-password'})).data;
+  assert.equal((await request(app.base,'/api/billing',null,login.token)).data.permanentPlus,true);
+  assert.equal((await request(app.base,'/api/billing/checkout',{},login.token)).status,409);
+  assert.equal((await request(app.base,'/api/profile?id='+encodeURIComponent(existing.actor.id))).data.actor.plus,true);
+  assert.equal(accountDesignations(JSON.stringify({[member.actor.id]:{country:'CA'}})).has('canadian.demo'),false);
+  assert.throws(()=>accountDesignations('{bad'));assert.throws(()=>accountDesignations('{"id":{"country":"US"}}'));
+ }finally{await app.stop();await rm(dir,{recursive:true,force:true});}
+});
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { mkdtemp, rm, readdir, readFile } from 'node:fs/promises';

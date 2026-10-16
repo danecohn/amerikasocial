@@ -1,4 +1,5 @@
 import {GOOGLE_SCHEMA} from './google-billing.mjs';
+import {accountDesignations} from './account-designations.mjs';
 import StripeClient from 'stripe';
 import { randomBytes, randomUUID } from 'node:crypto';
 
@@ -27,6 +28,7 @@ export function createBilling(db,origin) {
   const locks=new Map();
   // Grants follow immutable account IDs, so a renamed or recycled handle cannot transfer Plus.
   const permanentPlusIds=new Set((process.env.PERMANENT_PLUS_ACCOUNT_IDS||'').split(',').map(id=>id.trim()).filter(Boolean));
+  for(const [id,grant] of accountDesignations())if(grant.permanentPlus)permanentPlusIds.add(id);
   let verification={status:'not-run'};
   async function verifyConfiguration(){configured();try{const p=await stripe.prices.retrieve(price);if(!p.active||p.livemode!==live||p.currency!=='usd'||p.unit_amount!==800||p.recurring?.interval!=='month'||p.recurring.interval_count!==1)throw error(503,'The Plus price configuration must be US$8 per month.');await stripe.customers.list({limit:1});await stripe.subscriptions.list({limit:1});verification={status:'passed',checkedAt:new Date().toISOString()};console.info('Stripe configuration verified: US$8 per month and customer/subscription API access.');return verification;}catch(e){verification={status:'failed',checkedAt:new Date().toISOString()};console.error('Stripe configuration verification failed: '+(e.code||e.type||'configuration'));throw e;}}
   async function lock(id,fn){const previous=locks.get(id)||Promise.resolve();let release;const wait=new Promise(r=>release=r);const tail=previous.then(()=>wait);locks.set(id,tail);await previous;try{return await fn();}finally{release();if(locks.get(id)===tail)locks.delete(id);}}

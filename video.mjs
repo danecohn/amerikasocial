@@ -2,10 +2,10 @@ import { spawn } from 'node:child_process';
 import { mkdtemp,writeFile,readFile,rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join,resolve,sep } from 'node:path';
-import { validateMedia,maxMediaBytes } from './media.mjs';
+import { validateMedia,maxMediaBytes,maxVideoDuration } from './media.mjs';
 
 let converting=false;
-export async function normalizeVideo(bytes,mime,{maxDuration=60}={}){
+export async function normalizeVideo(bytes,mime,{maxDuration=maxVideoDuration}={}){
   const info=validateMedia(bytes,mime,{allowIphone:true,maxDuration});
   if(mime==='video/mp4'&&info.h264&&bytes.length<=20000000)return bytes;
   if(converting)throw Object.assign(new Error('Another iPhone video is processing. Please retry shortly.'),{status:503});

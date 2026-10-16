@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 const error=(status,message)=>Object.assign(new Error(message),{status});
 export const maxMediaBytes=250000000;
-export function validateMedia(bytes,mime,{allowIphone=false,maxDuration=60}={}){
+export const maxVideoDuration=180;
+export function validateMedia(bytes,mime,{allowIphone=false,maxDuration=maxVideoDuration}={}){
  if(!bytes.length)throw error(400,'Choose a nonempty media file.');
  const image=mime.startsWith('image/');
  if(bytes.length>(image?1000000:maxMediaBytes))throw error(413,image?'Images must be under 1 MB after resizing.':'Videos must be under 250 MB (0.25 GB).');

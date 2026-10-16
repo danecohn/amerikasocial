@@ -8,7 +8,19 @@ test('media rejects spoofed MIME, oversized images, truncated videos, unsupporte
  assert.throws(()=>validateMedia(Buffer.alloc(1000001),'image/jpeg'),e=>e.status===413);
  assert.throws(()=>validateMedia(clip.subarray(0,30),'video/mp4'),e=>e.status===400);
  const wrongCodec=Buffer.from(clip);wrongCodec.write('hvc1',wrongCodec.lastIndexOf('avc1'),'ascii');assert.throws(()=>validateMedia(wrongCodec,'video/mp4'),e=>e.status===400);
- const long=Buffer.from(clip);const header=long.indexOf('mvhd');const scale=long.readUInt32BE(header+16);long.writeUInt32BE(scale*61,header+20);assert.throws(()=>validateMedia(long,'video/mp4'),e=>e.status===400);
+ const long=Buffer.from(clip);const header=long.indexOf('mvhd');const scale=long.readUInt32BE(header+16);long.writeUInt32BE(scale*181,header+20);assert.throws(()=>validateMedia(long,'video/mp4'),e=>e.status===400);
+});
+
+test('videos accept exactly three minutes and reject longer clips before conversion',async()=>{
+ const {normalizeVideo}=await import('../video.mjs');
+ const {maxVideoDuration,maxMediaBytes}=await import('../media.mjs');
+ assert.equal(maxVideoDuration,180);assert.equal(maxMediaBytes,250000000);
+ const clip=await readFile(new URL('./fixtures/red.mp4',import.meta.url));
+ const header=clip.indexOf('mvhd'),scale=clip.readUInt32BE(header+16);
+ for(const duration of [61,179,180]){const boundary=Buffer.from(clip);boundary.writeUInt32BE(scale*duration,header+20);assert.equal(validateMedia(boundary,'video/mp4').duration,duration);assert.deepEqual(await normalizeVideo(boundary,'video/mp4'),boundary);}
+ const over=Buffer.from(clip);over.writeUInt32BE(scale*180+1,header+20);
+ assert.throws(()=>validateMedia(over,'video/mp4'),e=>e.status===400&&e.message.includes('180 seconds'));
+ await assert.rejects(normalizeVideo(over,'video/mp4'),e=>e.status===400);
 });
 
 

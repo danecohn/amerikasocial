@@ -1,4 +1,5 @@
 import {createGaming} from './gaming.mjs';
+import {createGamingPublisher,gamingMcp} from './gaming-mcp.mjs';
 import {accountDesignations} from './account-designations.mjs';
 const platformDesignations=accountDesignations();
 import {createMcpEvents} from './mcp-events.mjs';
@@ -276,6 +277,11 @@ function json(res,status,data) { res.writeHead(status,{'Content-Type':'applicati
 const welcome=createOnboarding(db,{handleDomain,publicActor,addFriend:async(actor,subject,supplied)=>{const a=db.prepare('SELECT * FROM actors WHERE id=?').get(actor),target=db.prepare('SELECT * FROM actors WHERE id=?').get(subject);enforcement.requireActive(a);enforcement.requireActive(target);requireRules(a);if(a.operator_id){const owner=db.prepare('SELECT * FROM actors WHERE id=?').get(a.operator_id);enforcement.requireActive(owner);requireRules(owner);}if(actor===subject)return;if(db.prepare('SELECT 1 FROM follows WHERE actor=? AND subject=?').get(actor,subject))return;const acting=supplied||{actor,operator:a.operator_id,keyId:'welcome',...(agentPdsSessions.get(actor)||credentialStore.agent(actor)||{})};const r=await record(acting,'app.bsky.graph.follow',{subject,createdAt:new Date().toISOString()},!networkActor(subject));db.prepare('INSERT OR IGNORE INTO follows VALUES (?,?,?)').run(actor,subject,r.uri);notify(subject,actor,'follow');}});
 const sharing=createSharing({origin:()=>publicOrigin||`http://localhost:${server.address().port}`,handleDomain,getPost:uri=>{const row=db.prepare('SELECT * FROM posts WHERE uri=?').get(uri);if(!row)fail(404,'Post not found.');const p=viewPost(row,null);if(p.deleted)fail(410,'This post is unavailable.');return p;},getImages:uri=>db.prepare("SELECT m.bytes FROM post_media pm JOIN media m ON m.id=pm.media WHERE pm.post=? AND m.mime!='video/mp4' ORDER BY pm.position").all(uri).map(m=>Buffer.from(m.bytes))});
 function oauthTarget(id,user){
+ if(id==='gaming'){
+  if(!user)return {id,kind:'gaming',owner:null,actor:null,name:'Amerika Gaming Publisher',actorName:'Your game library only',scopes:['gaming.read','gaming.publish'],expires:null};
+  const a=db.prepare('SELECT * FROM actors WHERE id=?').get(user);if(!a||a.kind!=='human'||a.deleted_at||a.suspended_at||a.rules_version!==rulesVersion||!a.rules_accepted_at)return null;
+  return {id,kind:'gaming',owner:a.id,actor:a.id,name:'Amerika Gaming Publisher',actorName:a.name,scopes:['gaming.read','gaming.publish'],expires:null};
+ }
  if(id==='service'){
   if(!user)return {id:'service',kind:'operator',owner:null,actor:null,name:'Amerika Social',actorName:'Your account and owned bots',scopes:['mcp'],expires:null};
   const a=db.prepare('SELECT * FROM actors WHERE id=?').get(user);if(!a||a.kind!=='human'||a.suspended_at||a.rules_version!==rulesVersion||!a.rules_accepted_at)return null;
@@ -292,6 +298,7 @@ const communities=createCommunities(db,{actor:id=>db.prepare('SELECT * FROM acto
 const moderation=createModeration(db,{enforcement,reasons:prohibited,operations,billing,publicActor,viewPost,webhooks:accountWebhooks,origin:()=>publicOrigin||'http://localhost:'+server.address().port});
 const dating=createDating(db,{actor:id=>db.prepare('SELECT * FROM actors WHERE id=?').get(id),active:enforcement.requireActive,rules:requireRules,notify,admin:moderation.requireStaff,platformBlocked:(a,b)=>accountSafety.blocked(a,b)});
 const gaming=await createGaming(db,{dir,root,origin:req=>publicOrigin||'http://'+req.headers.host,plus:billing.plus,blocked:(a,b)=>accountSafety.blocked(a,b),staff:id=>['admin','moderator'].includes(moderation.role(id)),localPackages:process.env.GAMING_LOCAL_PACKAGES,originals:JSON.parse(await readFile(join(root,'gaming-originals.json'),'utf8'))});
+const gamingPublisher=createGamingPublisher(db,{gaming,plus:billing.plus,activeGrant:oauth.activeGrant,origin:()=>publicOrigin||'http://localhost:'+server.address().port});
 const accountSafety=createAccountSafety(db,{cancelBilling:billing.cancelActor,remoteDelete:async id=>{try{await adminXrpc('com.atproto.admin.deleteAccount',{did:id});}catch(e){if(e.remoteStatus!==404&&!['AccountNotFound','RepoNotFound','NotFound'].includes(e.code))throw e;}},invalidate:id=>{gaming.purge(id);accountWebhooks.revokeAccount(id);db.prepare('UPDATE api_keys SET revoked=? WHERE actor=? OR operator=?').run(new Date().toISOString(),id,id);db.prepare('UPDATE oauth_grants SET revoked=? WHERE owner=?').run(Date.now(),id);db.prepare('UPDATE account_mcp_keys SET revoked=? WHERE owner=?').run(new Date().toISOString(),id);for(const [key,s]of sessions)if(s.actor===id||s.operator===id)sessions.delete(key);db.prepare('DELETE FROM login_sessions WHERE actor=?').run(id);db.prepare('DELETE FROM agent_sessions WHERE actor=?').run(id);agentPdsSessions.delete(id);}});
 const push=createPush(db,{blocked:(a,b)=>accountSafety.blocked(a,b)});
 const desktopAuth=createDesktopAuth(db,{readSession:session,mintSession:sourceHash=>{const source=credentialStore.login(sourceHash);if(!source||source.expires<=Date.now())fail(401,'Your browser session expired. Sign in again.');const actor=db.prepare('SELECT * FROM actors WHERE id=?').get(source.actor);enforcement.requireActive(actor);requireRules(actor);const token=randomBytes(32).toString('base64url');const delegated={...source,tokenHash:hash(token)};sessions.set(hash(token),delegated);credentialStore.saveLogin(hash(token),delegated);return {token,actor:ownActor(actor)};}});
@@ -303,10 +310,19 @@ const server = http.createServer(async(req,res)=>{
   try {
     const url=new URL(req.url,'http://localhost');
     const path=url.pathname;
+    if(path==='/game-crafter'||path.startsWith('/game-crafter/')){
+      if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');
+      const routes={'/game-crafter':['game-crafter.html','text/html; charset=utf-8'],'/game-crafter/support':['game-crafter-support.html','text/html; charset=utf-8'],'/game-crafter/privacy':['game-crafter-privacy.html','text/html; charset=utf-8'],'/game-crafter/terms':['game-crafter-terms.html','text/html; charset=utf-8'],'/game-crafter/style.css':['game-crafter.css','text/css'],'/game-crafter/icon.png':['game-crafter-icon.png','image/png'],'/game-crafter/download':['game-crafter-v1.0.2.zip','application/zip'],'/game-crafter/demo-game.zip':['game-crafter-demo.zip','application/zip']};
+      const asset=routes[path.replace(/\/$/,'')];if(!asset)fail(404,'Not found.');
+      res.setHeader('X-Robots-Tag','noindex, nofollow, noarchive');res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'");
+      if(asset[1]==='application/zip')res.setHeader('Content-Disposition','attachment; filename="'+asset[0]+'"');
+      const bytes=await readFile(join(root,'public',asset[0]));res.setHeader('Content-Type',asset[1]);res.setHeader('Content-Length',bytes.length);return res.end(req.method==='HEAD'?undefined:bytes);
+    }
     const gameAsset=/^\/gaming\/content\/([A-Za-z0-9_-]{43})\/(.+)$/.exec(path);
     if(gameAsset){if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');return await gaming.content(gameAsset[1],decodeURIComponent(gameAsset[2]),req,res);}
     if(path.startsWith('/gaming/covers/')){const name=path.slice(15);if(!/^(last-lamp|saint-marrows|salt-mine-9|ward-seven|pickles-pickle-shop|rooms-we-kept)\.png$/.test(name))fail(404,'Not found.');if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');res.setHeader('Content-Type','image/png');res.setHeader('Cache-Control','public,max-age=3600');return res.end(req.method==='HEAD'?undefined:await readFile(join(root,'public','gaming-covers',name)));}
     if(path==='/gaming'||path==='/gaming/')res.setHeader('Content-Security-Policy',"default-src 'self'; style-src 'self'; script-src 'self'; frame-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'");
+    if(path.startsWith('/api/gaming/mcp-upload/')){if(req.method!=='PUT')fail(405,'Use PUT for game ZIP uploads.');if(req.headers.origin&&req.headers.origin!==(publicOrigin||'http://'+req.headers.host))fail(403,'Cross-origin uploads are disabled.');return json(res,201,await gamingPublisher.upload(path.slice('/api/gaming/mcp-upload/'.length),req.headers.authorization?.replace(/^Bearer /,''),req));}
     if(path.startsWith('/api/gaming/')){
       const credential=req.headers.authorization?.replace(/^Bearer /,''),signed=session(credential);const route=path.slice(12);
       if(req.method==='GET'&&route==='catalog')return json(res,200,gaming.catalog(signed?.actor));
@@ -351,7 +367,7 @@ const server = http.createServer(async(req,res)=>{
       if(req.method==='OPTIONS'){res.setHeader('Access-Control-Allow-Origin','*');res.setHeader('Access-Control-Allow-Methods','POST, GET, OPTIONS');res.setHeader('Access-Control-Allow-Headers','Authorization, Content-Type, Accept, MCP-Protocol-Version, MCP-Session-Id');res.writeHead(204);return res.end();}
       if(!auth){res.setHeader('Access-Control-Allow-Origin','*');res.setHeader('Access-Control-Expose-Headers','WWW-Authenticate');try{res.setHeader('WWW-Authenticate',oauth.challenge(id));}catch{res.setHeader('WWW-Authenticate','Bearer resource_metadata="'+origin+'/.well-known/oauth-protected-resource"');}}
       if(auth){const bucket='mcp:'+id;const l=limits.get(bucket)||{n:0,until:Date.now()+60000};if(l.until<Date.now()){l.n=0;l.until=Date.now()+60000;}limits.set(bucket,l);if(++l.n>120)fail(429,'Too many MCP requests. Retry shortly.');}
-      return serveMcp(req,res,{auth,readBody:body,request:mcpRequest,events:mcpEvents,origin:allowedOrigin&&req.headers.origin?req.headers.origin:origin});
+      return serveMcp(req,res,{auth,readBody:body,request:id==='gaming'?gamingPublisher.request:mcpRequest,events:id==='gaming'?undefined:mcpEvents,custom:id==='gaming'?gamingMcp:undefined,origin:allowedOrigin&&req.headers.origin?req.headers.origin:origin});
     }
     if (!path.startsWith('/api/')) {
       if(req.method!=='GET') fail(405,'Method not allowed.');

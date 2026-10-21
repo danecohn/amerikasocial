@@ -36,7 +36,7 @@ SIGN_HOME = Path(os.environ.get('AMERIKA_SIGNING_HOME', Path.home() / '.local/sh
 KEY_NAME = 'Amerika OS Archive Signing Key'
 ARCH = 'arm64'
 SUITE = 'stable'
-DE_VERSION = '3.0.0'
+DE_VERSION = '3.0.1'
 MAINTAINER = 'Amerika LLC <noreply@amerika.social>'
 HOMEPAGE = 'https://www.amerika.social/downloads/os'
 SYSTEM_SHELL = Path('/usr/share/plasma/shells/org.kde.plasma.desktop')
@@ -271,6 +271,8 @@ def build_session():
             depends=f'amerika-desktop-shell (>= {DE_VERSION}), kwin-wayland', title='Amerika Session')
     p.copy(OS / 'session/amerika-session', '/usr/bin/amerika-session', 0o755)
     p.copy(OS / 'session/session-start', '/usr/libexec/amerika/session-start', 0o755)
+    p.copy(OS / 'session/amerika-restore-meta', '/usr/libexec/amerika/amerika-restore-meta', 0o755)
+    p.copy(OS / 'session/50-amerika-restore-meta.sh', '/etc/xdg/plasma-workspace/env/50-amerika-restore-meta.sh')
     p.copy(OS / 'session/amerika.desktop', '/usr/share/wayland-sessions/amerika.desktop')
     p.copyright('Amerika OS session files, Copyright Amerika LLC, GPL-3.0-only.\n')
     return p

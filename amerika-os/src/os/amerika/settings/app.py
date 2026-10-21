@@ -166,6 +166,18 @@ class SettingsApp(Gtk.Application):
         box.append(cards)
         self._refresh_connections()
 
+        # --- Copilot key
+        key_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        key_card.append(label('COPILOT KEY', 'am-label'))
+        key_card.append(label('The Copilot key on your keyboard (Win+Shift+F23) opens:', 'am-sub', wrap=True))
+        choices = [('claude', 'Claude'), ('chatgpt', 'ChatGPT'), ('ask', 'Ask me each time')]
+        drop = Gtk.DropDown.new_from_strings([c[1] for c in choices])
+        current = self.settings.get('copilot_app', 'claude')
+        drop.set_selected(next((i for i, c in enumerate(choices) if c[0] == current), 0))
+        drop.connect('notify::selected', lambda d, _p: self._set('copilot_app', choices[d.get_selected()][0]))
+        key_card.append(drop)
+        box.append(card(key_card))
+
         # --- permission mode
         mode_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         mode_card.append(label('PERMISSIONS', 'am-label'))

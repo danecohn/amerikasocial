@@ -1,0 +1,12 @@
+#!/bin/sh
+# Sourced by startplasma-style environments and runnable by hand: if the Super-key binding still points at the Amerika
+# shell (the Amerika session was killed before it could restore it), put the previous binding back.
+state="${XDG_STATE_HOME:-$HOME/.local/state}/amerika-os"
+cur=$(kreadconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta 2>/dev/null)
+case "$cur" in
+  org.amerika.Shell*)
+    saved=$(cat "$state/meta-shortcut.saved" 2>/dev/null)
+    if [ -n "$saved" ]; then kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta "$saved"
+    else kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta "org.kde.plasmashell,/PlasmaShell,org.kde.PlasmaShell,activateLauncherMenu"; fi
+    rm -f "$state/meta-shortcut.saved" ;;
+esac

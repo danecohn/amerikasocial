@@ -41,9 +41,16 @@ def all_apps():
     return sorted(apps, key=lambda a: a.get_display_name().lower())
 
 
+def launch_context():
+    """Launch environment for child apps: the shell's own LD_PRELOAD (layer-shell) must never reach them."""
+    ctx = Gio.AppLaunchContext()
+    ctx.unsetenv('LD_PRELOAD')
+    return ctx
+
+
 def launch(info, uris=None):
     try:
-        return info.launch(uris or [], None)
+        return info.launch(uris or [], launch_context())
     except Exception as error:  # noqa: BLE001 - GLib errors vary; never crash the shell on a bad desktop file
         print('launch failed:', info.get_id(), error, flush=True)
         return False

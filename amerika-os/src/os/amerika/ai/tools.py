@@ -75,8 +75,8 @@ class Tools:
             _schema({'profile': {'type': 'string', 'enum': ['power-saver', 'balanced', 'performance']}}, ['profile']), self.power_set_profile)
         reg('notifications.send', 'act', 'Show a desktop notification.', _schema({'title': S, 'body': S}, ['title']), self.notifications_send)
         reg('notifications.set_dnd', 'act', 'Turn Do Not Disturb on or off.', _schema({'on': B}, ['on']), self.notifications_dnd)
-        reg('settings.set', 'act', 'Change an Amerika OS preference: accent, secondary, wallpaper (horizon, grid, dusk), dock_size (32-96), clock_24h.',
-            _schema({'key': {'type': 'string', 'enum': ['accent', 'secondary', 'wallpaper', 'dock_size', 'clock_24h']}, 'value': {}}, ['key', 'value']),
+        reg('settings.set', 'act', 'Change an Amerika OS preference: accent, secondary, wallpaper (horizon, grid, dusk), dock_size (32-96), clock_24h, copilot_app (claude, chatgpt, ask).',
+            _schema({'key': {'type': 'string', 'enum': ['accent', 'secondary', 'wallpaper', 'dock_size', 'clock_24h', 'copilot_app']}, 'value': {}}, ['key', 'value']),
             self.settings_set)
         reg('shell.show_launcher', 'act', 'Open or close the launcher.', _schema(), self.show_launcher)
         reg('clipboard.set', 'act', 'Put text on the clipboard.', _schema({'text': S}, ['text']), self.clipboard_set)
@@ -233,7 +233,7 @@ class Tools:
 
     def settings_get(self, a):
         s = self.shell.settings
-        return {k: s.get(k) for k in ('accent', 'secondary', 'wallpaper', 'dock_size', 'clock_24h', 'dock_pinned')} | {'ai_mode': s['ai']['mode']}
+        return {k: s.get(k) for k in ('accent', 'secondary', 'wallpaper', 'dock_size', 'clock_24h', 'copilot_app', 'dock_pinned')} | {'ai_mode': s['ai']['mode']}
 
     def settings_set(self, a):
         key, value = a['key'], a['value']
@@ -246,6 +246,9 @@ class Tools:
         elif key == 'dock_size':
             if not (isinstance(value, int) and 32 <= value <= 96):
                 raise ValueError('dock_size must be an integer from 32 to 96')
+        elif key == 'copilot_app':
+            if value not in ('claude', 'chatgpt', 'ask'):
+                raise ValueError('copilot_app must be claude, chatgpt or ask')
         elif key == 'clock_24h':
             if not isinstance(value, bool):
                 raise ValueError('clock_24h must be true or false')

@@ -26,6 +26,8 @@ DEFAULTS = {
                     'amerika-terminal', 'amerika-office', 'amerika-software', 'amerika-settings'],
     'bar_ai_apps': ['com.anthropic.Claude', 'chatgpt'],
     'clock_24h': False,
+    # what the Copilot key opens: claude, chatgpt or ask (a picker)
+    'copilot_app': 'claude',
     'ai': {
         # one of: ask (confirm every action), safe (read and reversible actions run, others ask), trusted (all but sensitive run)
         'mode': 'safe',

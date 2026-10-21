@@ -99,9 +99,31 @@ class Validation(unittest.TestCase):
                 self.tools.call('files.read', {'path': bad})
 
     def test_settings_values_are_checked(self):
-        for key, value in (('accent', 'red'), ('accent', '#12'), ('wallpaper', '../../x'), ('dock_size', 5), ('dock_size', '60'), ('clock_24h', 'yes')):
+        for key, value in (('copilot_app', 'gemini'), ('accent', 'red'), ('accent', '#12'), ('wallpaper', '../../x'), ('dock_size', 5), ('dock_size', '60'), ('clock_24h', 'yes')):
             with self.assertRaises(ValueError, msg=(key, value)):
                 self.tools.table['settings.set']['handler']({'key': key, 'value': value})
+
+
+class CopilotKey(unittest.TestCase):
+    def test_copilot_setting_accepts_known_choices(self):
+        tools = Tools(fake_shell())
+        applied = []
+        tools.shell.update_setting = lambda k, v: applied.append((k, v))
+        for choice in ('claude', 'chatgpt', 'ask'):
+            tools.table['settings.set']['handler']({'key': 'copilot_app', 'value': choice})
+        self.assertEqual(applied, [('copilot_app', 'claude'), ('copilot_app', 'chatgpt'), ('copilot_app', 'ask')])
+
+    def test_launched_apps_never_inherit_ld_preload(self):
+        import gi
+        gi.require_version('Gio', '2.0')
+        from amerika.shell import apps
+        ctx = apps.launch_context()
+        os.environ['LD_PRELOAD'] = '/tmp/evil.so'
+        try:
+            env = ctx.get_environment()
+            self.assertFalse(any(e.startswith('LD_PRELOAD=') for e in env), env)
+        finally:
+            os.environ.pop('LD_PRELOAD')
 
 
 class Mcp(unittest.TestCase):

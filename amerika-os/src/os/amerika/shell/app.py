@@ -58,6 +58,8 @@ class Shell(Gtk.Application):
             self.toggle_launcher()
         elif name in ('ai1', 'ai2') and len(ai) >= int(name[-1]):
             self.activate_app(ai[int(name[-1]) - 1])
+        elif name == 'copilot':
+            self.copilot_key()
         elif name == 'lock':
             from .. import system
             system.lock_session()
@@ -136,6 +138,15 @@ class Shell(Gtk.Application):
         info = apps.lookup(desktop_id)
         if info:
             apps.launch(info)
+
+    def copilot_key(self):
+        """The Copilot key opens the AI app chosen in Settings, or a picker."""
+        choice = self.settings.get('copilot_app', 'claude')
+        ids = {'claude': 'com.anthropic.Claude', 'chatgpt': 'chatgpt'}
+        if choice in ids:
+            self.activate_app(ids[choice])
+        else:
+            self.launcher.present_ai()
 
     def hand_off_to_ai(self, desktop_id, text):
         """Put the question on the clipboard and bring the AI app forward (the apps have no prompt API)."""
@@ -234,4 +245,6 @@ def save_widget(widget, path):
 
 
 def main():
+    # gtk4-layer-shell was preloaded for this process only; apps we launch must not inherit it
+    os.environ.pop('LD_PRELOAD', None)
     return Shell().run(sys.argv)

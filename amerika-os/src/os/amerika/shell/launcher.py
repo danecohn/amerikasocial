@@ -56,6 +56,7 @@ class Launcher(Gtk.Window):
         click.connect('pressed', lambda g, n, x, y: self._outside(panel, x, y))
         outer.add_controller(click)
         self._apps = []
+        self._ai_mode = False
         self.connect('notify::visible', lambda *_: self._shown())
 
     def _outside(self, panel, x, y):
@@ -69,7 +70,17 @@ class Launcher(Gtk.Window):
             return True
         return False
 
+    def present_ai(self):
+        """Open with the Claude / ChatGPT choice up front (the Copilot key)."""
+        self._ai_mode = True
+        if self.get_visible():
+            self._shown()
+        else:
+            self.present()
+
     def _shown(self):
+        if not self.get_visible():
+            self._ai_mode = False
         if self.get_visible():
             self._apps = apps.all_apps()
             self.entry.set_text('')
@@ -88,7 +99,7 @@ class Launcher(Gtk.Window):
             nxt = child.get_next_sibling()
             self.ask_box.remove(child)
             child = nxt
-        if text:
+        if text or self._ai_mode:
             for desktop_id in self.shell.settings.get('bar_ai_apps', []):
                 info = apps.lookup(desktop_id)
                 if info:
@@ -96,7 +107,7 @@ class Launcher(Gtk.Window):
                     b.add_css_class('am-ask')
                     row = Gtk.Box(spacing=8)
                     row.append(apps.icon_image(info, 22))
-                    row.append(Gtk.Label(label=f'Ask {info.get_display_name()}'))
+                    row.append(Gtk.Label(label=(f'Ask {info.get_display_name()}' if text else f'Open {info.get_display_name()}')))
                     b.set_child(row)
                     b.connect('clicked', lambda _b, d=desktop_id: self._ask(d))
                     self.ask_box.append(b)

@@ -48,6 +48,7 @@ function control(name) { callDBus(SERVICE, "/Control", "org.amerika.Control", "A
 registerShortcut("Amerika: Launcher", "Open the launcher", "Meta+Space", function () { control("launcher"); });
 registerShortcut("Amerika: First AI app", "Open or focus the first AI app", "Meta+1", function () { control("ai1"); });
 registerShortcut("Amerika: Second AI app", "Open or focus the second AI app", "Meta+2", function () { control("ai2"); });
+registerShortcut("Amerika: Copilot key", "Open the AI app chosen for the Copilot key", "Meta+Shift+F23", function () { control("copilot"); });
 registerShortcut("Amerika: Settings", "Open Amerika Settings", "Meta+,", function () { control("settings"); });
 registerShortcut("Amerika: Lock screen", "Lock the screen", "Meta+L", function () { control("lock"); });
 registerShortcut("Amerika: Stop AI actions", "Pause or resume everything the AI apps are doing", "Ctrl+Alt+Escape", function () { control("stop"); });

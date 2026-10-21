@@ -14,6 +14,7 @@ async function load(){
   cards.append(card);
  }
  const count=data.assets.length;document.querySelector('#release-status').textContent=count?(count+' platform download'+(count===1?' is':'s are')+' available. Other builds appear here after validation and publication.'):'The first platform builds are being prepared. Published downloads appear here automatically; there are no placeholder download links.';
- if(!count){document.querySelector('#release-status').append(' ',el('a',{href:data.repository+'/actions',text:'View build progress ↗'}));setTimeout(()=>load().catch(()=>{}),45000);}
+ if(!count){document.querySelector('#release-status').append(' ',el('a',{href:data.repository+'/actions',text:'View build progress ↗'}));}
+ if(count<6)setTimeout(()=>load().catch(()=>{}),45000);
 }
 load().catch(()=>{document.querySelector('#release-status').replaceChildren(el('span',{text:'Download status is temporarily unavailable. '}),el('a',{href:'https://github.com/danecohn/'+(product==='office'?'AmerikaOffice':'AmerikaVenture')+'/releases',text:'View published releases ↗'}));});

@@ -136,8 +136,8 @@ Amerika-Category: System
 Description: Amerika OS package repository signing key and APT source
  Installs the signing key and the APT source for https://www.amerika.social/apt.
 Filename: pool/main/a/amerika-repo-keyring/amerika-repo-keyring_2.0.0_all.deb
-Size: 1596
-SHA256: 343304bf9ddca9e2a8632bd238ff184304a532a375022e8804128371f4e9178b
+Size: 1776
+SHA256: 6937d4b1cb460c0f8732702de70b43023e0a85bbfe2d43d4ba0739b0759207ab
 
 Package: amerika-session
 Version: 2.0.0

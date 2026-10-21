@@ -2,7 +2,7 @@
   "suite": "stable",
   "architecture": "arm64",
   "fingerprint": "9F52BD98A8EE9096B1BE7AAC1063BBC989A11133",
-  "generated": "Wed, 21 Oct 2026 06:01:38 UTC",
+  "generated": "Wed, 21 Oct 2026 06:05:21 UTC",
   "packages": {
     "adw-gtk3_5.3.0-0pop1~1710896694~26.04~213b5ed_all.deb": {
       "path": "pool/main/a/adw-gtk3/adw-gtk3_5.3.0-0pop1~1710896694~26.04~213b5ed_all.deb",
@@ -46,8 +46,8 @@
     },
     "amerika-repo-keyring_2.0.0_all.deb": {
       "path": "pool/main/a/amerika-repo-keyring/amerika-repo-keyring_2.0.0_all.deb",
-      "size": 1596,
-      "sha256": "343304bf9ddca9e2a8632bd238ff184304a532a375022e8804128371f4e9178b"
+      "size": 1776,
+      "sha256": "6937d4b1cb460c0f8732702de70b43023e0a85bbfe2d43d4ba0739b0759207ab"
     },
     "amerika-session_2.0.0_all.deb": {
       "path": "pool/main/a/amerika-session/amerika-session_2.0.0_all.deb",

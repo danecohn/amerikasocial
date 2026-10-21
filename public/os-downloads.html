@@ -33,7 +33,13 @@ Suites: stable
 Components: main
 Architectures: arm64
 Signed-By: /usr/share/keyrings/amerika-archive-keyring.gpg
-EOF</code></pre></div></li>
+EOF
+
+sudo tee /etc/apt/apt.conf.d/50amerika-social &gt;/dev/null &lt;&lt;'EOF'
+Acquire::http::www.amerika.social::Pipeline-Depth "0";
+Acquire::https::www.amerika.social::Pipeline-Depth "0";
+EOF</code></pre></div>
+<p class="muted">The second file turns off HTTP pipelining for this host only: the proxy in front of Amerika Social rejects pipelined requests, which makes large installs fail intermittently. The <code>amerika-repo-keyring</code> package keeps both files up to date.</p></li>
 <li><h3>Install the desktop</h3><div class="window"><div class="chrome"><i class="r"></i><i class="y"></i><i class="g"></i><span>bash</span><button class="copy" data-copy="inst">Copy</button></div><pre id="inst"><code>sudo apt update
 sudo apt install amerika-desktop</code></pre></div>
 <p class="muted">Log out and choose <b>Amerika OS</b> from the session menu on the login screen. Your current login manager stays the default, and your existing sessions (Plasma, GNOME) are left untouched, so you can always switch back. Install only the pieces you want with <code>apt install amerika-software</code>, <code>amerika-venture</code>, <code>amerika-office</code> or <code>amerika-social</code>. Want the old KDE Plasma variant of Amerika OS? <code>apt install amerika-plasma</code>.</p></li>

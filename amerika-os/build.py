@@ -213,6 +213,10 @@ def build_keyring():
     p.file('/etc/apt/sources.list.d/amerika.sources',
            f'Types: deb\nURIs: {BASE_URL}\nSuites: {SUITE}\nComponents: main\nArchitectures: {ARCH}\n'
            'Signed-By: /usr/share/keyrings/amerika-archive-keyring.gpg\n')
+    p.file('/etc/apt/apt.conf.d/50amerika-social',
+           '// The edge proxy in front of www.amerika.social rejects pipelined HTTP requests, which APT uses by default.\n'
+           'Acquire::http::www.amerika.social::Pipeline-Depth "0";\n'
+           'Acquire::https::www.amerika.social::Pipeline-Depth "0";\n')
     p.copyright('Amerika OS repository key and APT source.\nCopyright Amerika LLC. Licensed GPL-3.0-only.\n'
                 'See /usr/share/common-licenses/GPL-3.\n')
     return p

@@ -8,6 +8,10 @@ dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY XDG_CURRENT
 # one-time look and feel (window buttons, effects, colours); safe to re-run
 "${AMERIKA_BIN:-/usr/bin}/amerika-first-run"
 
+# the startup screen covers the gap until the shell has put its bar and dock on screen
+rm -f "${XDG_RUNTIME_DIR:-/tmp}/amerika/shell-ready"
+"${AMERIKA_BIN:-/usr/bin}/amerika-splash" >/dev/null 2>&1 &
+
 # clean up the Super-key binding that Amerika OS 3.0.0 to 3.0.2 wrote into kwinrc (the Windows key is now a KWin script shortcut)
 "${AMERIKA_LIBEXEC:-/usr/libexec/amerika}/amerika-restore-meta"
 

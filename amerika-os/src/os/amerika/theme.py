@@ -74,6 +74,14 @@ window.am-overlay { background: alpha(#05040a, .72); }
 .am-ask { background-image: linear-gradient(to right, alpha(@am_second, .20), alpha(@am_accent, .18)); border: 1px solid alpha(@am_second, .5); border-radius: 14px; padding: 10px 14px; color: @am_text; }
 .am-ask:hover { box-shadow: 0 0 18px alpha(@am_second, .5); }
 
+/* ---------- startup screen ---------- */
+window.am-splash { background: #05040a; }
+.am-splash-veil { background-image: radial-gradient(circle at 50%% 50%%, alpha(#05040a, .35), alpha(#05040a, .88)); }
+.am-splash-word { font-size: 30px; font-weight: 800; letter-spacing: 11px; color: #f4f2fb; text-shadow: 0 0 22px alpha(@am_accent, .75); }
+.am-splash-status { font-family: "JetBrains Mono", monospace; font-size: 11px; letter-spacing: 4px; color: @am_second; }
+progressbar.am-splash-bar trough { background: alpha(white, .12); min-height: 4px; border-radius: 999px; }
+progressbar.am-splash-bar progress { background-image: linear-gradient(to right, @am_second, @am_accent); min-height: 4px; border-radius: 999px; box-shadow: 0 0 14px alpha(@am_accent, .8); }
+
 /* ---------- notifications ---------- */
 .am-toast {
   background-image: linear-gradient(to bottom, alpha(#262540, .96), alpha(#0e0d17, .98));

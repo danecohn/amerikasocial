@@ -36,7 +36,7 @@ SIGN_HOME = Path(os.environ.get('AMERIKA_SIGNING_HOME', Path.home() / '.local/sh
 KEY_NAME = 'Amerika OS Archive Signing Key'
 ARCH = 'arm64'
 SUITE = 'stable'
-DE_VERSION = '3.0.3'
+DE_VERSION = '3.0.4'
 MAINTAINER = 'Amerika LLC <noreply@amerika.social>'
 HOMEPAGE = 'https://www.amerika.social/downloads/os'
 SYSTEM_SHELL = Path('/usr/share/plasma/shells/org.kde.plasma.desktop')
@@ -257,7 +257,7 @@ def build_shell():
     pkg_dir = '/usr/lib/python3/dist-packages/amerika'
     shutil.copytree(OS / 'amerika', p.path(pkg_dir), ignore=shutil.ignore_patterns('__pycache__', '*.pyc', 'bridge'))
     p.copy(OS / 'amerika/bridge/bridge.js', '/usr/share/amerika-os/bridge/bridge.js')
-    for name in ('amerika-shell', 'amerika-settings', 'amerika-mcp', 'amerika-first-run'):
+    for name in ('amerika-shell', 'amerika-settings', 'amerika-mcp', 'amerika-first-run', 'amerika-splash'):
         p.copy(OS / 'bin' / name, f'/usr/bin/{name}', 0o755)
     p.copy(OS / 'applications/org.amerika.Shell.desktop', '/usr/share/applications/org.amerika.Shell.desktop')
     p.copyright('Amerika Shell, Copyright Amerika LLC, GPL-3.0-only.\nUses GTK 4, gtk4-layer-shell and KWin (as the compositor) '
@@ -276,6 +276,23 @@ def build_session():
     p.copy(OS / 'session/50-amerika-restore-meta.sh', '/etc/xdg/plasma-workspace/env/50-amerika-restore-meta.sh')
     p.copy(OS / 'session/amerika.desktop', '/usr/share/wayland-sessions/amerika.desktop')
     p.copyright('Amerika OS session files, Copyright Amerika LLC, GPL-3.0-only.\n')
+    return p
+
+
+def build_login():
+    p = Pkg('amerika-login', DE_VERSION, 'Amerika OS login screen\nA retro-futurist SDDM login theme. Nothing changes until you switch it on in '
+            'Amerika Settings (or with "amerika-login enable");\nit can be switched off the same way, and falls back to the previous login '
+            'screen by itself if SDDM cannot start.',
+            depends='python3, sddm, kwin-wayland, pkexec, qml6-module-qt5compat-graphicaleffects, qml6-module-qtquick-controls, fonts-inter, '
+                    'fonts-jetbrains-mono', title='Amerika Login Screen', category='Appearance')
+    shutil.copytree(OS / 'login/amerika', p.path('/usr/share/sddm/themes/amerika'))
+    p.copy(OS / 'login/amerika-login-helper', '/usr/libexec/amerika/amerika-login-helper', 0o755)
+    p.copy(OS / 'login/amerika-login', '/usr/bin/amerika-login', 0o755)
+    p.copy(OS / 'login/org.amerika.login.policy', '/usr/share/polkit-1/actions/org.amerika.login.policy')
+    p.copy(OS / 'login/amerika-login-fallback.service', '/usr/lib/systemd/system/amerika-login-fallback.service')
+    p.scripts['prerm'] = ('#!/bin/sh\nset -e\nif [ "$1" = remove ] || [ "$1" = purge ]; then\n'
+                          '  /usr/libexec/amerika/amerika-login-helper disable >/dev/null 2>&1 || true\nfi\nexit 0\n')
+    p.copyright('Amerika OS login theme, Copyright Amerika LLC, GPL-3.0-only. Uses SDDM (GPL-2.0-or-later) and Qt.\n')
     return p
 
 
@@ -359,7 +376,7 @@ def build_venture():
 
 def build_office():
     root = extract(app_archive('office'), STAGE / '_payload-office')
-    p = Pkg('amerika-office', '0.1.0-1', 'Amerika Office desktop\nDesktop app for the hosted Amerika Office portal '
+    p = Pkg('amerika-office', '0.1.0-2', 'Amerika Office desktop\nDesktop app for the hosted Amerika Office portal '
             '(documents, spreadsheets and presentations).\nIt connects to the hosted portal and is not an offline '
             'office suite. The editor is ONLYOFFICE Community Edition.',
             arch=ARCH, title='Amerika Office', category='Office',
@@ -370,6 +387,17 @@ def build_office():
     p.path('/opt/amerika/office/chrome-sandbox').chmod(0o4755)
     p.file('/usr/bin/amerika-office', '#!/bin/sh\nexec /opt/amerika/office/amerika-office "$@"\n', 0o755)
     p.depends = ', '.join(shlib_depends(p.root / 'opt/amerika/office') or ['libc6'])
+    p.recommends = 'apparmor'
+    # Ubuntu restricts unprivileged user namespaces; like Chrome, Claude and ChatGPT, this app needs a profile that allows them.
+    p.file('/etc/apparmor.d/amerika-office', 'abi <abi/4.0>,\ninclude <tunables/global>\n\n'
+           'profile amerika-office /opt/amerika/office/amerika-office flags=(unconfined) {\n  userns,\n\n'
+           '  include if exists <local/amerika-office>\n}\n')
+    p.scripts['postinst'] = ('#!/bin/sh\nset -e\nif [ "$1" = configure ]; then\n'
+                             '  chmod 4755 /opt/amerika/office/chrome-sandbox || true\n'
+                             '  if [ -x /usr/sbin/apparmor_parser ] && command -v aa-enabled >/dev/null 2>&1 && aa-enabled --quiet 2>/dev/null; then\n'
+                             '    apparmor_parser -r -T -W /etc/apparmor.d/amerika-office || true\n  fi\nfi\nexit 0\n')
+    p.scripts['prerm'] = ('#!/bin/sh\nset -e\nif [ "$1" = remove ] && [ -x /usr/sbin/apparmor_parser ]; then\n'
+                          '  apparmor_parser -R /etc/apparmor.d/amerika-office 2>/dev/null || true\nfi\nexit 0\n')
     desktop_file(p, '[Desktop Entry]\nType=Application\nName=Amerika Office\nComment=Amerika LLC collaborative office\n'
                  'Exec=/usr/bin/amerika-office %U\nIcon=amerika-office\nTerminal=false\nCategories=Office;\n'
                  'StartupWMClass=amerika-office\n', 'amerika-office')
@@ -395,7 +423,7 @@ def build_meta():
 
 BUILDERS = {
     'amerika-repo-keyring': build_keyring, 'amerika-icon-theme': build_icons, 'amerika-theme': build_theme,
-    'amerika-desktop-shell': build_shell, 'amerika-session': build_session, 'amerika-apps': build_apps,
+    'amerika-desktop-shell': build_shell, 'amerika-session': build_session, 'amerika-apps': build_apps, 'amerika-login': build_login,
     'amerika-software': build_software, 'amerika-social': build_social, 'amerika-venture': build_venture,
     'amerika-office': build_office, 'amerika-desktop': build_meta,
 }

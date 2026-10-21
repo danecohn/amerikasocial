@@ -105,9 +105,19 @@ class Shell(Gtk.Application):
         for w in (self.desktop, self.bar, self.dock):
             w.present()
         self.hold()
+        GLib.timeout_add(900, self._mark_ready)
         shots = os.environ.get('AMERIKA_SCREENSHOT_DIR')
         if shots:
             GLib.timeout_add_seconds(int(os.environ.get('AMERIKA_SCREENSHOT_DELAY', '4')), self._screenshots, Path(shots))
+
+    def _mark_ready(self):
+        """Tell the startup screen that the bar and dock are on screen."""
+        try:
+            common.RUNTIME.mkdir(parents=True, exist_ok=True)
+            (common.RUNTIME / 'shell-ready').write_text(str(os.getpid()))
+        except OSError:
+            pass
+        return False
 
     def _settings_changed(self, _monitor, file, _other, event):
         if file.get_basename() != 'settings.json' or event not in (Gio.FileMonitorEvent.CHANGES_DONE_HINT, Gio.FileMonitorEvent.CREATED):

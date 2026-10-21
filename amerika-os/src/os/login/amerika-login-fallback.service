@@ -1,0 +1,7 @@
+[Unit]
+Description=Return to the previous login screen because the Amerika login screen failed to start
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/amerika/amerika-login-helper fallback

@@ -1,0 +1,10 @@
+#!/bin/sh
+# User-facing front end for the Amerika login screen.
+#   amerika-login status | enable | disable | preview
+helper=/usr/libexec/amerika/amerika-login-helper
+case "$1" in
+  status) exec "$helper" status ;;
+  enable|disable) exec pkexec "$helper" "$1" ;;
+  preview) exec timeout 30 sddm-greeter-qt6 --test-mode --theme /usr/share/sddm/themes/amerika ;;
+  *) echo "usage: amerika-login status|enable|disable|preview" >&2; exit 2 ;;
+esac

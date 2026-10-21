@@ -1,0 +1,139 @@
+#!/usr/bin/python3
+"""Privileged helper for the Amerika login screen. Run through pkexec (or directly as root).
+
+Actions (no other input is accepted):
+  status    print the current login manager and whether the Amerika login screen is active (JSON)
+  enable    use SDDM with the Amerika theme from the next boot; remembers the previous login manager
+  disable   go back to the previous login manager from the next boot
+  fallback  run by systemd if SDDM fails to start: switch back and start the previous login manager now
+
+The current session is never touched: nothing is stopped or restarted by enable or disable.
+"""
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(os.environ.get('AMERIKA_LOGIN_ROOT', '/'))
+THEME = '/usr/share/sddm/themes/amerika/Main.qml'
+STATE = 'var/lib/amerika-os/login/previous.json'
+CONF = 'etc/sddm.conf.d/50-amerika.conf'
+DROPIN = 'etc/systemd/system/sddm.service.d/amerika-fallback.conf'
+DEFAULT_DM = 'etc/X11/default-display-manager'
+DM_LINK = 'etc/systemd/system/display-manager.service'
+SDDM_BIN = '/usr/bin/sddm'
+SDDM_UNIT = 'sddm.service'
+
+CONF_TEXT = '''# Written by amerika-login-helper. Remove with: amerika-login disable
+[General]
+DisplayServer=wayland
+
+[Theme]
+Current=amerika
+
+[Wayland]
+CompositorCommand=kwin_wayland --drm --no-lockscreen --no-global-shortcuts --locale1
+'''
+DROPIN_TEXT = '''# Written by amerika-login-helper. If SDDM cannot start, go back to the previous login manager.
+[Unit]
+OnFailure=amerika-login-fallback.service
+StartLimitIntervalSec=90
+StartLimitBurst=3
+
+[Service]
+Restart=on-failure
+RestartSec=2
+'''
+
+
+def path(rel):
+    return ROOT / rel
+
+
+def run(argv):
+    return subprocess.run(argv, capture_output=True, text=True, check=False)
+
+
+class Login:
+    def __init__(self, runner=run):
+        self.run = runner
+
+    # ---- reading state
+    def current(self):
+        default = path(DEFAULT_DM).read_text().strip() if path(DEFAULT_DM).exists() else ''
+        link = path(DM_LINK)
+        unit = os.path.basename(os.readlink(link)) if link.is_symlink() else ''
+        return {'default': default, 'unit': unit}
+
+    def status(self):
+        cur = self.current()
+        previous = None
+        if path(STATE).exists():
+            previous = json.loads(path(STATE).read_text())
+        return {'default': cur['default'], 'unit': cur['unit'], 'amerika_active': cur['unit'] == SDDM_UNIT and path(CONF).exists(),
+                'theme_installed': path(THEME.lstrip('/')).exists(), 'sddm_installed': path(SDDM_BIN.lstrip('/')).exists(),
+                'previous': previous}
+
+    # ---- changing it
+    def enable(self):
+        if not path(THEME.lstrip('/')).exists():
+            raise SystemExit('The Amerika login theme is not installed.')
+        if not path(SDDM_BIN.lstrip('/')).exists():
+            raise SystemExit('SDDM is not installed.')
+        cur = self.current()
+        if cur['unit'] != SDDM_UNIT:  # remember what to go back to (never record SDDM itself)
+            path(STATE).parent.mkdir(parents=True, exist_ok=True)
+            path(STATE).write_text(json.dumps({'default': cur['default'], 'unit': cur['unit']}))
+        for rel, text in ((CONF, CONF_TEXT), (DROPIN, DROPIN_TEXT)):
+            path(rel).parent.mkdir(parents=True, exist_ok=True)
+            path(rel).write_text(text)
+        path(DEFAULT_DM).parent.mkdir(parents=True, exist_ok=True)
+        path(DEFAULT_DM).write_text(SDDM_BIN + '\n')
+        self.run(['systemctl', 'daemon-reload'])
+        result = self.run(['systemctl', 'enable', '--force', SDDM_UNIT])
+        if result.returncode != 0:
+            self.disable()
+            raise SystemExit('Could not enable SDDM: ' + (result.stderr or result.stdout).strip())
+        return self.status()
+
+    def disable(self):
+        previous = json.loads(path(STATE).read_text()) if path(STATE).exists() else None
+        for rel in (CONF, DROPIN):
+            try:
+                path(rel).unlink()
+            except FileNotFoundError:
+                pass
+        if previous and previous.get('unit') and previous['unit'] != SDDM_UNIT:
+            if previous.get('default'):
+                path(DEFAULT_DM).write_text(previous['default'] + '\n')
+            self.run(['systemctl', 'daemon-reload'])
+            self.run(['systemctl', 'enable', '--force', previous['unit']])
+        else:
+            self.run(['systemctl', 'daemon-reload'])
+        return self.status()
+
+    def fallback(self):
+        previous = json.loads(path(STATE).read_text()) if path(STATE).exists() else None
+        self.disable()
+        if previous and previous.get('unit') and previous['unit'] != SDDM_UNIT:
+            self.run(['systemctl', 'start', '--no-block', previous['unit']])
+
+
+def main(argv):
+    if len(argv) != 2 or argv[1] not in ('status', 'enable', 'disable', 'fallback'):
+        print('usage: amerika-login-helper status|enable|disable|fallback', file=sys.stderr)
+        return 2
+    if argv[1] != 'status' and os.geteuid() != 0 and 'AMERIKA_LOGIN_ROOT' not in os.environ:
+        print('error: this action needs administrator rights (run it through pkexec)', file=sys.stderr)
+        return 2
+    login = Login()
+    if argv[1] == 'fallback':
+        login.fallback()
+        return 0
+    print(json.dumps(getattr(login, argv[1])(), indent=2))
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))

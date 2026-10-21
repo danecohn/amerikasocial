@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 LIMIT = 5 * 1024 * 1024
-RELEASE = 'os-2.0.0'
+RELEASE = 'os-3.0.4'
 BASE = 'https://github.com/danecohn/amerikasocial/releases/download/'
 root = Path(__file__).resolve().parent.parent
 social = Path(sys.argv[1])
@@ -24,7 +24,7 @@ shutil.copytree(root / 'dist/apt', dest, ignore=lambda d, names: [n for n in nam
 redirects, big = {}, []
 for deb in sorted((root / 'dist/apt/pool').rglob('*.deb')):
     if deb.stat().st_size > LIMIT:
-        if deb.name in previous:  # unchanged file already attached to an earlier release
+        if deb.name in previous and previous[deb.name]['size'] == deb.stat().st_size:  # unchanged file already attached to an earlier release
             head, _, base = previous[deb.name]['url'].rpartition('/')
             redirects[deb.name] = {'url': head + '/' + base.replace('~', '.'), 'size': deb.stat().st_size}
         else:

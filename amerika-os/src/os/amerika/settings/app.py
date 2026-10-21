@@ -1,5 +1,7 @@
 """Amerika Settings: appearance, display, sound, network, power and, above all, the AI assistants."""
+import json
 import os
+import subprocess
 import sys
 import threading
 import time
@@ -88,6 +90,7 @@ class SettingsApp(Gtk.Application):
         order = [('ai', 'AI & Assistants', 'amerika-ai', self._page_ai), ('appearance', 'Appearance', 'amerika-home', self._page_appearance),
                  ('display', 'Display', 'amerika-display', self._page_display), ('sound', 'Sound', 'amerika-sound', self._page_sound),
                  ('network', 'Network', 'amerika-network', self._page_network), ('power', 'Power', 'amerika-power', self._page_power),
+                 ('login', 'Login screen', 'amerika-home', self._page_login),
                  ('about', 'About', 'amerika-settings', self._page_about)]
         for key, title, icon, builder in order:
             btn = Gtk.ToggleButton()
@@ -427,6 +430,87 @@ class SettingsApp(Gtk.Application):
         col.append(drop)
         box.append(card(col))
         return box
+
+    # ================================================================ Login screen
+    LOGIN_HELPER = os.environ.get('AMERIKA_LOGIN_HELPER', '/usr/libexec/amerika/amerika-login-helper')
+
+    def _login_status(self):
+        try:
+            out = subprocess.run([self.LOGIN_HELPER, 'status'], capture_output=True, text=True, timeout=10)
+            return json.loads(out.stdout)
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            return None
+
+    def _page_login(self):
+        box = page_box()
+        box.append(label('LOGIN SCREEN', 'am-heading'))
+        box.append(label('Amerika OS has its own retro-futurist login screen. It uses the SDDM login manager instead of GDM, '
+                         'takes effect the next time you start or restart the computer, and can be switched back here at any time.', 'am-sub', wrap=True))
+        col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        col.append(label('STATUS', 'am-label'))
+        self.login_status = label('', 'am-appname', wrap=True)
+        col.append(self.login_status)
+        row = Gtk.Box(spacing=10)
+        self.login_enable = Gtk.Button()
+        self.login_enable.add_css_class('am-primary')
+        self.login_enable.connect('clicked', lambda *_: self._login_change())
+        row.append(self.login_enable)
+        preview = Gtk.Button(label='Preview (30 seconds)')
+        preview.add_css_class('am-secondary')
+        preview.connect('clicked', lambda *_: subprocess.Popen(['timeout', '30', 'sddm-greeter-qt6', '--test-mode', '--theme',
+                                                                '/usr/share/sddm/themes/amerika'], stdout=subprocess.DEVNULL,
+                                                               stderr=subprocess.DEVNULL, start_new_session=True))
+        row.append(preview)
+        col.append(row)
+        self.login_note = label('', 'am-sub', wrap=True)
+        col.append(self.login_note)
+        box.append(card(col))
+        box.append(card(label('IF THE LOGIN SCREEN EVER DOES NOT APPEAR', 'am-label'),
+                        label('Amerika OS switches back to the previous login screen by itself if SDDM cannot start. If you ever see a blank '
+                              'screen anyway: press Ctrl+Alt+F3, log in on the text console, and run  sudo /usr/libexec/amerika/amerika-login-helper '
+                              'disable  then  sudo reboot.', 'am-sub', wrap=True)))
+        self._refresh_login()
+        return box
+
+    def _refresh_login(self):
+        st = self._login_status()
+        if not st:
+            self.login_status.set_text('The login screen helper is not installed.')
+            self.login_enable.set_sensitive(False)
+            return
+        name = os.path.basename(st.get('default') or '') or 'unknown'
+        if st.get('amerika_active'):
+            self.login_status.set_text('The Amerika login screen is on (SDDM).')
+            self.login_enable.set_label('Go back to the previous login screen')
+            self.login_enable.remove_css_class('am-primary')
+            self.login_enable.add_css_class('am-secondary')
+        else:
+            self.login_status.set_text(f'You are using the {name} login screen.')
+            self.login_enable.set_label('Use the Amerika login screen')
+            self.login_enable.remove_css_class('am-secondary')
+            self.login_enable.add_css_class('am-primary')
+        self.login_enable.set_sensitive(bool(st.get('theme_installed') and st.get('sddm_installed')))
+        self._login_active = bool(st.get('amerika_active'))
+
+    def _login_change(self):
+        action = 'disable' if getattr(self, '_login_active', False) else 'enable'
+        self.login_note.set_text('Asking for your password…')
+
+        def work():
+            res = subprocess.run(['pkexec', self.LOGIN_HELPER, action], capture_output=True, text=True)
+            GLib.idle_add(self._login_changed, action, res)
+        threading.Thread(target=work, daemon=True).start()
+
+    def _login_changed(self, action, res):
+        self._refresh_login()
+        if res.returncode == 0:
+            self.login_note.set_text('Done. It applies the next time you start or restart the computer.' if action == 'enable'
+                                     else 'Done. The previous login screen returns at the next start.')
+        elif res.returncode in (126, 127):
+            self.login_note.set_text('Cancelled: no changes were made.')
+        else:
+            self.login_note.set_text('Could not change it: ' + (res.stderr or res.stdout).strip()[:300])
+        return False
 
     # ================================================================ About
     def _page_about(self):

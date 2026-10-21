@@ -1,0 +1,7 @@
+#!/bin/sh
+lib="${AMERIKA_LAYERSHELL_LIB:-}"
+if [ -z "$lib" ]; then
+  for c in /usr/lib/*/libgtk4-layer-shell.so.0; do [ -e "$c" ] && lib="$c" && break; done
+fi
+[ -n "$lib" ] && export LD_PRELOAD="$lib${LD_PRELOAD:+:$LD_PRELOAD}"
+exec python3 -m amerika.splash "$@"

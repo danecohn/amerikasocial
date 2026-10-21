@@ -24,7 +24,7 @@ class Bar(Gtk.Window):
         super().__init__(application=shell, title='Amerika Bar')
         self.shell = shell
         self.add_css_class('am-bar')
-        layer.setup(self, 'top', anchors=('top', 'left', 'right'), exclusive='auto', namespace='amerika-bar')
+        layer.setup(self, 'top', anchors=('top', 'left', 'right'), exclusive='auto', keyboard='on_demand', namespace='amerika-bar')
         self.set_default_size(1280, 36)
 
         box = Gtk.CenterBox()

@@ -8,16 +8,11 @@ dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY XDG_CURRENT
 # one-time look and feel (window buttons, effects, colours); safe to re-run
 "${AMERIKA_BIN:-/usr/bin}/amerika-first-run"
 
-# The Super (Windows) key opens the launcher. kwinrc is shared with other KDE sessions on this account, so the previous
-# value is saved and put back when this session ends (and amerika-restore-meta repairs it if the session was killed).
+# amerika-session bound the Super key before KWin started and saved the old binding; put it back when the session ends
 state="${XDG_STATE_HOME:-$HOME/.local/state}/amerika-os"
-mkdir -p "$state"
-if [ ! -e "$state/meta-shortcut.saved" ]; then
-  kreadconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta > "$state/meta-shortcut.saved" 2>/dev/null
-fi
 restore_meta() {
   saved=$(cat "$state/meta-shortcut.saved" 2>/dev/null)
-  if [ -n "$saved" ]; then
+  if [ -n "$saved" ] && [ "$saved" != "-" ]; then
     kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta "$saved"
   else
     kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta --delete
@@ -28,8 +23,6 @@ shell_pid=""
 cleanup() { [ -n "$shell_pid" ] && kill "$shell_pid" 2>/dev/null; restore_meta; }
 trap 'cleanup' EXIT
 trap 'exit 0' TERM INT HUP
-kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta "org.amerika.Shell,/Control,org.amerika.Control,Action,launcher"
-busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure >/dev/null 2>&1
 
 # authentication prompts for pkexec (software installs, etc.)
 for agent in /usr/lib/*/libexec/polkit-kde-authentication-agent-1; do

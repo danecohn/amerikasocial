@@ -47,8 +47,20 @@ class WindowBridge(GObject.Object):
                 self.state = json.loads(params.unpack()[0])
             except ValueError:
                 pass
-            self.emit('changed')
+            self._schedule_changed()
         invocation.return_value(None)
+
+    def _schedule_changed(self):
+        """Coalesce bursts of updates (apps that retitle themselves constantly) into one 'changed' signal."""
+        if getattr(self, '_changed_pending', False):
+            return
+        self._changed_pending = True
+
+        def fire():
+            self._changed_pending = False
+            self.emit('changed')
+            return False
+        GLib.timeout_add(120, fire)
 
     # ----- loading the bridge script
     def load(self):

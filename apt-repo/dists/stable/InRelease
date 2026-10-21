@@ -5,18 +5,18 @@ Origin: Amerika
 Label: Amerika OS
 Suite: stable
 Codename: stable
-Date: Wed, 21 Oct 2026 12:40:06 UTC
+Date: Wed, 21 Oct 2026 12:57:20 UTC
 Architectures: arm64
 Components: main
 Description: Amerika OS packages
 SHA256:
- bce9b7064a9e95740ee344dd206c34d94fcadb06cd02f4ef132521a0421da618             8482 main/binary-arm64/Packages
- 14697707a53ecad4e937dd9fbd20cc8bf349906e811a9799ddb2dd6053b3f426             2601 main/binary-arm64/Packages.gz
- 38025470bda6a538b55bb54a1a577a6ed68c5de028ee81ec8da7cdd28ef3f452             2608 main/binary-arm64/Packages.xz
+ b79fdac1428f1986a7363dd62d26d64f54cb98a565194fe688eb17eb2d04aa0f             8482 main/binary-arm64/Packages
+ 4538099df640ac1cb80ad860c1408a8a603432282e3d7652c20d712f78aacfd7             2604 main/binary-arm64/Packages.gz
+ eeeaf3fe1a269020d6c12988e3844515213de773f9c248aac9b97c31f8d0eb3f             2604 main/binary-arm64/Packages.xz
 -----BEGIN PGP SIGNATURE-----
 
-iHUEARYKAB0WIQSfUr2YqO6QlrG+eqwQY7vJiaERMwUCatiypgAKCRAQY7vJiaER
-M+ZkAP9ZHoSSVhCTJi707PXHj4e9pAaBFO8cHURzLB0j8JEijwD/VMuG7WE6WGff
-iuQHVmSFxRvIOcYohJIdM/0+YgACFAY=
-=i2tn
+iHUEARYKAB0WIQSfUr2YqO6QlrG+eqwQY7vJiaERMwUCati2sAAKCRAQY7vJiaER
+M6CUAQD9sfTpzuom7MMrMsKWhggzBSsNu7Tunt1jAh6fbWfvbQEA5B1M5L3QXWXO
+vr3d9eR1xI4NeOsRM8ox/Ha4A1Uj5QA=
+=ZV55
 -----END PGP SIGNATURE-----

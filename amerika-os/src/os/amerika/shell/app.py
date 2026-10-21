@@ -60,6 +60,13 @@ class Shell(Gtk.Application):
             self.activate_app(ai[int(name[-1]) - 1])
         elif name == 'copilot':
             self.copilot_key()
+        elif name == 'debug-dock-menu' and os.environ.get('AMERIKA_DEBUG'):
+            self.dock.debug_menu()
+        elif name == 'debug-report' and os.environ.get('AMERIKA_DEBUG'):
+            menu = getattr(self.dock, '_open_menu', None)
+            print('DEBUG menu open=%s closed_after_ms=%s rebuilds=%s' % (bool(menu and menu.get_mapped() and menu.get_parent() is not None), getattr(self.dock, '_closed_after_ms', None), getattr(self.dock, '_rebuilds', 0)), flush=True)
+            if menu and menu.get_visible() and os.environ.get('AMERIKA_SCREENSHOT_DIR'):
+                save_widget(menu, Path(os.environ['AMERIKA_SCREENSHOT_DIR']) / 'dock-menu.png')
         elif name == 'lock':
             from .. import system
             system.lock_session()
@@ -112,7 +119,7 @@ class Shell(Gtk.Application):
         if old.get('wallpaper') != self.settings.get('wallpaper'):
             self.desktop.apply(self.settings)
         if old.get('dock_size') != self.settings.get('dock_size') or old.get('dock_pinned') != self.settings.get('dock_pinned'):
-            self.dock.rebuild()
+            self.dock.rebuild(force=True)
         if old.get('clock_24h') != self.settings.get('clock_24h'):
             self.bar._tick()
 
@@ -173,7 +180,7 @@ class Shell(Gtk.Application):
         elif key == 'wallpaper':
             self.desktop.apply(self.settings)
         elif key == 'dock_size':
-            self.dock.rebuild()
+            self.dock.rebuild(force=True)
         elif key == 'clock_24h':
             self.bar._tick()
 

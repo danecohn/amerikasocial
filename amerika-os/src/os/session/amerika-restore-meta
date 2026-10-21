@@ -6,7 +6,7 @@ cur=$(kreadconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta 2>/dev
 case "$cur" in
   org.amerika.Shell*)
     saved=$(cat "$state/meta-shortcut.saved" 2>/dev/null)
-    if [ -n "$saved" ]; then kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta "$saved"
+    if [ -n "$saved" ] && [ "$saved" != "-" ]; then kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta "$saved"
     else kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta "org.kde.plasmashell,/PlasmaShell,org.kde.PlasmaShell,activateLauncherMenu"; fi
     rm -f "$state/meta-shortcut.saved" ;;
 esac

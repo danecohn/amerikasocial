@@ -11,7 +11,7 @@ from pathlib import Path
 
 from . import common
 
-VERSION = '3.0.1-1'
+VERSION = '3.0.2-1'
 SCHEME = Path(os.environ.get('AMERIKA_SCHEMES', '/usr/share/color-schemes')) / 'AmerikaRetro.colors'
 KWIN_KEYS = [
     ('kwinrc', 'org.kde.kdecoration2', 'ButtonsOnLeft', 'XIA'),

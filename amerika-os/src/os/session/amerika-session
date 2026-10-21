@@ -9,4 +9,21 @@ export QT_QPA_PLATFORM=wayland
 export GDK_BACKEND=wayland,x11
 export MOZ_ENABLE_WAYLAND=1
 export _JAVA_AWT_WM_NONREPARENTING=1
-exec /usr/bin/kwin_wayland --xwayland --exit-with-session=/usr/libexec/amerika/session-start
+# Everything KWin only reads at startup is prepared here, before it starts.
+libexec="${AMERIKA_LIBEXEC:-/usr/libexec/amerika}"
+state="${XDG_STATE_HOME:-$HOME/.local/state}/amerika-os"
+mkdir -p "$state"
+
+# Copilot key: keep Shift+Super+F23 as F23 so KWin can bind it (the stock layout turns it into XF86Assistant).
+xkb=$("$libexec/amerika-xkb-override" 2>/dev/null)
+[ -n "$xkb" ] && export XKB_CONFIG_EXTRA_PATH="$xkb"
+
+# Super (Windows) key opens the launcher. kwinrc is shared with other KDE sessions, so the old binding is saved and
+# put back by session-start when this session ends (amerika-restore-meta repairs it if the session was killed).
+if [ ! -s "$state/meta-shortcut.saved" ]; then
+  kreadconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta > "$state/meta-shortcut.saved" 2>/dev/null
+  [ -s "$state/meta-shortcut.saved" ] || echo "-" > "$state/meta-shortcut.saved"
+fi
+kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta "org.amerika.Shell,/Control,org.amerika.Control,Action,launcher"
+
+exec "${AMERIKA_KWIN:-/usr/bin/kwin_wayland}" --xwayland --exit-with-session=/usr/libexec/amerika/session-start

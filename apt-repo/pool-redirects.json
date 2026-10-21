@@ -12,87 +12,87 @@
     "size": 109207400
   },
   "cosmic-app-library_1.10.0~1791846714~26.04~1d1e70a_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-app-library_1.10.0~1791846714~26.04~1d1e70a_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-app-library_1.10.0.1791846714.26.04.1d1e70a_arm64.deb",
     "size": 9503834
   },
   "cosmic-applets_1.10.0~1791312291~26.04~406d1b7_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-applets_1.10.0~1791312291~26.04~406d1b7_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-applets_1.10.0.1791312291.26.04.406d1b7_arm64.deb",
     "size": 14273402
   },
   "cosmic-comp_0.1~1791979042~26.04~742b800_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-comp_0.1~1791979042~26.04~742b800_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-comp_0.1.1791979042.26.04.742b800_arm64.deb",
     "size": 9033910
   },
   "cosmic-edit_1.10.0~1791488508~26.04~9dbaea3_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-edit_1.10.0~1791488508~26.04~9dbaea3_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-edit_1.10.0.1791488508.26.04.9dbaea3_arm64.deb",
     "size": 12734692
   },
   "cosmic-files_1.10.0~1791825941~26.04~0f15f44_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-files_1.10.0~1791825941~26.04~0f15f44_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-files_1.10.0.1791825941.26.04.0f15f44_arm64.deb",
     "size": 24725216
   },
   "cosmic-greeter_1.10.0~1792000472~26.04~5b912ba_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-greeter_1.10.0~1792000472~26.04~5b912ba_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-greeter_1.10.0.1792000472.26.04.5b912ba_arm64.deb",
     "size": 12475598
   },
   "cosmic-launcher_1.10.0~1792433718~26.04~6d63b1d_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-launcher_1.10.0~1792433718~26.04~6d63b1d_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-launcher_1.10.0.1792433718.26.04.6d63b1d_arm64.deb",
     "size": 9226022
   },
   "cosmic-monitor_1.10.0~1791316617~26.04~a79ce9e_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-monitor_1.10.0~1791316617~26.04~a79ce9e_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-monitor_1.10.0.1791316617.26.04.a79ce9e_arm64.deb",
     "size": 8636352
   },
   "cosmic-notifications_1.10.0~1792022500~26.04~c1a0695_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-notifications_1.10.0~1792022500~26.04~c1a0695_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-notifications_1.10.0.1792022500.26.04.c1a0695_arm64.deb",
     "size": 5700670
   },
   "cosmic-osd_1.10.0~1791315686~26.04~9b14ee0_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-osd_1.10.0~1791315686~26.04~9b14ee0_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-osd_1.10.0.1791315686.26.04.9b14ee0_arm64.deb",
     "size": 6673346
   },
   "cosmic-osk_1.10.0~1791491788~26.04~3a4800a_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-osk_1.10.0~1791491788~26.04~3a4800a_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-osk_1.10.0.1791491788.26.04.3a4800a_arm64.deb",
     "size": 8514794
   },
   "cosmic-panel_1.10.0~1791315703~26.04~3ce6ce1_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-panel_1.10.0~1791315703~26.04~3ce6ce1_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-panel_1.10.0.1791315703.26.04.3ce6ce1_arm64.deb",
     "size": 5401120
   },
   "cosmic-player_1.10.0~1791315619~26.04~9004537_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-player_1.10.0~1791315619~26.04~9004537_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-player_1.10.0.1791315619.26.04.9004537_arm64.deb",
     "size": 10504676
   },
   "cosmic-settings_1.10.0~1792021988~26.04~c4ff548_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-settings_1.10.0~1792021988~26.04~c4ff548_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-settings_1.10.0.1792021988.26.04.c4ff548_arm64.deb",
     "size": 14336022
   },
   "cosmic-store_1.10.0~1791381777~26.04~c7b36a2_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-store_1.10.0~1791381777~26.04~c7b36a2_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-store_1.10.0.1791381777.26.04.c7b36a2_arm64.deb",
     "size": 13054698
   },
   "cosmic-term_1.10.0~1791316259~26.04~3bfca1e_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-term_1.10.0~1791316259~26.04~3bfca1e_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-term_1.10.0.1791316259.26.04.3bfca1e_arm64.deb",
     "size": 11721934
   },
   "cosmic-viewer_1.10.0~1791390582~26.04~77ba62d_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-viewer_1.10.0~1791390582~26.04~77ba62d_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-viewer_1.10.0.1791390582.26.04.77ba62d_arm64.deb",
     "size": 12715812
   },
   "cosmic-wallpapers_1.0.0~1790783798~26.04~da595bb_all.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-wallpapers_1.0.0~1790783798~26.04~da595bb_all.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-wallpapers_1.0.0.1790783798.26.04.da595bb_all.deb",
     "size": 17051856
   },
   "cosmic-workspaces_1.0.12~1790783807~26.04~cb953ea_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-workspaces_1.0.12~1790783807~26.04~cb953ea_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/cosmic-workspaces_1.0.12.1790783807.26.04.cb953ea_arm64.deb",
     "size": 8417000
   },
   "pop-fonts_1.0.3~1629904758~26.04~2da23d5_all.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/pop-fonts_1.0.3~1629904758~26.04~2da23d5_all.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/pop-fonts_1.0.3.1629904758.26.04.2da23d5_all.deb",
     "size": 13369452
   },
   "xdg-desktop-portal-cosmic_1.10.0~1791324839~26.04~9d35e63_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/xdg-desktop-portal-cosmic_1.10.0~1791324839~26.04~9d35e63_arm64.deb",
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-2.0.0/xdg-desktop-portal-cosmic_1.10.0.1791324839.26.04.9d35e63_arm64.deb",
     "size": 12412604
   }
 }

@@ -25,9 +25,10 @@ redirects, big = {}, []
 for deb in sorted((root / 'dist/apt/pool').rglob('*.deb')):
     if deb.stat().st_size > LIMIT:
         if deb.name in previous:  # unchanged file already attached to an earlier release
-            redirects[deb.name] = {**previous[deb.name], 'size': deb.stat().st_size}
+            head, _, base = previous[deb.name]['url'].rpartition('/')
+            redirects[deb.name] = {'url': head + '/' + base.replace('~', '.'), 'size': deb.stat().st_size}
         else:
-            redirects[deb.name] = {'url': BASE + RELEASE + '/' + deb.name, 'size': deb.stat().st_size}
+            redirects[deb.name] = {'url': BASE + RELEASE + '/' + deb.name.replace('~', '.'), 'size': deb.stat().st_size}  # GitHub stores '~' as '.'
             big.append(str(deb))
 (dest / 'pool-redirects.json').write_text(json.dumps(redirects, indent=2) + '\n')
 (root / 'dist/release-assets.txt').write_text('\n'.join(big) + '\n')

@@ -299,7 +299,7 @@ def cosmic_theme(dest):
 def build_theme():
     p = Pkg('amerika-theme', DE_VERSION, 'Amerika OS dark retro-futurist theme\nCOSMIC theme (chrome and crimson), horizon '
             'wallpaper and defaults applied once per user by the Amerika session.',
-            depends='cosmic-settings, cosmic-bg, amerika-icon-theme', title='Amerika Theme', category='Appearance',
+            depends=f'cosmic-settings, cosmic-bg, amerika-icon-theme (>= {DE_VERSION})', title='Amerika Theme', category='Appearance',
             extra={}, conflicts='')
     cosmic_theme(p.path('/usr/share/amerika-os/cosmic'))
     p.copy(SRC / 'theme/wallpaper-3840x2160.png', f'{BG_DIR}/amerika-horizon-3840x2160.png')
@@ -359,7 +359,7 @@ def cosmic_layout(dest):
 def build_shell():
     p = Pkg('amerika-desktop-shell', DE_VERSION, 'Amerika OS desktop layout\nThe Amerika top bar and floating dock for the '
             'COSMIC desktop, seeded into the user configuration by the Amerika session.',
-            depends='cosmic-panel, cosmic-applets, cosmic-bg, cosmic-comp, amerika-theme, amerika-icon-theme',
+            depends=f'cosmic-panel, cosmic-applets, cosmic-bg, cosmic-comp, amerika-theme (>= {DE_VERSION}), amerika-icon-theme (>= {DE_VERSION})',
             title='Amerika Desktop Layout')
     cosmic_layout(p.path('/usr/share/amerika-os/cosmic'))
     p.copyright('Amerika OS layout defaults, Copyright Amerika LLC, GPL-3.0-only. Derived from the COSMIC panel defaults\n'
@@ -370,7 +370,7 @@ def build_shell():
 def build_session():
     p = Pkg('amerika-session', DE_VERSION, 'Amerika OS login session\nAdds an "Amerika OS" entry to the login screen. '
             'It starts the stock COSMIC session with the Amerika layout and theme.\nThe COSMIC and Plasma sessions are '
-            'not changed.', depends='amerika-desktop-shell, amerika-theme, cosmic-session',
+            'not changed.', depends=f'amerika-desktop-shell (>= {DE_VERSION}), amerika-theme (>= {DE_VERSION}), cosmic-session',
             title='Amerika Session', conflicts='')
     p.copy(SRC / 'session/amerika-session', '/usr/bin/amerika-session', 0o755)
     p.copy(SRC / 'session/amerika-cosmic-seed', '/usr/bin/amerika-cosmic-seed', 0o755)
@@ -455,7 +455,7 @@ def build_apps():
     p = Pkg('amerika-apps', DE_VERSION, 'Amerika core apps\nAmerika Files, Terminal, Text, Settings and AI launchers. '
             'Files, Terminal, Text and Settings are branded launchers\nfor COSMIC Files, Terminal, Edit and Settings, '
             'which remain installed and unmodified.',
-            depends='cosmic-files, cosmic-term, cosmic-edit, cosmic-settings, amerika-theme, amerika-icon-theme',
+            depends=f'cosmic-files, cosmic-term, cosmic-edit, cosmic-settings, amerika-theme (>= {DE_VERSION}), amerika-icon-theme (>= {DE_VERSION})',
             recommends='amerika-venture', title='Amerika Core Apps')
     for name in ('amerika-files', 'amerika-terminal', 'amerika-text', 'amerika-settings', 'amerika-ai'):
         p.copy(SRC / f'apps/{name}.desktop', f'/usr/share/applications/{name}.desktop')
@@ -571,9 +571,7 @@ def build_office():
 def build_meta():
     p = Pkg('amerika-desktop', DE_VERSION, 'Amerika OS desktop environment\nInstalls the Amerika desktop session, layout, '
             'theme, apps (Social, AI, Venture, Office, Files, Terminal)\nand the Amerika Software manager. Built on the '
-            'COSMIC desktop.', depends='amerika-session, amerika-desktop-shell, amerika-theme, '
-            'amerika-icon-theme, amerika-hub, amerika-apps, amerika-software, amerika-repo-keyring, amerika-social, '
-            'amerika-venture, amerika-office, cosmic-session, cosmic-greeter', arch=ARCH, title='Amerika OS Desktop',
+            'COSMIC desktop.', depends=', '.join(f'{n} (>= {DE_VERSION})' for n in ('amerika-session', 'amerika-desktop-shell', 'amerika-theme', 'amerika-icon-theme', 'amerika-hub', 'amerika-apps', 'amerika-software', 'amerika-repo-keyring')) + ', amerika-social, amerika-venture, amerika-office, cosmic-session, cosmic-greeter', arch=ARCH, title='Amerika OS Desktop',
             section='metapackages')
     p.copyright('Copyright Amerika LLC, GPL-3.0-only.\n')
     return p

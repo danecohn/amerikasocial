@@ -6,7 +6,7 @@ Installed-Size: 2
 Section: x11
 Priority: optional
 Homepage: https://www.amerika.social/downloads/os
-Depends: cosmic-files, cosmic-term, cosmic-edit, cosmic-settings, amerika-theme, amerika-icon-theme
+Depends: cosmic-files, cosmic-term, cosmic-edit, cosmic-settings, amerika-theme (>= 2.0.0), amerika-icon-theme (>= 2.0.0)
 Recommends: amerika-venture
 Amerika-Title: Amerika Core Apps
 Amerika-Category: System
@@ -14,8 +14,8 @@ Description: Amerika core apps
  Amerika Files, Terminal, Text, Settings and AI launchers. Files, Terminal, Text and Settings are branded launchers
  for COSMIC Files, Terminal, Edit and Settings, which remain installed and unmodified.
 Filename: pool/main/a/amerika-apps/amerika-apps_2.0.0_all.deb
-Size: 2512
-SHA256: 29bddfbe508f06453226ea0e1afaf022329364dc0845d5baa61067ba2febd15c
+Size: 2520
+SHA256: 2a06858dcd40e154e4f478e4fd789d88aec64885223d06b4179d785e78959c20
 
 Package: amerika-desktop-shell
 Version: 2.0.0
@@ -25,14 +25,14 @@ Installed-Size: 1
 Section: x11
 Priority: optional
 Homepage: https://www.amerika.social/downloads/os
-Depends: cosmic-panel, cosmic-applets, cosmic-bg, cosmic-comp, amerika-theme, amerika-icon-theme
+Depends: cosmic-panel, cosmic-applets, cosmic-bg, cosmic-comp, amerika-theme (>= 2.0.0), amerika-icon-theme (>= 2.0.0)
 Amerika-Title: Amerika Desktop Layout
 Amerika-Category: System
 Description: Amerika OS desktop layout
  The Amerika top bar and floating dock for the COSMIC desktop, seeded into the user configuration by the Amerika session.
 Filename: pool/main/a/amerika-desktop-shell/amerika-desktop-shell_2.0.0_all.deb
-Size: 3544
-SHA256: 791beb1bd7c138374c71806997a8e9297bbcf73239e6442709a6611b8e163152
+Size: 3556
+SHA256: 661fdf64a05b0bf8170bda6f939640296f17ff486150f932b65f478ce99c1bc3
 
 Package: amerika-desktop
 Version: 2.0.0
@@ -42,15 +42,15 @@ Installed-Size: 0
 Section: metapackages
 Priority: optional
 Homepage: https://www.amerika.social/downloads/os
-Depends: amerika-session, amerika-desktop-shell, amerika-theme, amerika-icon-theme, amerika-hub, amerika-apps, amerika-software, amerika-repo-keyring, amerika-social, amerika-venture, amerika-office, cosmic-session, cosmic-greeter
+Depends: amerika-session (>= 2.0.0), amerika-desktop-shell (>= 2.0.0), amerika-theme (>= 2.0.0), amerika-icon-theme (>= 2.0.0), amerika-hub (>= 2.0.0), amerika-apps (>= 2.0.0), amerika-software (>= 2.0.0), amerika-repo-keyring (>= 2.0.0), amerika-social, amerika-venture, amerika-office, cosmic-session, cosmic-greeter
 Amerika-Title: Amerika OS Desktop
 Amerika-Category: System
 Description: Amerika OS desktop environment
  Installs the Amerika desktop session, layout, theme, apps (Social, AI, Venture, Office, Files, Terminal)
  and the Amerika Software manager. Built on the COSMIC desktop.
 Filename: pool/main/a/amerika-desktop/amerika-desktop_2.0.0_arm64.deb
-Size: 1148
-SHA256: 29dccafa07d713519937867ad3bd382fa41bbe110f95e0d4f4183c7247d644f4
+Size: 1156
+SHA256: 2f5d1fa7b13e0f00fe5b1092817f740a21c123ebabe97d21650f67fb3c2072a4
 
 Package: amerika-hub
 Version: 2.0.0
@@ -147,15 +147,15 @@ Installed-Size: 1
 Section: x11
 Priority: optional
 Homepage: https://www.amerika.social/downloads/os
-Depends: amerika-desktop-shell, amerika-theme, cosmic-session
+Depends: amerika-desktop-shell (>= 2.0.0), amerika-theme (>= 2.0.0), cosmic-session
 Amerika-Title: Amerika Session
 Amerika-Category: System
 Description: Amerika OS login session
  Adds an "Amerika OS" entry to the login screen. It starts the stock COSMIC session with the Amerika layout and theme.
  The COSMIC and Plasma sessions are not changed.
 Filename: pool/main/a/amerika-session/amerika-session_2.0.0_all.deb
-Size: 1836
-SHA256: 4b38811619f5edc4146921dd0766bc27589ff24061c2305233b74176958b61f0
+Size: 1844
+SHA256: b81a43bab817865c78abab7b1f23366e8c8d8be95917506bdc87f09d3a7570ba
 
 Package: amerika-social
 Version: 1.0.0-1
@@ -199,14 +199,14 @@ Installed-Size: 1007
 Section: x11
 Priority: optional
 Homepage: https://www.amerika.social/downloads/os
-Depends: cosmic-settings, cosmic-bg, amerika-icon-theme
+Depends: cosmic-settings, cosmic-bg, amerika-icon-theme (>= 2.0.0)
 Amerika-Title: Amerika Theme
 Amerika-Category: Appearance
 Description: Amerika OS dark retro-futurist theme
  COSMIC theme (chrome and crimson), horizon wallpaper and defaults applied once per user by the Amerika session.
 Filename: pool/main/a/amerika-theme/amerika-theme_2.0.0_all.deb
-Size: 982508
-SHA256: ee81acc84ec5827eac8821e22ccaa1c9bc5a4079711fdabbf72f389a07540fbb
+Size: 982532
+SHA256: 50814dd4ff2299827f5f0c93cf13fa909d11a192624386904847717493b7dda7
 
 Package: amerika-venture
 Version: 158.0.1-amerika1

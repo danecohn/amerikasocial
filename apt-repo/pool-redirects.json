@@ -1,14 +1,14 @@
 {
-  "amerika-office_0.1.0-1_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-1.0.0/amerika-office_0.1.0-1_arm64.deb",
-    "size": 106706996
+  "amerika-office_0.1.0-2_arm64.deb": {
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-3.0.4/amerika-office_0.1.0-2_arm64.deb",
+    "size": 106715924
   },
   "amerika-social_1.0.0-1_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-1.0.0/amerika-social_1.0.0-1_arm64.deb",
-    "size": 100922608
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-3.0.4/amerika-social_1.0.0-1_arm64.deb",
+    "size": 100923588
   },
   "amerika-venture_158.0.1-amerika1_arm64.deb": {
-    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-1.0.0/amerika-venture_158.0.1-amerika1_arm64.deb",
-    "size": 109207400
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-3.0.4/amerika-venture_158.0.1-amerika1_arm64.deb",
+    "size": 109208104
   }
 }

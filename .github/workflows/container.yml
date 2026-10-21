@@ -2,7 +2,7 @@ name: Build production image
 on:
   push:
     branches: [main]
-    paths: ['Dockerfile', '**.mjs', 'package*.json', 'public/**', 'scripts/**', 'certificates/**', 'geo/**', '.github/workflows/container.yml']
+    paths: ['Dockerfile', '**.mjs', 'package*.json', 'public/**', 'scripts/**', 'certificates/**', 'geo/**', 'apt-repo/**', '.github/workflows/container.yml']
   workflow_dispatch:
 permissions:
   contents: read

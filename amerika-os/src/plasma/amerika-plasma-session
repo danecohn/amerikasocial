@@ -1,7 +1,0 @@
-#!/bin/sh
-# Legacy Amerika OS (Plasma) session. Runs the stock Plasma (KWin) Wayland session with the Amerika
-# shell package selected. The regular Plasma session is untouched.
-export AMERIKA_PLASMA=1
-export XDG_SESSION_DESKTOP=AmerikaPlasma
-set -- /usr/lib/*/libexec/plasma-dbus-run-session-if-needed
-exec "$1" /usr/bin/startplasma-wayland

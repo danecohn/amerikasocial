@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Amerika OS
+Comment=Amerika OS: its own desktop, with Claude and ChatGPT at the centre
+Exec=/usr/bin/amerika-session
+TryExec=/usr/bin/kwin_wayland
+DesktopNames=Amerika

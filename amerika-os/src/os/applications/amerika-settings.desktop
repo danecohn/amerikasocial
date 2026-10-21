@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Amerika Settings
+GenericName=System Settings
+Comment=Make Amerika OS yours
+Exec=amerika-settings
+Icon=amerika-settings
+Terminal=false
+Categories=Settings;
+StartupWMClass=org.amerika.Settings

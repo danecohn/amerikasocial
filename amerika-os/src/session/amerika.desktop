@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Amerika OS
-Comment=Amerika OS desktop environment (COSMIC)
-Exec=/usr/bin/amerika-session
-TryExec=/usr/bin/start-cosmic
-DesktopNames=COSMIC

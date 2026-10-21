@@ -2,242 +2,62 @@
   "suite": "stable",
   "architecture": "arm64",
   "fingerprint": "9F52BD98A8EE9096B1BE7AAC1063BBC989A11133",
-  "generated": "Wed, 21 Oct 2026 06:05:21 UTC",
+  "generated": "Wed, 21 Oct 2026 12:12:44 UTC",
   "packages": {
-    "adw-gtk3_5.3.0-0pop1~1710896694~26.04~213b5ed_all.deb": {
-      "path": "pool/main/a/adw-gtk3/adw-gtk3_5.3.0-0pop1~1710896694~26.04~213b5ed_all.deb",
-      "size": 103190,
-      "sha256": "606488ca7a03733396296e8b246c211ef8266397ea036d03442c8f7e73407969"
+    "amerika-apps_3.0.0_all.deb": {
+      "path": "pool/main/a/amerika-apps/amerika-apps_3.0.0_all.deb",
+      "size": 1788,
+      "sha256": "1790286b60391c14e53f2d71328aafb701094e6a4364cc7d0a751b8942440334"
     },
-    "amerika-apps_2.0.0_all.deb": {
-      "path": "pool/main/a/amerika-apps/amerika-apps_2.0.0_all.deb",
-      "size": 2520,
-      "sha256": "2a06858dcd40e154e4f478e4fd789d88aec64885223d06b4179d785e78959c20"
-    },
-    "amerika-desktop_2.0.0_arm64.deb": {
-      "path": "pool/main/a/amerika-desktop/amerika-desktop_2.0.0_arm64.deb",
+    "amerika-desktop_3.0.0_arm64.deb": {
+      "path": "pool/main/a/amerika-desktop/amerika-desktop_3.0.0_arm64.deb",
       "size": 1156,
-      "sha256": "2f5d1fa7b13e0f00fe5b1092817f740a21c123ebabe97d21650f67fb3c2072a4"
+      "sha256": "8ed613e5d9cfb668bfc5d34fd5877e9f5f76758cfba32bd036faa83f95270e7e"
     },
-    "amerika-desktop-shell_2.0.0_all.deb": {
-      "path": "pool/main/a/amerika-desktop-shell/amerika-desktop-shell_2.0.0_all.deb",
-      "size": 3556,
-      "sha256": "661fdf64a05b0bf8170bda6f939640296f17ff486150f932b65f478ce99c1bc3"
+    "amerika-desktop-shell_3.0.0_all.deb": {
+      "path": "pool/main/a/amerika-desktop-shell/amerika-desktop-shell_3.0.0_all.deb",
+      "size": 33548,
+      "sha256": "f1b46976a4fd9f66c87256dfe8f3f55351ffce2d39271b7afebd9c3c811f1d92"
     },
-    "amerika-hub_2.0.0_all.deb": {
-      "path": "pool/main/a/amerika-hub/amerika-hub_2.0.0_all.deb",
-      "size": 3912,
-      "sha256": "7a5318fd7e8695de3725cc1bb3cc92046ccc9405073f87140e0179d79bc76fe5"
-    },
-    "amerika-icon-theme_2.0.0_all.deb": {
-      "path": "pool/main/a/amerika-icon-theme/amerika-icon-theme_2.0.0_all.deb",
-      "size": 535292,
-      "sha256": "49a27b35c0ae454c8178c4614dce42659c4a96dd2dedd9b0d28d631644b4c4cd"
+    "amerika-icon-theme_3.0.0_all.deb": {
+      "path": "pool/main/a/amerika-icon-theme/amerika-icon-theme_3.0.0_all.deb",
+      "size": 9108,
+      "sha256": "f66d3ed4667603a950b5d84dc4888cba0776ceb5ec256463c5fa95935c7cd985"
     },
     "amerika-office_0.1.0-1_arm64.deb": {
       "path": "pool/main/a/amerika-office/amerika-office_0.1.0-1_arm64.deb",
       "size": 106706996,
       "sha256": "609b749edabc6c5cbf3e320c8b0c1849de838144bc58207d13d90916f72b0924"
     },
-    "amerika-plasma_2.0.0_all.deb": {
-      "path": "pool/main/a/amerika-plasma/amerika-plasma_2.0.0_all.deb",
-      "size": 980992,
-      "sha256": "4667e4ecec02e6943a42befcf6c4d806bea9047b0e751de0bc441ded15d93e73"
+    "amerika-repo-keyring_3.0.0_all.deb": {
+      "path": "pool/main/a/amerika-repo-keyring/amerika-repo-keyring_3.0.0_all.deb",
+      "size": 1784,
+      "sha256": "8b42ffebdc86630b7eb817b5bc187971ef83b7963513b793bfe6dcddc7731bdc"
     },
-    "amerika-repo-keyring_2.0.0_all.deb": {
-      "path": "pool/main/a/amerika-repo-keyring/amerika-repo-keyring_2.0.0_all.deb",
-      "size": 1776,
-      "sha256": "6937d4b1cb460c0f8732702de70b43023e0a85bbfe2d43d4ba0739b0759207ab"
-    },
-    "amerika-session_2.0.0_all.deb": {
-      "path": "pool/main/a/amerika-session/amerika-session_2.0.0_all.deb",
-      "size": 1844,
-      "sha256": "b81a43bab817865c78abab7b1f23366e8c8d8be95917506bdc87f09d3a7570ba"
+    "amerika-session_3.0.0_all.deb": {
+      "path": "pool/main/a/amerika-session/amerika-session_3.0.0_all.deb",
+      "size": 2288,
+      "sha256": "fbddc6c301d02d9f3cef2440f037892913fe5ddfd119a7e99c91937abc7a5e05"
     },
     "amerika-social_1.0.0-1_arm64.deb": {
       "path": "pool/main/a/amerika-social/amerika-social_1.0.0-1_arm64.deb",
       "size": 100922608,
       "sha256": "99669615b544285dcd248fdc6f9fc5579743c37541994356fca5152129499ffe"
     },
-    "amerika-software_2.0.0_all.deb": {
-      "path": "pool/main/a/amerika-software/amerika-software_2.0.0_all.deb",
+    "amerika-software_3.0.0_all.deb": {
+      "path": "pool/main/a/amerika-software/amerika-software_3.0.0_all.deb",
       "size": 6784,
-      "sha256": "b74f9b7d6d665466892be5a49ff7b18b8d28bbd35b88e3d224710242db0c7135"
+      "sha256": "25c845b140c5c563ab71da927b293e2d1246e13ae394b81bdc07cb259df2abc8"
     },
-    "amerika-theme_2.0.0_all.deb": {
-      "path": "pool/main/a/amerika-theme/amerika-theme_2.0.0_all.deb",
-      "size": 982532,
-      "sha256": "50814dd4ff2299827f5f0c93cf13fa909d11a192624386904847717493b7dda7"
+    "amerika-theme_3.0.0_all.deb": {
+      "path": "pool/main/a/amerika-theme/amerika-theme_3.0.0_all.deb",
+      "size": 1682148,
+      "sha256": "8cdcdb47207fe53e342985ee8a9d2e2b8fa204330c1212c46d009117b4d4d9f8"
     },
     "amerika-venture_158.0.1-amerika1_arm64.deb": {
       "path": "pool/main/a/amerika-venture/amerika-venture_158.0.1-amerika1_arm64.deb",
       "size": 109207400,
       "sha256": "236000f7aa70f7b4995f45741a66c2cecf2ef7f08589474a9016cb1f9dd5c965"
-    },
-    "appstream-data-pop_0.0.3~1727715771~26.04~23d51d3_all.deb": {
-      "path": "pool/main/a/appstream-data-pop/appstream-data-pop_0.0.3~1727715771~26.04~23d51d3_all.deb",
-      "size": 16888,
-      "sha256": "f3b001c3da96b732d539705d4fbf385037821ee01070f94e301b3f220a7f5875"
-    },
-    "appstream-data-pop-icons_0.0.3~1727715771~26.04~23d51d3_all.deb": {
-      "path": "pool/main/a/appstream-data-pop-icons/appstream-data-pop-icons_0.0.3~1727715771~26.04~23d51d3_all.deb",
-      "size": 166584,
-      "sha256": "b1f1df9ad4ec51e59dea5436fdadef97f3462741791b7a7f2f4297244a10bb0a"
-    },
-    "cosmic-app-library_1.10.0~1791846714~26.04~1d1e70a_arm64.deb": {
-      "path": "pool/main/c/cosmic-app-library/cosmic-app-library_1.10.0~1791846714~26.04~1d1e70a_arm64.deb",
-      "size": 9503834,
-      "sha256": "1b9991259c9f0422f56674ea1d603f15cc971383224c99fc5b7fcbe4d8ea909c"
-    },
-    "cosmic-applets_1.10.0~1791312291~26.04~406d1b7_arm64.deb": {
-      "path": "pool/main/c/cosmic-applets/cosmic-applets_1.10.0~1791312291~26.04~406d1b7_arm64.deb",
-      "size": 14273402,
-      "sha256": "1df3dafb8698588f02564b20c6ac74bc75a29d1c9fae33cc11a1cdd512bed129"
-    },
-    "cosmic-bg_1.10.0~1791316428~26.04~91d525b_arm64.deb": {
-      "path": "pool/main/c/cosmic-bg/cosmic-bg_1.10.0~1791316428~26.04~91d525b_arm64.deb",
-      "size": 2245928,
-      "sha256": "c33e190550bd88404b6d799814a61e644dbffe4854e1ff4f762787ca886b160c"
-    },
-    "cosmic-comp_0.1~1791979042~26.04~742b800_arm64.deb": {
-      "path": "pool/main/c/cosmic-comp/cosmic-comp_0.1~1791979042~26.04~742b800_arm64.deb",
-      "size": 9033910,
-      "sha256": "ca0823b50b671386e63cf036dc8aa36b53e67699e757efdc77326caaa84a38cf"
-    },
-    "cosmic-edit_1.10.0~1791488508~26.04~9dbaea3_arm64.deb": {
-      "path": "pool/main/c/cosmic-edit/cosmic-edit_1.10.0~1791488508~26.04~9dbaea3_arm64.deb",
-      "size": 12734692,
-      "sha256": "b07651ca2d793a35ffec62a78f26885c175d05c321b82afb7d97e454c205f694"
-    },
-    "cosmic-files_1.10.0~1791825941~26.04~0f15f44_arm64.deb": {
-      "path": "pool/main/c/cosmic-files/cosmic-files_1.10.0~1791825941~26.04~0f15f44_arm64.deb",
-      "size": 24725216,
-      "sha256": "e94f1db4b8ecf275181857f0f3c6e47e371176c369556ef6dbd903f8daea4a66"
-    },
-    "cosmic-greeter_1.10.0~1792000472~26.04~5b912ba_arm64.deb": {
-      "path": "pool/main/c/cosmic-greeter/cosmic-greeter_1.10.0~1792000472~26.04~5b912ba_arm64.deb",
-      "size": 12475598,
-      "sha256": "39d3c8efa7db0d82f3a7a94253ce5b4ec68f26aefafee4d279cd8e90f8b81fce"
-    },
-    "cosmic-greeter-daemon_1.10.0~1792000472~26.04~5b912ba_arm64.deb": {
-      "path": "pool/main/c/cosmic-greeter-daemon/cosmic-greeter-daemon_1.10.0~1792000472~26.04~5b912ba_arm64.deb",
-      "size": 1798318,
-      "sha256": "c56d9e2c930ea509eb73557efb6699baa7dcf6f15b3c1b07ee562bb78944e00d"
-    },
-    "cosmic-icons_0.1.0~1790783741~26.04~f1a282a_arm64.deb": {
-      "path": "pool/main/c/cosmic-icons/cosmic-icons_0.1.0~1790783741~26.04~f1a282a_arm64.deb",
-      "size": 233396,
-      "sha256": "04f142a9de3fc70ad7333cb86fa9450b5ee81b48037c3c7773692fd7fdb3bfc0"
-    },
-    "cosmic-idle_1.10.0~1791316310~26.04~21e983c_arm64.deb": {
-      "path": "pool/main/c/cosmic-idle/cosmic-idle_1.10.0~1791316310~26.04~21e983c_arm64.deb",
-      "size": 1544738,
-      "sha256": "89fb02050ef411c224a2751e1529eed3c58a5f5404e870eef72fb1c8ebbf2a33"
-    },
-    "cosmic-launcher_1.10.0~1792433718~26.04~6d63b1d_arm64.deb": {
-      "path": "pool/main/c/cosmic-launcher/cosmic-launcher_1.10.0~1792433718~26.04~6d63b1d_arm64.deb",
-      "size": 9226022,
-      "sha256": "cb1981201b5de825d062f8bb9c0cd5e7e274fe28b5fbe20a72e148864f1d6e9d"
-    },
-    "cosmic-monitor_1.10.0~1791316617~26.04~a79ce9e_arm64.deb": {
-      "path": "pool/main/c/cosmic-monitor/cosmic-monitor_1.10.0~1791316617~26.04~a79ce9e_arm64.deb",
-      "size": 8636352,
-      "sha256": "d3905475ddf3f36359c0196922b16b2916171f380212cd7cb90698b9eb3c3b25"
-    },
-    "cosmic-notifications_1.10.0~1792022500~26.04~c1a0695_arm64.deb": {
-      "path": "pool/main/c/cosmic-notifications/cosmic-notifications_1.10.0~1792022500~26.04~c1a0695_arm64.deb",
-      "size": 5700670,
-      "sha256": "bf985cad36f6f708fd78b1005501a44f8c23f22238e983df5a5de00bbd46d8a8"
-    },
-    "cosmic-osd_1.10.0~1791315686~26.04~9b14ee0_arm64.deb": {
-      "path": "pool/main/c/cosmic-osd/cosmic-osd_1.10.0~1791315686~26.04~9b14ee0_arm64.deb",
-      "size": 6673346,
-      "sha256": "9816fdef251e5703c37a5d5fe811f8147ad4e3803916c854d735941a069bce02"
-    },
-    "cosmic-osk_1.10.0~1791491788~26.04~3a4800a_arm64.deb": {
-      "path": "pool/main/c/cosmic-osk/cosmic-osk_1.10.0~1791491788~26.04~3a4800a_arm64.deb",
-      "size": 8514794,
-      "sha256": "667cfe4d876731ae371b2478984c2fa0c7444d441cda3355167a63b24790a7ce"
-    },
-    "cosmic-panel_1.10.0~1791315703~26.04~3ce6ce1_arm64.deb": {
-      "path": "pool/main/c/cosmic-panel/cosmic-panel_1.10.0~1791315703~26.04~3ce6ce1_arm64.deb",
-      "size": 5401120,
-      "sha256": "b9bb317be29af5bb4f7b053af01a6650d6025208a02444b1cda8a10de30fa14d"
-    },
-    "cosmic-player_1.10.0~1791315619~26.04~9004537_arm64.deb": {
-      "path": "pool/main/c/cosmic-player/cosmic-player_1.10.0~1791315619~26.04~9004537_arm64.deb",
-      "size": 10504676,
-      "sha256": "284cdf75d268dbf57aead8db0312bdefa4f6227de54284be04a7e941880a36dd"
-    },
-    "cosmic-randr_1.10.0~1791314440~26.04~85efc7f_arm64.deb": {
-      "path": "pool/main/c/cosmic-randr/cosmic-randr_1.10.0~1791314440~26.04~85efc7f_arm64.deb",
-      "size": 597622,
-      "sha256": "21251e822b9b27d21c2bc73d17ad11ff1fd2cc2d5a1b07af66385fc4a955a765"
-    },
-    "cosmic-screenshot_1.10.0~1791314515~26.04~07e2758_arm64.deb": {
-      "path": "pool/main/c/cosmic-screenshot/cosmic-screenshot_1.10.0~1791314515~26.04~07e2758_arm64.deb",
-      "size": 1063894,
-      "sha256": "1d8bfb3248e0542cc189a3e17968e05598add5957df2648fee2770c2fba07d06"
-    },
-    "cosmic-session_1.10.0~1791314577~26.04~8093b59_arm64.deb": {
-      "path": "pool/main/c/cosmic-session/cosmic-session_1.10.0~1791314577~26.04~8093b59_arm64.deb",
-      "size": 1636276,
-      "sha256": "cb89fa70437c2ce60015d6b415ab1ef455a3b24fc03e9bd0f76902c1446953ab"
-    },
-    "cosmic-settings_1.10.0~1792021988~26.04~c4ff548_arm64.deb": {
-      "path": "pool/main/c/cosmic-settings/cosmic-settings_1.10.0~1792021988~26.04~c4ff548_arm64.deb",
-      "size": 14336022,
-      "sha256": "ef0c0ef50069683540b84893a126d4a853849ccc9017f0a9856d942bd5e9a403"
-    },
-    "cosmic-settings-daemon_1.10.0~1791837699~26.04~8844464_arm64.deb": {
-      "path": "pool/main/c/cosmic-settings-daemon/cosmic-settings-daemon_1.10.0~1791837699~26.04~8844464_arm64.deb",
-      "size": 2633580,
-      "sha256": "53f339f0856fed53f180ec6241177edd33b7c3619b7980e341454a8f70525466"
-    },
-    "cosmic-store_1.10.0~1791381777~26.04~c7b36a2_arm64.deb": {
-      "path": "pool/main/c/cosmic-store/cosmic-store_1.10.0~1791381777~26.04~c7b36a2_arm64.deb",
-      "size": 13054698,
-      "sha256": "77a9751b6de2fa2dc78a50416898438180578271c551da418c4d01cfd01bacda"
-    },
-    "cosmic-term_1.10.0~1791316259~26.04~3bfca1e_arm64.deb": {
-      "path": "pool/main/c/cosmic-term/cosmic-term_1.10.0~1791316259~26.04~3bfca1e_arm64.deb",
-      "size": 11721934,
-      "sha256": "9cc1814ca67e263ca74f2cc5968dd1349766ec840688c602f8628d3eeed12751"
-    },
-    "cosmic-viewer_1.10.0~1791390582~26.04~77ba62d_arm64.deb": {
-      "path": "pool/main/c/cosmic-viewer/cosmic-viewer_1.10.0~1791390582~26.04~77ba62d_arm64.deb",
-      "size": 12715812,
-      "sha256": "a6b9d624a3f6d821a678535826a4ef24c64d56e937db9478a3f84a753cfdf652"
-    },
-    "cosmic-wallpapers_1.0.0~1790783798~26.04~da595bb_all.deb": {
-      "path": "pool/main/c/cosmic-wallpapers/cosmic-wallpapers_1.0.0~1790783798~26.04~da595bb_all.deb",
-      "size": 17051856,
-      "sha256": "3d3e8e1780fdeaeae7fe841ac9c991a360ad8c53c389ca1e9f4239416770aa41"
-    },
-    "cosmic-workspaces_1.0.12~1790783807~26.04~cb953ea_arm64.deb": {
-      "path": "pool/main/c/cosmic-workspaces/cosmic-workspaces_1.0.12~1790783807~26.04~cb953ea_arm64.deb",
-      "size": 8417000,
-      "sha256": "3633d878d83e609ae4dbda5fff2ee8cc928e1f8f8e2aea8fbaaa8b58075a2b15"
-    },
-    "pop-fonts_1.0.3~1629904758~26.04~2da23d5_all.deb": {
-      "path": "pool/main/p/pop-fonts/pop-fonts_1.0.3~1629904758~26.04~2da23d5_all.deb",
-      "size": 13369452,
-      "sha256": "c52b52fd9784aefb4950a9df6d4a65dd2537ffa5dbbde7513efb6a1c7edef4f1"
-    },
-    "pop-launcher_1.2.6~1791924690~26.04~3f35b7f_arm64.deb": {
-      "path": "pool/main/p/pop-launcher/pop-launcher_1.2.6~1791924690~26.04~3f35b7f_arm64.deb",
-      "size": 2765676,
-      "sha256": "c7717e45039eab19b906dcc25d03cc3e7f71efb0201ef6e6ccac562dd3d59ab6"
-    },
-    "pop-sound-theme_5.5.1~1723827328~26.04~25ea85d_all.deb": {
-      "path": "pool/main/p/pop-sound-theme/pop-sound-theme_5.5.1~1723827328~26.04~25ea85d_all.deb",
-      "size": 216134,
-      "sha256": "345cb2b647696c00c63814dece64107a2db99b72b6003107502dd84780b6da58"
-    },
-    "xdg-desktop-portal-cosmic_1.10.0~1791324839~26.04~9d35e63_arm64.deb": {
-      "path": "pool/main/x/xdg-desktop-portal-cosmic/xdg-desktop-portal-cosmic_1.10.0~1791324839~26.04~9d35e63_arm64.deb",
-      "size": 12412604,
-      "sha256": "2f77b137a05c2cfa8a79c3c845d9ca5f5d7031de6c2dcde3a4d11a54bfa6eb10"
     }
   }
 }

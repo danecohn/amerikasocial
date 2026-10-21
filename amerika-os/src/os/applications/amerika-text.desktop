@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Amerika Text
+GenericName=Text Editor
+Comment=Edit text and code
+Exec=gnome-text-editor %U
+Icon=amerika-text
+Terminal=false
+Categories=Utility;TextEditor;
+MimeType=text/plain;
+StartupWMClass=org.gnome.TextEditor

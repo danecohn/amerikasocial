@@ -1,0 +1,12 @@
+#!/bin/sh
+# Amerika OS session entry point (started by the login manager).
+# KWin is the compositor and nothing else: the shell, bar, dock, launcher, notifications and settings are Amerika's own.
+export XDG_CURRENT_DESKTOP=Amerika
+export XDG_SESSION_DESKTOP=Amerika
+export XDG_SESSION_TYPE=wayland
+export AMERIKA_SESSION=1
+export QT_QPA_PLATFORM=wayland
+export GDK_BACKEND=wayland,x11
+export MOZ_ENABLE_WAYLAND=1
+export _JAVA_AWT_WM_NONREPARENTING=1
+exec /usr/bin/kwin_wayland --xwayland --exit-with-session=/usr/libexec/amerika/session-start

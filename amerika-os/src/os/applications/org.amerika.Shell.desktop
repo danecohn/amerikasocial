@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Amerika Shell
+Exec=/usr/bin/amerika-shell
+Icon=amerika-home
+NoDisplay=true
+X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2

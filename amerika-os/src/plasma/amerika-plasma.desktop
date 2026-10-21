@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Amerika OS (Plasma, legacy)
-Comment=Amerika OS on KDE Plasma (legacy 1.x desktop)
-Exec=/usr/bin/amerika-plasma-session
-TryExec=/usr/bin/startplasma-wayland
-DesktopNames=KDE
-X-KDE-PluginInfo-Version=1.0.0

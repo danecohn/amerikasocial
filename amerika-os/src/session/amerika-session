@@ -1,6 +1,0 @@
-#!/bin/sh
-# Amerika OS session entry point. Runs the stock COSMIC session (cosmic-comp and friends) after seeding
-# the Amerika panel, dock and theme defaults once per user. The stock COSMIC session is untouched.
-export AMERIKA_SESSION=1
-/usr/bin/amerika-cosmic-seed || true
-exec /usr/bin/start-cosmic "$@"

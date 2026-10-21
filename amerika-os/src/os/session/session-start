@@ -1,0 +1,27 @@
+#!/bin/sh
+# Runs inside the compositor once it is up (WAYLAND_DISPLAY and DISPLAY are set by KWin).
+# The session ends when this script exits.
+dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE \
+  XDG_SESSION_DESKTOP QT_QPA_PLATFORM GDK_BACKEND MOZ_ENABLE_WAYLAND AMERIKA_SESSION 2>/dev/null
+
+# AMERIKA_BIN is only for testing a build tree; installed systems use /usr/bin
+# one-time look and feel (window buttons, effects, colours); safe to re-run
+"${AMERIKA_BIN:-/usr/bin}/amerika-first-run"
+
+# authentication prompts for pkexec (software installs, etc.)
+for agent in /usr/lib/*/libexec/polkit-kde-authentication-agent-1; do
+  [ -x "$agent" ] && { "$agent" >/dev/null 2>&1 & break; }
+done
+
+# the shell: restart it if it crashes, end the session if it exits cleanly (log out)
+crashes=0
+while [ "$crashes" -lt 5 ]; do
+  started=$(date +%s)
+  "${AMERIKA_BIN:-/usr/bin}/amerika-shell"
+  code=$?
+  [ "$code" -eq 0 ] && exit 0
+  now=$(date +%s)
+  if [ $((now - started)) -gt 60 ]; then crashes=0; else crashes=$((crashes + 1)); fi
+  sleep 1
+done
+exit 1

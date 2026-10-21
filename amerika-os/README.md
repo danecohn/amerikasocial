@@ -1,98 +1,94 @@
-# Amerika OS
+# Amerika OS 3.0
 
-Amerika OS is a desktop environment built on the **COSMIC** desktop (System76) with a macOS-inspired
-retro-futurist look: a top menu bar, a floating dock that never hides, a dark chrome-and-crimson theme, and a
-signed APT repository hosted by Amerika Social at <https://www.amerika.social/apt>.
+Amerika OS is its own desktop environment for Ubuntu 26.10 (ARM64), designed so that the **Claude** and **ChatGPT** desktop
+apps can operate the computer, under the user's control, with a retro-futurist look. Packages come from the signed APT
+repository at <https://www.amerika.social/apt>; install instructions are at <https://www.amerika.social/downloads/os>.
 
-It is **not** a new Linux distribution or kernel. Amerika adds a session, panel and dock layout, theme, apps and a
-software manager on top of COSMIC. Version 1.x was built on KDE Plasma; that variant is still available as the
-`amerika-plasma` package.
+It is not a Linux distribution or kernel. **KWin** (from KDE) is the window compositor; everything the user sees and uses is
+Amerika's own: the shell (top bar, dock, launcher, notifications, quick controls), the settings app, the icons and
+wallpapers, and the AI system-control layer. No Plasma shell, no GNOME Shell.
 
-## Install (Ubuntu 26.10, ARM64)
+## Architecture
 
-See <https://www.amerika.social/downloads/os>, or run `outputs/Install-Amerika-OS.sh`. In short: add the signing key and the
-`amerika.sources` file, then `sudo apt install amerika-desktop` and choose **Amerika OS** on the login screen.
-Your login manager and existing sessions are left as they are.
+```
+GDM  ->  amerika-session  ->  kwin_wayland --exit-with-session=session-start
+                                   |
+                         session-start: first-run look and feel, polkit agent, supervised amerika-shell
+                                   |
+amerika-shell (GTK4 + gtk4-layer-shell):  desktop (wallpaper) | bar | dock | launcher | notifications daemon
+        |   \                              AI broker (permissions, approvals, audit, Stop switch)
+        |    D-Bus org.amerika.Windows  <-  KWin script (bridge.js): window list, shortcuts, one-shot window commands
+        |
+   control socket $XDG_RUNTIME_DIR/amerika/control.sock (0600, same user)
+        |
+amerika-mcp (stdio MCP server)  <-  started by the Claude / ChatGPT (Codex) apps
+```
 
-Amerika signing key fingerprint: `9F52 BD98 A8EE 9096 B1BE 7AAC 1063 BBC9 89A1 1133`
-
-## Packages
+### Packages
 
 | Package | Contents |
 | --- | --- |
-| `amerika-desktop` | Meta package that installs everything below plus the COSMIC session |
-| `amerika-session` | Login session entry, `amerika-session`, one-time seeding of the Amerika layout and theme |
-| `amerika-desktop-shell` | Seed files for the Amerika top bar, dock, dock favorites and wallpaper setting |
-| `amerika-theme`, `amerika-icon-theme` | COSMIC dark theme with crimson accents, horizon wallpaper, AmerikaOS icons |
-| `amerika-hub` | Start screen (PyQt6) |
-| `amerika-apps` | Files, Terminal, Text, Settings, AI launchers (branded launchers for COSMIC Files, Terminal, Edit, Settings) |
-| `amerika-software` | Graphical package manager and its Polkit-guarded root helper |
+| `amerika-desktop` | Meta package for everything below |
+| `amerika-session` | Login session entry, `amerika-session`, `session-start` |
+| `amerika-desktop-shell` | The `amerika` Python package: shell, settings, AI layer, KWin bridge; `amerika-shell`, `amerika-settings`, `amerika-mcp`, `amerika-first-run` |
+| `amerika-theme`, `amerika-icon-theme` | Wallpapers, colour scheme, neon cartridge icons |
+| `amerika-apps` | Files, Terminal, Text, Settings launchers (Nautilus, Ptyxis, GNOME Text Editor) |
+| `amerika-software` | Graphical package manager (Qt) and its Polkit-guarded root helper |
 | `amerika-social`, `amerika-venture`, `amerika-office` | Application payloads repackaged from the published ARM64 releases |
-| `amerika-repo-keyring` | Amerika signing key and `/etc/apt/sources.list.d/amerika.sources` |
-| `amerika-plasma` | Legacy Amerika OS on KDE Plasma (session, shell package, KDE theme); not part of `amerika-desktop` |
-| 34 COSMIC packages | `cosmic-*`, `pop-launcher`, `pop-fonts`, `xdg-desktop-portal-cosmic` and friends, mirrored unmodified |
+| `amerika-repo-keyring` | Signing key, APT source, and the per-host pipelining setting |
 
-Only ARM64 is built and tested. x86-64 is not advertised.
+Only ARM64 is built and tested.
 
-## COSMIC packages
+## The AI layer
 
-Ubuntu 26.10 does not ship COSMIC, and its APT (sqv) rejects the Pop!_OS archive key because the key's
-self-signature uses SHA-1, so the Pop!_OS repository cannot be added as an APT source. `tools/fetch-cosmic.py`
-therefore verifies it manually: GnuPG must validate `InRelease` against the pinned System76 key
-(`63C4 6DF0 140D 7389 6142 9F4E 204D D8AE C33A 7AFF`, also named in pop-os/iso), the Packages index must match the
-signed hash, and every `.deb` must match the index. The unmodified files are stored in `vendor/cosmic` with a
-manifest (including each package's upstream commit, taken from the version suffix) and re-hosted by Amerika.
-The packages are built by System76 for Ubuntu 26.04; their dependencies were checked with `apt-get -s` on 26.10.
-COSMIC is GPL-3.0; the source is at <https://github.com/pop-os/cosmic-epoch> and the component repositories.
-COSMIC updates reach users when Amerika re-runs `fetch-cosmic.py` and publishes a new repository version.
+* `amerika-mcp --client claude|chatgpt` is a Model Context Protocol server (stdio, newline-delimited JSON-RPC). The AI app
+  starts it; it forwards each tool call to the running shell's broker.
+* The broker classifies every tool as `read`, `act`, `sensitive` or `critical` and applies the user's mode
+  (`ask`, `safe` = balanced, `trusted`). Critical tools (power off, restart, delete) always ask. "Always allow" grants are
+  per app and never apply to critical tools. Approvals are full-screen prompts that show the app, the tool and its arguments.
+* Every call, refusal and pause is appended to `~/.local/state/amerika-os/ai-audit.log` and shown in Settings.
+* The bar shows which app is operating the computer. `Ctrl+Alt+Esc` (or the Stop button) pauses all AI actions; pressing it
+  again resumes. A paused broker refuses everything and cancels open approval prompts.
+* Nothing is connected by default. Settings > AI & Assistants > Connect adds an `amerika` MCP server to Claude's
+  `claude_desktop_config.json` (backed up once) and to Codex's `config.toml` (marked block), and Disconnect removes it.
 
-## How the session works
+Tools (see `src/os/amerika/ai/tools.py`): system info/status, apps, windows (list, focus, minimize, maximize, restore, fullscreen,
+tile, move/resize, to desktop, close), desktops, audio, brightness, display scale, Wi-Fi, power profile, notifications,
+Do Not Disturb, preferences, clipboard, files (home folder only), lock, suspend, restart, shut down, delete, and `shell.run`.
 
-`/usr/share/wayland-sessions/amerika.desktop` runs `amerika-session`, which sets `AMERIKA_SESSION=1`, runs
-`amerika-cosmic-seed` and then `start-cosmic`. The seeder copies `/usr/share/amerika-os/cosmic/*` (COSMIC
-configuration files: panel, dock, app list favorites, background, dark theme, icon theme) into
-`~/.config/cosmic` once (marker `~/.local/state/amerika-os/cosmic-seed-2`). The files are derived at build time from
-the stock COSMIC defaults, so key names and formats match the shipped COSMIC version.
+Not included yet: screenshots and synthetic keyboard/mouse input (they need a portal or libei integration).
 
-## Amerika Software
-
-`amerika-software` lists packages whose candidate comes from the trusted `Amerika` origin at `www.amerika.social`
-(via python-apt). Changes run `pkexec /usr/libexec/amerika-software-helper <action> [packages]`. The helper
-only accepts `update`, `install`, `remove` and `upgrade`, validates names and membership in the verified Amerika
-catalog, never uses a shell, and passes `--` before package names. It also keeps the current default login manager
-when a package such as `cosmic-greeter` is installed or upgraded.
-
-## Build
+## Build and test
 
 ```bash
-python3 tools/fetch-cosmic.py        # verifies and downloads the COSMIC packages into vendor/cosmic
-python3 build.py --init-key          # once; key goes to ~/.local/share/amerika-os-signing (never in git)
-python3 build.py                     # builds ./dist/packages and the signed ./dist/apt tree
-python3 tools/stage-for-social.py ../path/to/amerikasocial   # copies metadata + small debs into apt-repo/
-python3 -m unittest discover tests   # helper validation tests
-tools/nested-cosmic-test.sh          # COSMIC layout nested in the current session on a private D-Bus
+python3 tools/make_icons.py          # icon theme (SVG)  -> src/os/icons/AmerikaOS
+python3 tools/make_wallpapers.py     # wallpapers        -> src/os/wallpapers
+python3 build.py --init-key          # once; the key goes to ~/.local/share/amerika-os-signing, never into git
+python3 build.py                     # packages in ./dist/packages and the signed tree in ./dist/apt
+python3 tools/stage-for-social.py ../path/to/amerikasocial   # metadata + small debs -> apt-repo/
+PYTHONPATH=src/os python3 -m unittest discover tests          # unit tests (permissions, MCP, config, window safety)
+tools/kwin-rig.sh <script>           # headless KWin on a private D-Bus for end-to-end tests (needs dbus-run-session)
 ```
 
-The application payloads come from the verified release archives (SHA-256 checked in `build.py`). Packages over
-5 MB (apps and COSMIC) are not committed. They are attached to GitHub releases of `danecohn/amerikasocial`; Social
-redirects pool requests for exactly those file names, and APT verifies size and SHA-256 against the signed index.
+`tests/rig_ai_e2e.py` (run inside the rig) drives the real shell through the MCP server: window tiling and resizing are
+verified against KWin's geometry, sensitive tools are asked about and cancelled by Stop, and the audit log is checked.
 
 ## Key handling
 
-The private signing key lives only in `$AMERIKA_SIGNING_HOME` (default `~/.local/share/amerika-os-signing`), is not in
-this repository and must be backed up by the owner. Rotating it means shipping a new keyring package signed by the
-old key first.
+The private signing key lives only in `$AMERIKA_SIGNING_HOME` (default `~/.local/share/amerika-os-signing`), is not in this
+repository and must be backed up by the owner.
 
 ## Limitations
 
-* The COSMIC layout was verified in a nested COSMIC compositor (panel and dock components start from the seeded
-  configuration) and package-by-package, not through a real login-manager login on a fresh machine.
-* The Amerika theme recolours COSMIC's stock Dark theme files; opening COSMIC Settings > Appearance may regenerate
-  colours from the theme builder values.
-* Window decorations are COSMIC's own, not a custom macOS-style set.
-* COSMIC packages are System76's builds for Ubuntu 26.04 used on 26.10.
-* The Social, Venture and Office packages ship unsigned upstream builds (see their copyright files).
-* Venture is Mozilla Firefox 158.0.1 with Amerika branding, not a full rebuild. Office keeps ONLYOFFICE Community
-  Edition branding. Upstream licenses are preserved in each package.
+* The shell, settings and AI layer are tested in an isolated KWin session and by automated tests, not through a real login on
+  many machines.
+* Screen locking uses KDE's stock locker (libkscreenlocker6, with its lock screen from plasma-desktop-data); authentication
+  prompts use KDE's polkit agent. Both are replaceable later.
+* Window decorations are KWin's Breeze, recoloured by the Amerika Retro scheme with buttons on the left.
+* The first-run step writes a few keys to `kwinrc`, `kdeglobals` and the GTK `gtk.css` files, which other sessions on the same
+  account also read.
+* `claude-desktop` and `chatgpt` icons in the theme are generic stand-ins, not the logos of Anthropic or OpenAI.
+* Social, Venture and Office ship unsigned upstream builds. Venture is Firefox 158.0.1 with Amerika branding (MPL-2.0).
+  Office keeps ONLYOFFICE Community Edition branding.
 
 License: GPL-3.0-only for Amerika code. Third-party components keep their own licenses.

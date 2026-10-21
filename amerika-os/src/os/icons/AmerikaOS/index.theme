@@ -1,0 +1,19 @@
+[Icon Theme]
+Name=Amerika OS
+Comment=Amerika OS retro-futurist icon theme
+Inherits=Adwaita,hicolor
+Directories=scalable/apps,scalable/status
+
+[scalable/apps]
+Size=256
+MinSize=16
+MaxSize=512
+Type=Scalable
+Context=Applications
+
+[scalable/status]
+Size=16
+MinSize=8
+MaxSize=64
+Type=Scalable
+Context=Status

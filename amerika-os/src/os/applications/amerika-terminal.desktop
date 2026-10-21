@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Amerika Terminal
+GenericName=Terminal
+Comment=The command line
+Exec=ptyxis --new-window
+Icon=amerika-terminal
+Terminal=false
+Categories=System;TerminalEmulator;
+StartupWMClass=org.gnome.Ptyxis

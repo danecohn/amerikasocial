@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Amerika Files
+GenericName=File Manager
+Comment=Browse your files
+Exec=nautilus --new-window %U
+Icon=amerika-files
+Terminal=false
+Categories=System;FileTools;FileManager;
+MimeType=inode/directory;
+StartupWMClass=org.gnome.Nautilus

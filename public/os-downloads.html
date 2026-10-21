@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0d0d13">
-<title>Amerika OS · Desktop Environment and Package Repository</title>
-<meta name="description" content="Install the Amerika OS desktop environment from the signed Amerika package repository. Built on the COSMIC desktop for Ubuntu 26.10 ARM64.">
+<title>Amerika OS · The AI-operated desktop</title>
+<meta name="description" content="Amerika OS is its own desktop, designed around the Claude and ChatGPT apps operating your computer under your control. Signed APT repository for Ubuntu 26.10 ARM64.">
 <link rel="icon" href="/logo.svg" type="image/svg+xml"><link rel="stylesheet" href="/os-downloads.css"><script src="/os-downloads.js" defer></script></head>
 <body>
 <header class="bar"><a class="brand" href="/"><img src="/logo.svg" width="30" height="30" alt="">amerika<span>os</span></a>
@@ -9,9 +9,9 @@
 <main>
 <section class="hero">
  <div class="sun" aria-hidden="true"></div><div class="grid" aria-hidden="true"></div>
- <div class="hero-copy"><p class="eyebrow">AMERIKA OS · 1.0 · EARLY ACCESS</p>
- <h1>The Amerika desktop.<br>One command away.</h1>
- <p class="lead">A top menu bar, a floating dock that never hides, and a signed package repository hosted right here on Amerika Social. Social, AI, browsing, files and terminal, built on the COSMIC desktop.</p>
+ <div class="hero-copy"><p class="eyebrow">AMERIKA OS · 3.0 · EARLY ACCESS</p>
+ <h1>Your computer.<br>Operated by AI.<br>Run by you.</h1>
+ <p class="lead">Amerika OS is its own desktop: a retro-futurist shell with Claude and ChatGPT at the centre. They can open apps, arrange windows, change settings and more through a system-control layer with permissions, approvals, a live activity indicator and a stop switch.</p>
  <div class="window" role="group" aria-label="Quick install">
   <div class="chrome"><i class="r"></i><i class="y"></i><i class="g"></i><span>Terminal — quick install</span></div>
   <pre id="quick"><code>sudo apt install amerika-desktop</code></pre>
@@ -20,7 +20,7 @@
 </section>
 
 <section id="install" class="block"><h2>Install</h2>
-<p class="muted">Ubuntu 26.10 for ARM64, using ordinary APT with a dedicated signing key. No <code>trusted=yes</code>, no unauthenticated packages. The COSMIC desktop itself is installed from this same repository.</p>
+<p class="muted">Ubuntu 26.10 for ARM64, using ordinary APT with a dedicated signing key. No <code>trusted=yes</code>, no unauthenticated packages.</p>
 <ol class="steps">
 <li><h3>Add the signing key</h3><div class="window"><div class="chrome"><i class="r"></i><i class="y"></i><i class="g"></i><span>bash</span><button class="copy" data-copy="key">Copy</button></div><pre id="key"><code>sudo install -d -m 0755 /usr/share/keyrings
 curl -fsSL https://www.amerika.social/apt/amerika-archive-keyring.gpg | sudo tee /usr/share/keyrings/amerika-archive-keyring.gpg &gt;/dev/null
@@ -42,15 +42,24 @@ EOF</code></pre></div>
 <p class="muted">The second file turns off HTTP pipelining for this host only: the proxy in front of Amerika Social rejects pipelined requests, which makes large installs fail intermittently. The <code>amerika-repo-keyring</code> package keeps both files up to date.</p></li>
 <li><h3>Install the desktop</h3><div class="window"><div class="chrome"><i class="r"></i><i class="y"></i><i class="g"></i><span>bash</span><button class="copy" data-copy="inst">Copy</button></div><pre id="inst"><code>sudo apt update
 sudo apt install amerika-desktop</code></pre></div>
-<p class="muted">Log out and choose <b>Amerika OS</b> from the session menu on the login screen. Your current login manager stays the default, and your existing sessions (Plasma, GNOME) are left untouched, so you can always switch back. Install only the pieces you want with <code>apt install amerika-software</code>, <code>amerika-venture</code>, <code>amerika-office</code> or <code>amerika-social</code>. Want the old KDE Plasma variant of Amerika OS? <code>apt install amerika-plasma</code>.</p></li>
+<p class="muted">Log out and choose <b>Amerika OS</b> from the session menu on the login screen. Your login manager and your other sessions stay exactly as they are, so you can always switch back. Coming from Amerika OS 2.x (the COSMIC version)? After the upgrade, <code>sudo apt autoremove</code> clears the COSMIC packages you no longer need.</p></li>
 </ol></section>
 
-<section class="block"><h2>What you get</h2>
+<section class="block"><h2>AI at the centre</h2>
+<p class="muted">Claude and ChatGPT are the first two things in the top bar and the dock. In <b>Settings &rsaquo; AI &amp; Assistants</b> you press <b>Connect</b> for each app once; from then on they can use the Amerika system tools. Nothing is connected until you do that.</p>
 <div class="cards">
-<article><h3>Amerika shell</h3><p>Top menu bar with launcher, workspaces, tray and clock. A floating dock for Social, AI, Venture, Files, Terminal, Office and Software. Both stay visible.</p></article>
-<article><h3>Amerika apps</h3><p>Social, Venture (Firefox-based), Office, AI shortcut, Files, Terminal, Text and Settings, all with Amerika branding.</p></article>
-<article><h3>Amerika Software</h3><p>A graphical package manager for this repository: install, update and remove with the normal administrator prompt.</p></article>
-<article><h3>Retro-future look</h3><p>A dark COSMIC theme with crimson accents, a horizon wallpaper and the AmerikaOS icon set.</p></article>
+<article><h3>What they can do</h3><p>Open and close apps, focus, tile, move and resize windows, switch desktops, set volume, brightness, display scale, Wi-Fi and power profile, send notifications, read and write files in your home folder, and (with your approval) run shell commands.</p></article>
+<article><h3>You decide how much</h3><p><b>Ask every time</b>, <b>Balanced</b> (everyday changes run, risky ones ask) or <b>Trusted</b>. Shutting down, restarting and deleting always ask. Each app can be switched off separately.</p></article>
+<article><h3>You always see it</h3><p>The top bar shows which app is operating the computer. <b>Ctrl+Alt+Esc</b> or the Stop button pauses everything at once, and every action is recorded in an activity log you can read in Settings.</p></article>
+<article><h3>An open door</h3><p>The tools are a standard MCP server (<code>amerika-mcp</code>), so any MCP-capable assistant can be connected, not just these two.</p></article>
+</div></section>
+
+<section class="block"><h2>The desktop</h2>
+<div class="cards">
+<article><h3>Amerika Shell</h3><p>Our own top bar, floating dock, launcher, notifications and quick controls, in Python and GTK 4. No Plasma, no GNOME Shell.</p></article>
+<article><h3>Amerika Settings</h3><p>Our own settings app: AI, appearance, display, sound, network and power.</p></article>
+<article><h3>Retro-future, all the way</h3><p>Neon cartridge app icons, chrome glass panels, three horizon wallpapers, and accent colours you can change.</p></article>
+<article><h3>Your apps</h3><p>Social, Venture (Firefox-based), Office, Files, Terminal, Text, and the Amerika Software manager.</p></article>
 </div></section>
 
 <section class="block"><h2>Packages</h2>
@@ -61,18 +70,19 @@ sudo apt install amerika-desktop</code></pre></div>
 <table class="spec"><tbody>
 <tr><th>Release</th><td>Ubuntu 26.10 (stonking)</td></tr>
 <tr><th>Architecture</th><td>ARM64 (aarch64) only for this release. x86-64 packages are not built or tested yet, so they are not offered.</td></tr>
-<tr><th>Desktop base</th><td>COSMIC 1.10 (cosmic-comp, cosmic-panel, cosmic-settings and friends) on Wayland, from System76&rsquo;s Pop!_OS builds for Ubuntu 26.04. They are re-hosted here unmodified, and their dependencies resolve on Ubuntu 26.10.</td></tr>
+<tr><th>Under the hood</th><td>The KWin compositor (from KDE) handles windows and effects. The shell, settings and AI layer are Amerika's own. Screen locking is KDE's stock locker for now, and authentication prompts use KDE's polkit agent.</td></tr>
+<tr><th>AI apps</th><td>Claude and ChatGPT are separate apps you install yourself; Amerika OS does not bundle them. The stand-in icons for them are generic, not their logos.</td></tr>
 <tr><th>Updates</th><td><code>sudo apt update &amp;&amp; sudo apt upgrade</code>, or Amerika Software. Removal: <code>sudo apt remove amerika-desktop</code>.</td></tr>
 </tbody></table></section>
 
 <section class="block"><h2>Source, licenses and honesty</h2>
 <ul class="plain">
-<li>Everything is built from public sources: <a href="https://github.com/danecohn/amerikasocial/tree/main/amerika-os">desktop, packaging and repository tooling</a>, <a href="https://github.com/danecohn/AmerikaLinux">Social</a>, <a href="https://github.com/danecohn/AmerikaVenture">Venture</a>, <a href="https://github.com/danecohn/AmerikaOffice">Office</a>.</li>
-<li>Amerika OS is a desktop environment built on COSMIC, not a new Linux distribution or kernel. It adds an Amerika session, top bar and dock layout, theme, apps and the Amerika Software manager. COSMIC is System76&rsquo;s desktop; the 34 COSMIC packages here are their unmodified builds, checked against the signature on their repository and re-hosted by Amerika because Ubuntu 26.10&rsquo;s APT rejects that repository&rsquo;s SHA-1-bound key. Package versions end in the upstream commit, e.g. the <a href="https://github.com/pop-os/cosmic-epoch">COSMIC source</a> projects at the tagged commits. COSMIC updates reach you when Amerika re-mirrors them.</li>
-<li>Files, Terminal, Text and Settings are Amerika-branded launchers for COSMIC Files, Terminal, Edit and Settings, which stay installed under their own licenses (GPL-3.0).</li>
+<li>Everything is built from public sources: <a href="https://github.com/danecohn/amerikasocial/tree/main/amerika-os">shell, settings, AI layer and packaging</a>, <a href="https://github.com/danecohn/AmerikaLinux">Social</a>, <a href="https://github.com/danecohn/AmerikaVenture">Venture</a>, <a href="https://github.com/danecohn/AmerikaOffice">Office</a>.</li>
+<li>Amerika OS is a desktop environment, not a new Linux distribution or kernel, and it uses KWin as its window compositor.</li>
+<li>Files, Terminal and Text are Amerika-branded launchers for GNOME Files (Nautilus), Ptyxis and GNOME Text Editor, which stay installed under their own licenses.</li>
 <li>Venture is Mozilla Firefox 158.0.1 with Amerika branding (MPL-2.0), not a full rebuild of Gecko. Office is an Electron wrapper for the hosted portal and keeps ONLYOFFICE Community Edition branding and notices.</li>
-<li>Amerika AI is a shortcut to a web assistant (configurable in <code>/etc/amerika/ai-url</code>); no AI model is bundled.</li>
-<li>Early access: the Amerika session layout was tested in a nested COSMIC compositor and package-by-package, not yet across a wide range of machines. Report problems from the <a href="/support">support page</a>.</li>
+<li>An AI app that can operate your computer can make mistakes or be misled by what it reads. That is why risky actions ask first, and why the stop switch and the activity log exist. Connect only apps you trust.</li>
+<li>Early access: the shell and the AI layer are tested in an isolated KWin session (windows, approvals, permissions, the stop switch) and with automated tests, but not yet through a real login on many machines. Report problems from the <a href="/support">support page</a>.</li>
 </ul></section>
 </main>
 <footer><span>© Amerika LLC · Amerika OS</span><nav><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/support">Support</a></nav></footer>

@@ -36,11 +36,11 @@ SIGN_HOME = Path(os.environ.get('AMERIKA_SIGNING_HOME', Path.home() / '.local/sh
 KEY_NAME = 'Amerika OS Archive Signing Key'
 ARCH = 'arm64'
 SUITE = 'stable'
-DE_VERSION = '2.0.0'
+DE_VERSION = '3.0.0'
 MAINTAINER = 'Amerika LLC <noreply@amerika.social>'
 HOMEPAGE = 'https://www.amerika.social/downloads/os'
 SYSTEM_SHELL = Path('/usr/share/plasma/shells/org.kde.plasma.desktop')
-VENDOR = ROOT / 'vendor/cosmic'
+OS = SRC / 'os'
 BG_DIR = '/usr/share/backgrounds/amerika'
 THEME_OUT = OUTPUTS / 'Amerika-OS-theme'
 BASE_URL = 'https://www.amerika.social/apt'
@@ -192,7 +192,7 @@ def extract(archive, dest):
 
 
 def icon_svg(name):
-    p = THEME_OUT / 'icons/scalable/apps' / f'{name}.svg'
+    p = OS / 'icons/AmerikaOS/scalable/apps' / f'{name}.svg'
     return p if p.exists() else None
 
 
@@ -223,255 +223,68 @@ def build_keyring():
 
 
 def build_icons():
-    p = Pkg('amerika-icon-theme', DE_VERSION, 'Amerika OS icon theme\nCharcoal and crimson icons for Amerika OS.',
-            depends='cosmic-icons', title='Amerika Icons', category='Appearance', section='gnome')
-    dest = p.path('/usr/share/icons/AmerikaOS')
-    shutil.copytree(THEME_OUT / 'icons', dest, ignore=shutil.ignore_patterns('icon-theme.cache'))
-    idx = dest / 'index.theme'
-    t = idx.read_text()
-    t = re.sub(r'^Inherits=.*$', 'Inherits=Cosmic,Adwaita,hicolor', t, flags=re.M)
-    t = re.sub(r'^Comment=.*$', 'Comment=Amerika OS icon theme', t, flags=re.M)
-    idx.write_text(t)
-    for alias, source in (('amerika-ai', 'chatgpt'), ('amerika-software', 'plasmadiscover')):
-        for ext in ('svg', 'png'):
-            s = dest / 'scalable/apps' / f'{source}.{ext}'
-            if s.exists():
-                shutil.copy2(s, dest / 'scalable/apps' / f'{alias}.{ext}')
+    p = Pkg('amerika-icon-theme', DE_VERSION, 'Amerika OS icon theme\nRetro-futurist neon cartridge app icons and panel icons.',
+            depends='adwaita-icon-theme', title='Amerika Icons', category='Appearance', section='gnome')
+    shutil.copytree(OS / 'icons/AmerikaOS', p.path('/usr/share/icons/AmerikaOS'))
     p.scripts['postinst'] = ('#!/bin/sh\nset -e\nif [ "$1" = configure ] && command -v gtk-update-icon-cache >/dev/null;'
                              ' then gtk-update-icon-cache -q -f /usr/share/icons/AmerikaOS || true; fi\nexit 0\n')
-    p.copyright('Icon theme generated for Amerika OS by Amerika LLC; GPL-3.0-only.\n'
-                'Some icons are recolored derivatives of the Breeze/KDE icon set (LGPL-3.0-or-later). The theme\n'
-                'inherits from the COSMIC icon theme (cosmic-icons) at run time.\n')
+    p.copyright('Icon theme generated for Amerika OS by Amerika LLC (tools/make_icons.py); GPL-3.0-only.\n'
+                'The icons named claude-desktop and chatgpt are generic stand-ins in the Amerika style; they are not\n'
+                'the logos of Anthropic or OpenAI, whose applications keep their own window icons.\n')
     return p
-
-
-def vendor_root(*names):
-    """Extract the named vendored COSMIC packages into a scratch root and return it."""
-    root = STAGE / '_cosmic-defaults'
-    if root.exists():
-        shutil.rmtree(root)
-    root.mkdir(parents=True)
-    for n in names:
-        deb = next(VENDOR.glob(f'{n}_*.deb'), None)
-        if deb is None:
-            sys.exit(f'vendor/cosmic has no {n} package; run tools/fetch-cosmic.py first.')
-        sh('dpkg-deb', '-x', deb, root)
-    return root
-
-
-def recolor(text, mapping):
-    for old, new in mapping.items():
-        text = re.sub(re.escape(old), new, text, flags=re.I)
-    return text
-
-
-# Dark v2 default hex colours -> Amerika dark chrome-and-crimson. The alpha suffix of each colour is kept.
-DARK_MAP = {
-    '#63D0DF': '#FF4D79', '#63BAC6': '#E64470', '#3C737A': '#8F2A46', '#326870': '#73213A',
-    '#1B1B1B': '#0D0D13', '#262626': '#14141B', '#2E2E2E': '#1C1C26', '#363636': '#22222E',
-    '#3B3B3B': '#262633', '#434343': '#2E2E3C', '#4A4A4A': '#343446', '#4F4F4F': '#3A3A4C',
-    '#515151': '#3E3E50', '#585858': '#3C3C4E', '#444444': '#343446', '#343434': '#26263A',
-    '#272727': '#181821', '#161616': '#0D0D13', '#414141': '#2E2E3C',
-}
-
-
-def cosmic_theme(dest):
-    """Seed tree for the Amerika COSMIC theme, derived from the stock Dark theme files."""
-    root = vendor_root('cosmic-settings')
-    src = root / 'usr/share/cosmic'
-    out = Path(dest)
-    for rel in ('com.system76.CosmicTheme.Dark/v2', 'com.system76.CosmicTheme.Dark/v1'):
-        if not (src / rel).exists():
-            continue
-        for f in sorted((src / rel).iterdir()):
-            if f.name in ('palette', 'name', 'is_dark'):
-                text = f.read_text()
-            else:
-                text = recolor(f.read_text(), DARK_MAP)
-            if f.name == 'name':
-                text = '"amerika-dark"'
-            write(out / rel / f.name, text)
-    # builder values so that COSMIC Settings regenerates the same look when the theme is edited
-    b = out / 'com.system76.CosmicTheme.Dark.Builder'
-    write(b / 'v2/accent', 'Some((\n    red: 1.0,\n    green: 0.3019608,\n    blue: 0.4745098,\n))')
-    write(b / 'v2/bg_color', 'Some((\n    red: 0.05098039,\n    green: 0.05098039,\n    blue: 0.07450981,\n    alpha: 1.0,\n))')
-    write(out / 'com.system76.CosmicTheme.Mode/v1/is_dark', 'true')
-    write(out / 'com.system76.CosmicTheme.Mode/v1/auto_switch', 'false')
-    write(out / 'com.system76.CosmicTk/v1/icon_theme', '"AmerikaOS"')
 
 
 def build_theme():
-    p = Pkg('amerika-theme', DE_VERSION, 'Amerika OS dark retro-futurist theme\nCOSMIC theme (chrome and crimson), horizon '
-            'wallpaper and defaults applied once per user by the Amerika session.',
-            depends=f'cosmic-settings, cosmic-bg, amerika-icon-theme (>= {DE_VERSION})', title='Amerika Theme', category='Appearance',
-            extra={}, conflicts='')
-    cosmic_theme(p.path('/usr/share/amerika-os/cosmic'))
-    p.copy(SRC / 'theme/wallpaper-3840x2160.png', f'{BG_DIR}/amerika-horizon-3840x2160.png')
-    p.copy(SRC / 'theme/wallpaper-2560x1600.png', f'{BG_DIR}/amerika-horizon-2560x1600.png')
-    p.copyright('Amerika OS theme, Copyright Amerika LLC, GPL-3.0-only. The colour values are derived from the COSMIC\n'
-                'Dark theme defaults (cosmic-settings, GPL-3.0-only, System76).\n')
+    p = Pkg('amerika-theme', DE_VERSION, 'Amerika OS theme\nRetro-futurist wallpapers and the Amerika Retro colour scheme.',
+            title='Amerika Theme', category='Appearance')
+    for name in ('horizon', 'grid', 'dusk'):
+        p.copy(OS / f'wallpapers/{name}.png', f'{BG_DIR}/{name}.png')
+    p.copy(OS / 'color-schemes/AmerikaRetro.colors', '/usr/share/color-schemes/AmerikaRetro.colors')
+    p.copyright('Amerika OS theme, Copyright Amerika LLC, GPL-3.0-only.\n')
     return p
 
 
-def cosmic_layout(dest):
-    """Seed tree for the Amerika top bar and floating dock, derived from the stock COSMIC panel defaults."""
-    root = vendor_root('cosmic-panel', 'cosmic-applets', 'cosmic-bg')
-    src = root / 'usr/share/cosmic'
-    out = Path(dest)
-    panel = src / 'com.system76.CosmicPanel.Panel/v1'
-    dock = src / 'com.system76.CosmicPanel.Dock/v1'
-    for f in panel.iterdir():
-        text = f.read_text()
-        if f.name == 'opacity':
-            text = '0.88'
-        elif f.name == 'plugins_center':
-            text = 'None'
-        elif f.name == 'plugins_wings':
-            text = ('Some((["com.system76.CosmicPanelLauncherButton", "com.system76.CosmicPanelWorkspacesButton", '
-                    '"com.system76.CosmicPanelAppButton"],["com.system76.CosmicAppletInputSources", '
-                    '"com.system76.CosmicAppletA11y", "com.system76.CosmicAppletStatusArea", '
-                    '"com.system76.CosmicAppletTiling", "com.system76.CosmicAppletAudio", '
-                    '"com.system76.CosmicAppletBluetooth", "com.system76.CosmicAppletNetwork", '
-                    '"com.system76.CosmicAppletBattery", "com.system76.CosmicAppletNotifications", '
-                    '"com.system76.CosmicAppletTime", "com.system76.CosmicAppletPower"]))')
-        write(out / 'com.system76.CosmicPanel.Panel/v1' / f.name, text)
-    for f in dock.iterdir():
-        text = f.read_text()
-        if f.name == 'plugins_center':
-            text = '\n'.join(['Some(["com.system76.CosmicAppList", "com.system76.CosmicAppletMinimize"])'])
-        elif f.name == 'margin':
-            text = '8'
-        elif f.name == 'padding':
-            text = '6'
-        elif f.name == 'opacity':
-            text = '0.92'
-        elif f.name == 'size':
-            text = 'M'
-        write(out / 'com.system76.CosmicPanel.Dock/v1' / f.name, text)
-    write(out / 'com.system76.CosmicPanel/v1/entries', '["Panel","Dock"]')
-    write(out / 'com.system76.CosmicAppList/v1/favorites',
-          '[\n    "amerika-social",\n    "amerika-ai",\n    "amerika-venture",\n    "amerika-files",\n    "amerika-terminal",\n'
-          '    "amerika-office",\n    "amerika-software",\n]\n')
-    write(out / 'com.system76.CosmicAppList/v1/filter_top_levels', 'None')
-    bg = (src / 'com.system76.CosmicBackground/v1/all').read_text()
-    bg = re.sub(r'source: Path\("[^"]*"\)', f'source: Path("{BG_DIR}/amerika-horizon-3840x2160.png")', bg)
-    bg = re.sub(r'filter_by_theme: #?\w+', 'filter_by_theme: false', bg)
-    write(out / 'com.system76.CosmicBackground/v1/all', bg)
-    write(out / 'com.system76.CosmicBackground/v1/same-on-all', 'true')
-
-
 def build_shell():
-    p = Pkg('amerika-desktop-shell', DE_VERSION, 'Amerika OS desktop layout\nThe Amerika top bar and floating dock for the '
-            'COSMIC desktop, seeded into the user configuration by the Amerika session.',
-            depends=f'cosmic-panel, cosmic-applets, cosmic-bg, cosmic-comp, amerika-theme (>= {DE_VERSION}), amerika-icon-theme (>= {DE_VERSION})',
-            title='Amerika Desktop Layout')
-    cosmic_layout(p.path('/usr/share/amerika-os/cosmic'))
-    p.copyright('Amerika OS layout defaults, Copyright Amerika LLC, GPL-3.0-only. Derived from the COSMIC panel defaults\n'
-                '(cosmic-panel, cosmic-applets: GPL-3.0-only, System76).\n')
+    deps = ['python3 (>= 3.11)', 'python3-gi', 'gir1.2-gtk-4.0', 'gir1.2-gtk4layershell-1.0', 'libgtk4-layer-shell0',
+            'gir1.2-polkit-1.0', 'gir1.2-nm-1.0', 'kwin-wayland', 'kglobalacceld', 'polkit-kde-agent-1',
+            'libkscreen-bin', 'libkf6config-bin', 'libkscreenlocker6', 'plasma-desktop-data', 'wireplumber', 'pipewire-pulse', 'network-manager', 'power-profiles-daemon',
+            'upower', 'systemd', 'xdg-desktop-portal-gtk', 'fonts-inter', 'fonts-jetbrains-mono', 'librsvg2-common',
+            f'amerika-icon-theme (>= {DE_VERSION})', f'amerika-theme (>= {DE_VERSION})']
+    p = Pkg('amerika-desktop-shell', DE_VERSION,
+            'Amerika Shell and Settings\nAmerika OS\'s own desktop shell (top bar, dock, launcher, notifications), its settings app, and the '
+            'system-control server\nthat lets the Claude and ChatGPT apps operate the computer under your supervision.',
+            depends=', '.join(deps), recommends='nautilus, ptyxis, gnome-text-editor', title='Amerika Shell')
+    pkg_dir = '/usr/lib/python3/dist-packages/amerika'
+    shutil.copytree(OS / 'amerika', p.path(pkg_dir), ignore=shutil.ignore_patterns('__pycache__', '*.pyc', 'bridge'))
+    p.copy(OS / 'amerika/bridge/bridge.js', '/usr/share/amerika-os/bridge/bridge.js')
+    for name in ('amerika-shell', 'amerika-settings', 'amerika-mcp', 'amerika-first-run'):
+        p.copy(OS / 'bin' / name, f'/usr/bin/{name}', 0o755)
+    p.copy(OS / 'applications/org.amerika.Shell.desktop', '/usr/share/applications/org.amerika.Shell.desktop')
+    p.copyright('Amerika Shell, Copyright Amerika LLC, GPL-3.0-only.\nUses GTK 4, gtk4-layer-shell and KWin (as the compositor) '
+                'under their own licenses.\n')
     return p
 
 
 def build_session():
-    p = Pkg('amerika-session', DE_VERSION, 'Amerika OS login session\nAdds an "Amerika OS" entry to the login screen. '
-            'It starts the stock COSMIC session with the Amerika layout and theme.\nThe COSMIC and Plasma sessions are '
-            'not changed.', depends=f'amerika-desktop-shell (>= {DE_VERSION}), amerika-theme (>= {DE_VERSION}), cosmic-session',
-            title='Amerika Session', conflicts='')
-    p.copy(SRC / 'session/amerika-session', '/usr/bin/amerika-session', 0o755)
-    p.copy(SRC / 'session/amerika-cosmic-seed', '/usr/bin/amerika-cosmic-seed', 0o755)
-    p.copy(SRC / 'session/amerika.desktop', '/usr/share/wayland-sessions/amerika.desktop')
+    p = Pkg('amerika-session', DE_VERSION, 'Amerika OS login session\nAdds "Amerika OS" to the login screen. KWin runs as the compositor; '
+            'everything else is Amerika\'s own shell.\nOther sessions are not changed.',
+            depends=f'amerika-desktop-shell (>= {DE_VERSION}), kwin-wayland', title='Amerika Session')
+    p.copy(OS / 'session/amerika-session', '/usr/bin/amerika-session', 0o755)
+    p.copy(OS / 'session/session-start', '/usr/libexec/amerika/session-start', 0o755)
+    p.copy(OS / 'session/amerika.desktop', '/usr/share/wayland-sessions/amerika.desktop')
     p.copyright('Amerika OS session files, Copyright Amerika LLC, GPL-3.0-only.\n')
     return p
 
 
-def build_plasma():
-    """Legacy Amerika OS 1.x desktop on KDE Plasma: session, shell package and KDE theme."""
-    version = subprocess.run(['dpkg-query', '-W', '-f', '${Version}', 'plasma-desktop-data'], capture_output=True,
-                             text=True).stdout
-    m = re.match(r'(\d+):(\d+)\.(\d+)', version)
-    epoch, major, minor = m.group(1), int(m.group(2)), int(m.group(3))
-    dep = f'plasma-desktop-data (>= {epoch}:{major}.{minor}), plasma-desktop-data (<< {epoch}:{major}.{minor + 1}~)'
-    p = Pkg('amerika-plasma', DE_VERSION, 'Amerika OS on KDE Plasma (legacy)\nThe Amerika OS 1.x desktop: an Amerika '
-            'session, shell package and theme on KDE Plasma and KWin.\nThe main Amerika OS desktop is now based on '
-            'COSMIC; install this package only if you want the Plasma variant.',
-            depends=f'plasma-desktop, {dep}, plasma-workspace, kwin-wayland, libkf6config-bin, konsole, '
-                    'amerika-icon-theme', title='Amerika OS (Plasma, legacy)',
-            extra={}, provides='', conflicts='')
-    p.extra['Replaces'] = 'amerika-desktop-shell (<< 2.0.0), amerika-theme (<< 2.0.0), amerika-session (<< 2.0.0)'
-    p.copy(SRC / 'plasma/theme/AmerikaDark.colors', '/usr/share/color-schemes/AmerikaDark.colors')
-    p.copy(SRC / 'plasma/theme/konsole/Amerika.profile', '/usr/share/konsole/Amerika.profile')
-    p.copy(SRC / 'plasma/theme/konsole/AmerikaDark.colorscheme', '/usr/share/konsole/AmerikaDark.colorscheme')
-    shutil.copytree(SRC / 'plasma/theme/look-and-feel', p.path('/usr/share/plasma/look-and-feel'))
-    wall = '/usr/share/wallpapers/Amerika'
-    p.copy(SRC / 'theme/wallpaper-2560x1600.png', f'{wall}/contents/images/2560x1600.png')
-    p.copy(SRC / 'theme/wallpaper-3840x2160.png', f'{wall}/contents/images/3840x2160.png')
-    p.file(f'{wall}/metadata.json', json.dumps({
-        'KPackageStructure': 'Wallpaper/Images',
-        'KPlugin': {'Authors': [{'Name': 'Amerika LLC'}], 'Id': 'Amerika', 'License': 'GPL-3.0', 'Name': 'Amerika'}},
-        indent=2) + '\n')
-    meta = json.loads((SYSTEM_SHELL / 'metadata.json').read_text())
-
-    def strip(o):
-        if isinstance(o, dict):
-            return {k: strip(v) for k, v in o.items() if not re.search(r'\[.*\]$', k)}
-        if isinstance(o, list):
-            return [strip(x) for x in o]
-        return o
-
-    meta = strip(meta)
-    meta['KPlugin'].update({'Id': 'org.amerika.shell', 'Name': 'Amerika OS', 'Description': 'Amerika OS desktop shell',
-                            'Authors': [{'Name': 'Amerika LLC'}, {'Name': 'KDE contributors'}],
-                            'License': 'GPL-3.0+', 'Website': 'https://www.amerika.social', 'Icon': 'amerika-hub'})
-    base = '/usr/share/plasma/shells/org.amerika.shell'
-    p.file(f'{base}/metadata.json', json.dumps(meta, indent=2) + '\n')
-    layout = (SRC / 'plasma/shell/layout-templates/org.amerika.topbar/contents/layout.js').read_text() + '\n' + \
-        (SRC / 'plasma/shell/layout-templates/org.amerika.dock/contents/layout.js').read_text() + '\n' + \
-        (SRC / 'plasma/shell/main.js').read_text()
-    p.file(f'{base}/contents/main.js', layout)
-    p.file(f'{base}/contents/layout.js', layout)
-    p.copy(SYSTEM_SHELL / 'contents/defaults', f'{base}/contents/defaults')
-    for item in sorted((SYSTEM_SHELL / 'contents').iterdir()):
-        if item.name not in ('main.js', 'defaults'):
-            p.path(f'{base}/contents/{item.name}').symlink_to(item)
-    p.copy(SRC / 'plasma/amerika-plasma-session', '/usr/bin/amerika-plasma-session', 0o755)
-    p.copy(SRC / 'plasma/amerika-plasma-first-run', '/usr/bin/amerika-plasma-first-run', 0o755)
-    p.copy(SRC / 'plasma/amerika-plasma.desktop', '/usr/share/wayland-sessions/amerika-plasma.desktop')
-    p.copy(SRC / 'plasma/50-amerika-plasma.sh', '/etc/xdg/plasma-workspace/env/50-amerika-plasma.sh')
-    p.copy(SRC / 'plasma/amerika-plasma-first-run.desktop', '/etc/xdg/autostart/amerika-plasma-first-run.desktop')
-    p.copyright('Amerika OS (Plasma) files, Copyright Amerika LLC, GPL-3.0-only.\n\nThe shell views are the unmodified KDE '
-                'Plasma files from plasma-desktop-data, linked from /usr/share/plasma/shells/org.kde.plasma.desktop '
-                '(GPL-2.0-or-later / LGPL-2.0-or-later, KDE contributors).\n')
-    return p
-
-
-def build_hub():
-    p = Pkg('amerika-hub', DE_VERSION, 'Amerika Hub\nThe Amerika OS start screen for Social, AI, browsing, files and '
-            'terminal.', depends='python3-pyqt6, libgtk-3-bin, amerika-icon-theme', title='Amerika Hub')
-    p.copy(SRC / 'hub/amerika-hub', '/usr/bin/amerika-hub', 0o755)
-    desktop_file(p, '[Desktop Entry]\nType=Application\nName=Amerika Hub\nComment=Your Amerika OS start screen\n'
-                 'Exec=/usr/bin/amerika-hub\nIcon=amerika-hub\nTerminal=false\nCategories=Utility;\n', 'amerika-hub')
-    if icon_svg('amerika-hub'):
-        p.copy(icon_svg('amerika-hub'), '/usr/share/icons/hicolor/scalable/apps/amerika-hub.svg')
-    p.copyright('Copyright Amerika LLC, GPL-3.0-only.\n')
-    return p
-
-
 def build_apps():
-    p = Pkg('amerika-apps', DE_VERSION, 'Amerika core apps\nAmerika Files, Terminal, Text, Settings and AI launchers. '
-            'Files, Terminal, Text and Settings are branded launchers\nfor COSMIC Files, Terminal, Edit and Settings, '
-            'which remain installed and unmodified.',
-            depends=f'cosmic-files, cosmic-term, cosmic-edit, cosmic-settings, amerika-theme (>= {DE_VERSION}), amerika-icon-theme (>= {DE_VERSION})',
-            recommends='amerika-venture', title='Amerika Core Apps')
-    for name in ('amerika-files', 'amerika-terminal', 'amerika-text', 'amerika-settings', 'amerika-ai'):
-        p.copy(SRC / f'apps/{name}.desktop', f'/usr/share/applications/{name}.desktop')
-    p.copy(SRC / 'apps/amerika-ai', '/usr/bin/amerika-ai', 0o755)
-    p.copy(SRC / 'apps/ai-url', '/etc/amerika/ai-url')
-    p.file('/usr/share/doc/amerika-apps/README.Debian',
-           'Amerika Files, Terminal, Text and Settings launch COSMIC Files, Terminal, Edit and Settings.\n'
-           'Those programs are copyright System76 and contributors (GPL-3.0-only).\n'
-           'Amerika AI opens the URL in /etc/amerika/ai-url (default https://chatgpt.com) in Amerika Venture.\n'
-           'It is a web shortcut; no AI service is bundled.\n')
-    p.copyright('Launchers, Copyright Amerika LLC, GPL-3.0-only.\nCOSMIC Files, Terminal, Edit and Settings are '
-                'separate packages (System76) with their own licenses.\n')
+    p = Pkg('amerika-apps', DE_VERSION, 'Amerika core apps\nAmerika Files, Terminal, Text and Settings launchers. Files, Terminal and Text are '
+            'Amerika-branded launchers\nfor GNOME Files (Nautilus), Ptyxis and GNOME Text Editor, which stay installed and unmodified.',
+            depends=f'nautilus, ptyxis, gnome-text-editor, amerika-desktop-shell (>= {DE_VERSION}), amerika-icon-theme (>= {DE_VERSION})',
+            title='Amerika Core Apps')
+    for name in ('amerika-files', 'amerika-terminal', 'amerika-text', 'amerika-settings'):
+        p.copy(OS / f'applications/{name}.desktop', f'/usr/share/applications/{name}.desktop')
+    p.copyright('Launchers, Copyright Amerika LLC, GPL-3.0-only.\nNautilus, Ptyxis and GNOME Text Editor are separate GNOME packages with '
+                'their own licenses (GPL-3.0-or-later).\n')
     return p
 
 
@@ -485,12 +298,6 @@ def build_software():
     p.copy(SRC / 'software/amerika-software.desktop', '/usr/share/applications/amerika-software.desktop')
     p.copyright('Copyright Amerika LLC, GPL-3.0-only.\n')
     return p
-
-
-def prepare_app(key, name, dest_dir):
-    root = extract(app_archive(key), STAGE / f'_payload-{key}')
-    target = Path(dest_dir)
-    return root, target
 
 
 def build_social():
@@ -573,19 +380,21 @@ def build_office():
 
 
 def build_meta():
-    p = Pkg('amerika-desktop', DE_VERSION, 'Amerika OS desktop environment\nInstalls the Amerika desktop session, layout, '
-            'theme, apps (Social, AI, Venture, Office, Files, Terminal)\nand the Amerika Software manager. Built on the '
-            'COSMIC desktop.', depends=', '.join(f'{n} (>= {DE_VERSION})' for n in ('amerika-session', 'amerika-desktop-shell', 'amerika-theme', 'amerika-icon-theme', 'amerika-hub', 'amerika-apps', 'amerika-software', 'amerika-repo-keyring')) + ', amerika-social, amerika-venture, amerika-office, cosmic-session, cosmic-greeter', arch=ARCH, title='Amerika OS Desktop',
-            section='metapackages')
+    ours = ('amerika-session', 'amerika-desktop-shell', 'amerika-theme', 'amerika-icon-theme', 'amerika-apps', 'amerika-software',
+            'amerika-repo-keyring')
+    p = Pkg('amerika-desktop', DE_VERSION, 'Amerika OS desktop environment\nAmerika OS: its own shell on the KWin compositor, with the Claude and '
+            'ChatGPT apps at the centre.\nInstalls the session, shell, settings, theme, apps and the Amerika Software manager.',
+            depends=', '.join(f'{n} (>= {DE_VERSION})' for n in ours) + ', amerika-social, amerika-venture, amerika-office',
+            arch=ARCH, title='Amerika OS Desktop', section='metapackages')
     p.copyright('Copyright Amerika LLC, GPL-3.0-only.\n')
     return p
 
 
 BUILDERS = {
     'amerika-repo-keyring': build_keyring, 'amerika-icon-theme': build_icons, 'amerika-theme': build_theme,
-    'amerika-desktop-shell': build_shell, 'amerika-session': build_session, 'amerika-plasma': build_plasma, 'amerika-hub': build_hub,
-    'amerika-apps': build_apps, 'amerika-software': build_software, 'amerika-social': build_social,
-    'amerika-venture': build_venture, 'amerika-office': build_office, 'amerika-desktop': build_meta,
+    'amerika-desktop-shell': build_shell, 'amerika-session': build_session, 'amerika-apps': build_apps,
+    'amerika-software': build_software, 'amerika-social': build_social, 'amerika-venture': build_venture,
+    'amerika-office': build_office, 'amerika-desktop': build_meta,
 }
 
 # --------------------------------------------------------------------------- repository
@@ -624,20 +433,6 @@ def make_repo(debs):
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(deb, dest)
         entries.append(f'{fields}\nFilename: {rel}\nSize: {dest.stat().st_size}\nSHA256: {sha256(dest)}\n')
-    # Unmodified COSMIC packages mirrored from the Pop!_OS repository (verified by tools/fetch-cosmic.py).
-    vendor = json.loads((VENDOR / 'manifest.json').read_text()) if (VENDOR / 'manifest.json').exists() else None
-    for deb in sorted(VENDOR.glob('*.deb')) if vendor else []:
-        info = vendor['packages'][deb.name]
-        if sha256(deb) != info['sha256']:
-            sys.exit(f'{deb.name} no longer matches vendor/cosmic/manifest.json')
-        fields = deb_fields(deb)
-        name = info['package']
-        rel = f'pool/main/{name[0]}/{name}/{deb.name}'
-        dest = APT_DIR / rel
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(deb, dest)
-        entries.append(f'{fields}\nAmerika-Category: COSMIC (System76)\nFilename: {rel}\nSize: {dest.stat().st_size}\n'
-                       f'SHA256: {sha256(dest)}\n')
     pkgdir = APT_DIR / f'dists/{SUITE}/main/binary-{ARCH}'
     pkgdir.mkdir(parents=True)
     text = '\n'.join(entries).encode()

@@ -38,12 +38,38 @@ class Helper(unittest.TestCase):
     def test_apt_arguments_are_fixed_and_terminated(self):
         seen = []
         self.h.run = lambda argv: seen.append(argv) or 0
+        self.h.guard_display_manager = lambda: None
+        self.h.restore_display_manager = lambda before: None
         self.h.os.geteuid = lambda: 0
         self.h.sys.argv = ['helper', 'install', 'amerika-hub']
         with self.assertRaises(SystemExit):
             self.h.main()
         self.assertEqual(seen[0][-2:], ['--', 'amerika-hub'])
         self.assertEqual(seen[0][0], '/usr/bin/apt-get')
+
+    def test_display_manager_is_restored(self):
+        calls = []
+        states = iter([('/usr/sbin/gdm3', '/lib/systemd/system/gdm.service'), ('/usr/sbin/greetd', '/lib/systemd/system/greetd.service')])
+        self.h.dm_state = lambda: next(states)
+        self.h.subprocess.run = lambda *a, **k: calls.append(a)
+        before = self.h.guard_display_manager()
+        self.assertEqual(before[0], '/usr/sbin/gdm3')
+        self.assertIn('/usr/bin/debconf-set-selections', calls[0][0])
+        written = {}
+        import builtins, io
+        real_open, real_lexists, real_symlink = builtins.open, self.h.os.path.lexists, self.h.os.symlink
+        self.h.os.path.lexists = lambda p: False
+        self.h.os.symlink = lambda target, link: written.setdefault('link', (target, link))
+        class Sink(io.StringIO):
+            def close(self): written['dm'] = self.getvalue(); super().close()
+        builtins.open = lambda p, mode='r', **k: Sink() if 'w' in mode else real_open(p, mode, **k)
+        try:
+            self.h.restore_display_manager(before)
+        finally:
+            builtins.open = real_open
+            self.h.os.path.lexists, self.h.os.symlink = real_lexists, real_symlink
+        self.assertEqual(written['dm'].strip(), '/usr/sbin/gdm3')
+        self.assertEqual(written['link'][0], '/lib/systemd/system/gdm.service')
 
     def test_protected_package_cannot_be_removed(self):
         self.h.os.geteuid = lambda: 0

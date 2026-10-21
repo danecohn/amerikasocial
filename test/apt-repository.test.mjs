@@ -31,6 +31,12 @@ test('serves repository metadata and pool packages with range support',async()=>
  r=await call(serve,'/apt/pool/main/a/amerika-hub/amerika-hub_1.0.0_all.deb',{headers:{range:'bytes=2-5'}});assert.equal(r.status,206);assert.equal(Buffer.concat(r.body).toString(),'2345');assert.equal(r.headers['content-range'],'bytes 2-5/10');
  r=await call(serve,'/apt/pool/main/a/amerika-hub/amerika-hub_1.0.0_all.deb',{method:'HEAD'});assert.equal(r.headers['content-length'],'10');assert.match(r.headers['cache-control'],/immutable/);
 });
+test('percent-encoded tildes in package names are accepted (as sent by APT) but encoded traversal is not',async()=>{
+ const serve=await fixture();
+ let r=await call(serve,'/apt/pool/main/a/amerika-office/amerika-office_0.1.0-1_arm64.deb');assert.equal(r.status,302);
+ r=await call(serve,'/apt/pool/main/a/amerika-office/amerika-office_0.1.0%2d1_arm64.deb');assert.equal(r.status,302);
+ for(const p of ['/apt/pool/main/a/amerika-hub/%2e%2e%2f%2e%2e%2fsecret.txt','/apt/dists/stable/%2e%2e/%2e%2e/secret.txt','/apt/%5csecret.txt','/apt/pool/main/a/amerika-hub/amerika-hub_1.0.0_all.deb%00']){r=await call(serve,p);assert.equal(r.status,404,p);}
+});
 test('only repository layout paths are mapped and traversal is impossible',async()=>{
  const serve=await fixture();
  for(const p of ['/apt/secret.txt','/apt/../secret.txt','/apt/dists/stable/../../secret.txt','/apt/pool/main/a/amerika-hub/..%2f..%2fsecret.txt','/apt/pool/main/a/amerika-hub/x.txt','/apt/dists/unstable/InRelease','/apt/pool-redirects.json']){

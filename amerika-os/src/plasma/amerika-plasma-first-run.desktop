@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=Amerika first run
-Exec=/usr/bin/amerika-first-run
+Name=Amerika Plasma first run
+Exec=/usr/bin/amerika-plasma-first-run
 NoDisplay=true
 X-KDE-autostart-phase=2

@@ -1,8 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Amerika OS
-Comment=Amerika OS desktop environment
+Comment=Amerika OS desktop environment (COSMIC)
 Exec=/usr/bin/amerika-session
-TryExec=/usr/bin/startplasma-wayland
-DesktopNames=KDE
-X-KDE-PluginInfo-Version=1.0.0
+TryExec=/usr/bin/start-cosmic
+DesktopNames=COSMIC

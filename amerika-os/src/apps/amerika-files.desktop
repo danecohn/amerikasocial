@@ -2,11 +2,11 @@
 Type=Application
 Name=Amerika Files
 GenericName=File Manager
-Comment=Browse your files (Amerika-branded launcher for KDE Dolphin)
-Exec=dolphin %u
+Comment=Browse your files (Amerika-branded launcher for COSMIC Files)
+Exec=cosmic-files %U
 Icon=system-file-manager
 Terminal=false
-Categories=System;FileTools;FileManager;Qt;KDE;
+Categories=System;FileTools;FileManager;
 MimeType=inode/directory;
-StartupWMClass=dolphin
+StartupWMClass=com.system76.CosmicFiles
 Keywords=files;folders;browse;

@@ -1,0 +1,10 @@
+#!/bin/sh
+# Copies the Amerika COSMIC defaults (panel, dock, app list, wallpaper, theme) into the user's COSMIC
+# configuration, once. Re-run with: rm ~/.local/state/amerika-os/cosmic-seed-2 && amerika-cosmic-seed
+src="${AMERIKA_COSMIC_SRC:-/usr/share/amerika-os/cosmic}"
+state="${XDG_STATE_HOME:-$HOME/.local/state}/amerika-os"
+[ -e "$state/cosmic-seed-2" ] && exit 0
+cfg="${XDG_CONFIG_HOME:-$HOME/.config}/cosmic"
+mkdir -p "$state" "$cfg"
+cp -R --no-preserve=mode,ownership "$src/." "$cfg/" || exit 1
+touch "$state/cosmic-seed-2"

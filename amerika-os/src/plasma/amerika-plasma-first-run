@@ -1,11 +1,11 @@
 #!/bin/sh
 # Applies the Amerika look once per user, inside the Amerika session only.
-[ "$AMERIKA_SESSION" = "1" ] || exit 0
+[ "$AMERIKA_PLASMA" = "1" ] || exit 0
 state="${XDG_STATE_HOME:-$HOME/.local/state}/amerika-os"
-[ -e "$state/first-run-1" ] && exit 0
+[ -e "$state/plasma-first-run-1" ] && exit 0
 mkdir -p "$state"
 plasma-apply-lookandfeel -a org.amerika.os.desktop >/dev/null 2>&1
 plasma-apply-colorscheme AmerikaDark >/dev/null 2>&1
 kwriteconfig6 --file kdeglobals --group Icons --key Theme AmerikaOS
 kwriteconfig6 --file konsolerc --group "Desktop Entry" --key DefaultProfile Amerika.profile
-touch "$state/first-run-1"
+touch "$state/plasma-first-run-1"

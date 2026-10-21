@@ -2,10 +2,10 @@
 Type=Application
 Name=Amerika Text
 GenericName=Text Editor
-Comment=Edit text and code (Amerika-branded launcher for KDE Kate)
-Exec=kate %U
+Comment=Edit text and code (Amerika-branded launcher for COSMIC Edit)
+Exec=cosmic-edit %F
 Icon=accessories-text-editor
 Terminal=false
-Categories=Utility;TextEditor;Development;Qt;KDE;
+Categories=Utility;TextEditor;Development;
 MimeType=text/plain;
-StartupWMClass=kate
+StartupWMClass=com.system76.CosmicEdit

@@ -1,7 +1,6 @@
 #!/bin/sh
-# Amerika OS session entry point. It runs the stock Plasma (KWin) Wayland session
-# with the Amerika shell package selected, and leaves the Plasma session untouched.
+# Amerika OS session entry point. Runs the stock COSMIC session (cosmic-comp and friends) after seeding
+# the Amerika panel, dock and theme defaults once per user. The stock COSMIC session is untouched.
 export AMERIKA_SESSION=1
-export XDG_SESSION_DESKTOP=Amerika
-set -- /usr/lib/*/libexec/plasma-dbus-run-session-if-needed
-exec "$1" /usr/bin/startplasma-wayland
+/usr/bin/amerika-cosmic-seed || true
+exec /usr/bin/start-cosmic "$@"

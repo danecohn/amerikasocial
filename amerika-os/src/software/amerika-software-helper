@@ -57,6 +57,50 @@ def run(argv):
     return subprocess.call(argv, env=ENV)
 
 
+DM_FILE = '/etc/X11/default-display-manager'
+DM_SERVICE = '/etc/systemd/system/display-manager.service'
+
+
+def dm_state():
+    try:
+        with open(DM_FILE, encoding='utf-8') as handle:
+            current = handle.read().strip()
+    except OSError:
+        return None
+    link = os.readlink(DM_SERVICE) if os.path.islink(DM_SERVICE) else None
+    return current, link
+
+
+def guard_display_manager():
+    """Keep the current login manager: preseed debconf before apt runs and restore the state afterwards."""
+    before = dm_state()
+    if before and before[0]:
+        package = os.path.basename(before[0])
+        subprocess.run(['/usr/bin/debconf-set-selections'], env=ENV, input=f'shared/default-x-display-manager select {package}\n',
+                       text=True, check=False)
+    return before
+
+
+def restore_display_manager(before):
+    if before is None or dm_state() == before:
+        return
+    current, link = before
+    with open(DM_FILE, 'w', encoding='utf-8') as handle:
+        handle.write(current + '\n')
+    if link:
+        if os.path.lexists(DM_SERVICE):
+            os.remove(DM_SERVICE)
+        os.symlink(link, DM_SERVICE)
+    print('note: the default login manager was kept as it was.')
+
+
+def run_apt(argv):
+    before = guard_display_manager()
+    code = run(argv)
+    restore_display_manager(before)
+    return code
+
+
 def main():
     if os.geteuid() != 0:
         fail('This helper must be run as root through pkexec.')
@@ -69,7 +113,7 @@ def main():
         sys.exit(run(['/usr/bin/apt-get', '-o', 'APT::Status-Fd=1', '-o', 'Dir::Etc::sourceparts=/nonexistent',
                       '-o', 'APT::Get::List-Cleanup=0', '-o', f'Dir::Etc::sourcelist={SOURCES}', 'update']))
     if action == 'install':
-        sys.exit(run(APT + ['install', '--'] + checked(args)))
+        sys.exit(run_apt(APT + ['install', '--'] + checked(args)))
     if action == 'remove':
         names = checked(args)
         if PROTECTED & set(names):
@@ -82,7 +126,7 @@ def main():
         if not targets:
             print('Nothing to upgrade.')
             sys.exit(0)
-        sys.exit(run(APT + ['install', '--only-upgrade', '--'] + targets))
+        sys.exit(run_apt(APT + ['install', '--only-upgrade', '--'] + targets))
     fail('Unknown action.')
 
 

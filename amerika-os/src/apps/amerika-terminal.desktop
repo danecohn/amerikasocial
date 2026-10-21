@@ -2,10 +2,10 @@
 Type=Application
 Name=Amerika Terminal
 GenericName=Terminal
-Comment=Command line (Amerika-branded launcher for KDE Konsole)
-Exec=konsole --profile Amerika
+Comment=Command line (Amerika-branded launcher for COSMIC Terminal)
+Exec=cosmic-term
 Icon=utilities-terminal
 Terminal=false
-Categories=System;TerminalEmulator;Qt;KDE;
-StartupWMClass=konsole
+Categories=System;TerminalEmulator;
+StartupWMClass=com.system76.CosmicTerm
 Keywords=shell;command;console;

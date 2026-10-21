@@ -27,7 +27,10 @@ export function createAptRepository({dir}){
   const entry=Object.hasOwn(redirects,name)?redirects[name]:null;
   return entry&&REDIRECT_URL.test(entry.url)?entry.url:null;
  }
- return async function serve(req,res,path){
+ return async function serve(req,res,rawPath){
+  // APT percent-encodes characters such as '~' in package file names.
+  let path;try{path=decodeURIComponent(rawPath);}catch{path='';}
+  if(/[\\\0]/.test(path))path='';
   const route=ROUTES.find(r=>r.re.test(path));
   if(!route){res.statusCode=404;res.setHeader('Content-Type','text/plain');res.end('Not found.');return;}
   if(req.method!=='GET'&&req.method!=='HEAD'){res.statusCode=405;res.setHeader('Allow','GET, HEAD');res.end('Use GET.');return;}

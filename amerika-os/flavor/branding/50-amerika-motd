@@ -1,0 +1,15 @@
+#!/bin/sh
+# Amerika OS message of the day (update-motd.d). Plain ASCII, no colours: pam_motd and sshd are not terminals.
+# Silence it with:  sudo touch /etc/amerika-os/motd.disable
+[ -e /etc/amerika-os/motd.disable ] && exit 0
+flavour=/usr/share/amerika-os/flavour
+[ -r "$flavour" ] || exit 0
+get() { sed -n "s/^$1=\"\{0,1\}\([^\"]*\)\"\{0,1\}\$/\1/p" "$flavour" | head -n 1; }
+channel=$(cat /etc/amerika-os/channel 2>/dev/null || get CHANNEL)
+printf '\n'
+printf '  +------------------------------------------------------+\n'
+printf '  |  A M E R I K A   O S   %-30s|\n' "$(get VERSION)"
+printf '  +------------------------------------------------------+\n'
+printf '  Built on Ubuntu %s (%s), channel: %s\n' "$(get BASE_VERSION_ID)" "$(get ARCHITECTURE)" "$channel"
+printf '  Software: amerika-software    Manual: man amerika-flavour    Support: %s\n' "$(get SUPPORT_URL)"
+printf '\n'

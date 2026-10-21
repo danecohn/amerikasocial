@@ -1,35 +1,55 @@
 #!/usr/bin/env python3
-"""Stage dist/apt into an Amerika Social checkout.
+"""Stage a signed APT snapshot; large packages become checksum-matched release redirects.
 
-Small packages and all repository metadata are copied into <social>/apt-repo and ship in the Social image.
-Packages over the size limit stay out of git and are served as redirects to a GitHub release asset; APT still
-verifies their SHA-256 against the signed Packages index, so the host never has to be trusted.
+This only writes a checkout/staging folder. It never uploads, pushes or deploys.
 """
+import argparse
+import hashlib
 import json
 import shutil
-import sys
 from pathlib import Path
 
-LIMIT = 5 * 1024 * 1024
-RELEASE = 'os-3.0.8'
-BASE = 'https://github.com/danecohn/amerikasocial/releases/download/'
-root = Path(__file__).resolve().parent.parent
-social = Path(sys.argv[1])
-dest = social / 'apt-repo'
-previous = json.loads((dest / 'pool-redirects.json').read_text()) if (dest / 'pool-redirects.json').exists() else {}
-if dest.exists():
-    shutil.rmtree(dest)
-shutil.copytree(root / 'dist/apt', dest, ignore=lambda d, names: [n for n in names if n.endswith('.deb')
-                                                                  and (Path(d) / n).stat().st_size > LIMIT])
-redirects, big = {}, []
-for deb in sorted((root / 'dist/apt/pool').rglob('*.deb')):
-    if deb.stat().st_size > LIMIT:
-        if deb.name in previous and previous[deb.name]['size'] == deb.stat().st_size:  # unchanged file already attached to an earlier release
-            head, _, base = previous[deb.name]['url'].rpartition('/')
-            redirects[deb.name] = {'url': head + '/' + base.replace('~', '.'), 'size': deb.stat().st_size}
+LIMIT=5*1024*1024
+BASE='https://github.com/danecohn/amerikasocial/releases/download/'
+ROOT=Path(__file__).resolve().parents[1]
+
+
+def digest(path):
+    h=hashlib.sha256()
+    with path.open('rb') as handle:
+        for chunk in iter(lambda:handle.read(1<<20),b''):h.update(chunk)
+    return h.hexdigest()
+
+
+def stage(social,repo,release):
+    repo=Path(repo).resolve();dest=Path(social).resolve()/'apt-repo'
+    if repo==dest or repo in dest.parents or dest in repo.parents:raise ValueError('Source and destination repositories must be separate.')
+    if not (repo/'dists/stable/InRelease').is_file():raise ValueError('The source must be a signed repository.')
+    previous=json.loads((dest/'pool-redirects.json').read_text()) if (dest/'pool-redirects.json').exists() else {}
+    manifest=json.loads((dest/'manifest.json').read_text()).get('packages',{}) if (dest/'manifest.json').exists() else {}
+    if dest.exists():shutil.rmtree(dest)
+    shutil.copytree(repo,dest,ignore=lambda directory,names:[name for name in names if name.endswith('.deb') and (Path(directory)/name).stat().st_size>LIMIT])
+    redirects,big={},[]
+    for deb in sorted((repo/'pool').rglob('*.deb')):
+        if deb.stat().st_size<=LIMIT:continue
+        sha=digest(deb);old=previous.get(deb.name,{})
+        oldsha=old.get('sha256') or manifest.get(deb.name,{}).get('sha256')
+        if old.get('size')==deb.stat().st_size and oldsha==sha:
+            url=old['url']
         else:
-            redirects[deb.name] = {'url': BASE + RELEASE + '/' + deb.name.replace('~', '.'), 'size': deb.stat().st_size}  # GitHub stores '~' as '.'
+            url=BASE+release+'/'+deb.name.replace('~','.')
             big.append(str(deb))
-(dest / 'pool-redirects.json').write_text(json.dumps(redirects, indent=2) + '\n')
-(root / 'dist/release-assets.txt').write_text('\n'.join(big) + '\n')
-print('staged', dest, 'redirected:', ', '.join(redirects))
+        redirects[deb.name]={'url':url,'size':deb.stat().st_size,'sha256':sha}
+    (dest/'pool-redirects.json').write_text(json.dumps(redirects,indent=2)+'\n')
+    assets=repo.parent/'release-assets.txt';assets.write_text('\n'.join(big)+'\n')
+    return {'destination':str(dest),'release':release,'new_assets':big,'uploaded':False}
+
+
+def main():
+    ap=argparse.ArgumentParser();ap.add_argument('social');ap.add_argument('--repo',default=str(ROOT/'dist/apt'))
+    ap.add_argument('--release',default='os-3.0.8');args=ap.parse_args()
+    if '/' in args.release or not args.release.startswith('os-'):ap.error('Use an os-... release tag without slashes.')
+    print(json.dumps(stage(args.social,args.repo,args.release),indent=2))
+
+
+if __name__=='__main__':main()

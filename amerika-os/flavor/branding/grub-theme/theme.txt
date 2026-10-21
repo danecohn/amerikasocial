@@ -1,0 +1,71 @@
+# Amerika OS GRUB theme (retro-futurist). Not enabled automatically.
+desktop-image: "background.png"
+desktop-color: "#05040a"
+title-text: ""
+terminal-font: "JetBrains Mono Regular 14"
+terminal-left: "8%"
+terminal-top: "8%"
+terminal-width: "84%"
+terminal-height: "84%"
+terminal-border: "0"
+
++ label {
+  top = 14%
+  left = 0
+  width = 100%
+  align = "center"
+  text = "A M E R I K A   O S"
+  font = "Inter Display Regular 32"
+  color = "#19e3ff"
+}
+
++ boot_menu {
+  left = 25%
+  top = 30%
+  width = 50%
+  height = 44%
+  item_font = "Inter Display Regular 18"
+  item_color = "#cfcfe4"
+  selected_item_color = "#ffffff"
+  item_height = 38
+  item_padding = 8
+  item_spacing = 6
+  icon_width = 0
+  icon_height = 0
+  item_icon_space = 0
+  menu_pixmap_style = "menu_*.png"
+  selected_item_pixmap_style = "select_*.png"
+  scrollbar = false
+}
+
++ progress_bar {
+  id = "__timeout__"
+  left = 25%
+  top = 78%
+  width = 50%
+  height = 14
+  show_text = false
+  bar_style = "progress_bar_*.png"
+  highlight_style = "progress_highlight_*.png"
+}
+
++ label {
+  id = "__timeout__"
+  top = 82%
+  left = 0
+  width = 100%
+  align = "center"
+  text = "Booting in %d seconds"
+  font = "Inter Display Regular 18"
+  color = "#7c7c98"
+}
+
++ label {
+  top = 94%
+  left = 0
+  width = 100%
+  align = "center"
+  text = "Enter: boot    e: edit    c: command line"
+  font = "Inter Display Regular 18"
+  color = "#7c7c98"
+}

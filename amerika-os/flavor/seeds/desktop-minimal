@@ -1,0 +1,34 @@
+Task-Name: amerika-desktop-minimal
+Task-Description: Amerika OS desktop, minimal
+Task-Long-Description: The Amerika session, shell, settings, theme and defaults with the smallest
+ sensible set of applications: no Amerika Social, Venture or Office, and none of the extra
+ media, graphics or development tools of amerika-desktop-full. Add applications with Amerika
+ Software or install amerika-desktop for the usual set.
+Section: metapackages
+
+Depends:
+ * amerika-standard
+ * amerika-session
+ * amerika-desktop-shell
+ * amerika-theme
+ * amerika-icon-theme
+ * amerika-apps
+ * amerika-branding
+ * amerika-defaults
+ * amerika-software
+ * sddm
+ * kwin-wayland
+ * network-manager
+ * xdg-user-dirs
+ * gnome-keyring
+ * libpam-gnome-keyring
+ * linux-firmware
+
+Recommends:
+ * amerika-login
+ * amerika-boot
+ * amerika-doc
+ * system-config-printer
+ * bluez
+ * gnome-disk-utility
+ * gnome-calculator

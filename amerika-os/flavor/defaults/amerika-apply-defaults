@@ -1,0 +1,30 @@
+#!/bin/sh
+# Copy the Amerika application defaults into the current user's dconf database (or remove them again).
+#   amerika-apply-defaults [--dry-run]    write the keys of /etc/dconf/db/amerika.d/00-amerika to the user database
+#   amerika-apply-defaults --reset        reset exactly those keys to the system default
+# Needed only if your session does not select DCONF_PROFILE=amerika by itself (see session-env.sh). Idempotent.
+set -eu
+src=/etc/dconf/db/amerika.d/00-amerika
+mode=apply
+case "${1:-}" in
+  --dry-run) mode=dry ;;
+  --reset) mode=reset ;;
+  "") ;;
+  *) echo "usage: amerika-apply-defaults [--dry-run|--reset]" >&2; exit 2 ;;
+esac
+[ -r "$src" ] || { echo "amerika-apply-defaults: $src not found (install amerika-defaults)" >&2; exit 1; }
+command -v dconf >/dev/null 2>&1 || { echo "amerika-apply-defaults: dconf is not installed" >&2; exit 1; }
+section=
+while IFS= read -r line; do
+  case "$line" in
+    ''|'#'*) continue ;;
+    '['*']') section=${line#[}; section=/${section%]}/; continue ;;
+  esac
+  key=${line%%=*}
+  value=${line#*=}
+  case "$mode" in
+    dry) echo "dconf write $section$key $value" ;;
+    reset) dconf reset "$section$key" ;;
+    apply) dconf write "$section$key" "$value" ;;
+  esac
+done < "$src"

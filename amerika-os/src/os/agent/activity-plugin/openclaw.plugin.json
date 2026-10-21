@@ -1,0 +1,6 @@
+{
+  "id": "amerika-activity",
+  "name": "Amerika activity bridge",
+  "description": "Publishes task state to the local Amerika shell without prompts, replies or credentials.",
+  "configSchema": {"type": "object", "properties": {}, "additionalProperties": false}
+}

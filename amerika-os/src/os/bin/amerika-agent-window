@@ -1,0 +1,3 @@
+#!/bin/sh
+# The Amerika Agent window (Control UI in WebKitGTK; default browser when WebKitGTK is missing).
+exec python3 -m amerika.agent.window "$@"

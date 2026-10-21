@@ -1,0 +1,12 @@
+# Amerika OS seed structure (germinate-style, as used by Ubuntu flavours).
+# Each seed becomes a metapackage; "needs" lists seeds whose packages it already pulls in.
+# The authoritative package list for each metapackage lives in the seed file of the same name.
+# tools/builders/flavor.py turns these seeds into Depends/Recommends/Suggests of the metapackages.
+#
+# seed:             metapackage            needs
+standard:           amerika-standard       -
+desktop-minimal:    amerika-desktop-minimal standard
+desktop:            amerika-desktop        -                 (defined in build.py, not generated here)
+desktop-full:       amerika-desktop-full   desktop
+live:               amerika-live           desktop
+installer:          amerika-installer-config -

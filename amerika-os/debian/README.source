@@ -1,0 +1,8 @@
+This source packaging covers the shell and session integration. The main
+build.py package builders also produce branding/defaults/metapackages, and the
+separate pinned npm OpenClaw bundle. This is not a claim that the complete
+flavour has a clean Debian archive build. See docs/RELEASE-GATES.md.
+
+Run dpkg-buildpackage -us -uc in a disposable Ubuntu 26.10 ARM64 build environment
+with the declared Build-Depends. No archive signing key is needed: debian/rules
+uses build.py --no-repo. The keyring data in flavor/keys is public only.

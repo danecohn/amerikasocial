@@ -1,0 +1,24 @@
+Source: amerika-os
+Section: x11
+Priority: optional
+Maintainer: Amerika LLC <noreply@amerika.social>
+Build-Depends: debhelper-compat (= 13), python3 (>= 3.14), python3-dev, libpython3.14-dev, python3-gi, gir1.2-gtk-4.0, gcc
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+Homepage: https://www.amerika.social/downloads/os
+
+Package: amerika-desktop-shell
+Architecture: arm64
+Depends: ${shlibs:Depends}, ${misc:Depends}, python3 (>= 3.14), python3.14, python3-gi, gir1.2-gtk-4.0, gir1.2-gtk4layershell-1.0, libgtk4-layer-shell0, gir1.2-polkit-1.0, gir1.2-nm-1.0, kwin-wayland, kglobalacceld, polkit-kde-agent-1, libkscreen-bin, libkf6config-bin, wireplumber, pipewire-pulse, network-manager, power-profiles-daemon, upower, systemd, xdg-desktop-portal-gtk, fonts-inter, fonts-jetbrains-mono, librsvg2-common, amerika-theme, amerika-icon-theme
+Recommends: wl-clipboard, playerctl, network-manager-gnome, bluez, powerdevil, gstreamer1.0-tools, gstreamer1.0-plugins-good
+Description: Amerika desktop shell, settings and supervised system tools
+ Native GTK desktop shell on the KWin compositor with a dedicated executable
+ identity for screen capture, native Settings and an approval broker for AI tools.
+ The separately packaged OpenClaw engine is optional at runtime.
+
+Package: amerika-session
+Architecture: all
+Depends: ${misc:Depends}, amerika-desktop-shell (= ${binary:Version}), kwin-wayland
+Description: Amerika Wayland desktop session
+ Adds an Amerika session without selecting a display manager or changing the
+ user's default session. The opt-in Agent service follows the session target.

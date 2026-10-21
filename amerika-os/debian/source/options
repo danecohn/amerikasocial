@@ -1,0 +1,6 @@
+tar-ignore = dist
+tar-ignore = work
+tar-ignore = .git
+tar-ignore = __pycache__
+tar-ignore = node_modules
+tar-ignore = *.pyc

@@ -6,6 +6,7 @@ gi.require_version('Gdk', '4.0')
 from gi.repository import Gdk, Gtk  # noqa: E402
 
 from . import apps, layer
+from .agent_ask import AskPanel  # agent-ui
 
 
 class Launcher(Gtk.Window):
@@ -40,6 +41,8 @@ class Launcher(Gtk.Window):
 
         self.ask_box = Gtk.Box(spacing=10)
         inner.append(self.ask_box)
+        self.agent_ask = AskPanel(shell)  # agent-ui: "Ask Amerika Agent" row + streamed answer
+        inner.append(self.agent_ask)
 
         scroller = Gtk.ScrolledWindow(vexpand=True)
         scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
@@ -81,6 +84,7 @@ class Launcher(Gtk.Window):
     def _shown(self):
         if not self.get_visible():
             self._ai_mode = False
+            self.agent_ask.reset()  # agent-ui
         if self.get_visible():
             self._apps = apps.all_apps()
             self.entry.set_text('')
@@ -89,6 +93,7 @@ class Launcher(Gtk.Window):
 
     def _refresh(self):
         text = self.entry.get_text().strip().lower()
+        self.agent_ask.update(self.entry.get_text())  # agent-ui
         child = self.flow.get_first_child()
         while child:
             nxt = child.get_next_sibling()
@@ -111,6 +116,15 @@ class Launcher(Gtk.Window):
                     b.set_child(row)
                     b.connect('clicked', lambda _b, d=desktop_id: self._ask(d))
                     self.ask_box.append(b)
+        if self._ai_mode and not text:  # agent-ui: the Copilot-key picker also offers Amerika Agent
+            b = Gtk.Button()
+            b.add_css_class('am-ask')
+            row = Gtk.Box(spacing=8)
+            row.append(apps.icon_image('amerika-ai', 22))
+            row.append(Gtk.Label(label='Open Amerika Agent'))
+            b.set_child(row)
+            b.connect('clicked', lambda *_: (self.hide(), self.shell.open_agent_window()))
+            self.ask_box.append(b)
         self._shown_apps = []
         for info in self._apps:
             hay = (info.get_display_name() + ' ' + (info.get_generic_name() or '') + ' ' + ' '.join(info.get_keywords() or [])).lower()
@@ -138,5 +152,8 @@ class Launcher(Gtk.Window):
         self.shell.hand_off_to_ai(desktop_id, text)
 
     def _activate_first(self):
+        if self.agent_ask.question and (self.agent_ask.explicit or not self._shown_apps):  # agent-ui
+            self.agent_ask.submit()
+            return
         if self._shown_apps and self.entry.get_text().strip():
             self._open(self._shown_apps[0])

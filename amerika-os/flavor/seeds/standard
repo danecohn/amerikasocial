@@ -1,0 +1,29 @@
+Task-Name: amerika-standard
+Task-Description: Amerika OS standard system
+Task-Long-Description: The command line tools every Amerika OS system has, on top of Ubuntu's own
+ standard set: unattended security updates, the Amerika update channels, firmware updates, and the
+ manual pages for the Amerika tools.
+Section: metapackages
+
+Depends:
+ * ubuntu-standard
+ * amerika-repo-keyring
+ * amerika-updates
+ * unattended-upgrades
+ * bash-completion
+ * man-db
+ * less
+ * nano
+ * curl
+ * wget
+ * ca-certificates
+ * openssh-client
+ * zstd
+ * fwupd
+ * ubuntu-drivers-common
+
+Recommends:
+ * amerika-doc
+ * htop
+ * tmux
+ * ufw

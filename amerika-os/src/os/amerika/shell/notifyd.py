@@ -7,6 +7,7 @@ gi.require_version('Gtk', '4.0')
 from gi.repository import Gio, GLib, GObject, Gtk  # noqa: E402
 
 from . import layer
+from .. import notifprefs
 
 XML = '''<node><interface name="org.freedesktop.Notifications">
  <method name="GetCapabilities"><arg type="as" direction="out"/></method>
@@ -26,9 +27,10 @@ class Notifications(GObject.Object):
     def __init__(self, shell):
         super().__init__()
         self.shell = shell
-        self.dnd = False
+        self.dnd = notifprefs.load()['dnd']
         self.history = []  # newest first: dicts
         self._next = 1
+        self._action_handlers = {}
         self._toasts = {}
         self._conn = None
         self._popover_list = None
@@ -57,18 +59,23 @@ class Notifications(GObject.Object):
             invocation.return_value(GLib.Variant('(u)', (nid,)))
 
     # ------------------------------------------------------------------ model
-    def notify(self, app, replaces, icon, summary, body, actions=(), hints=None, timeout=-1, ai=False):
+    def notify(self, app, replaces, icon, summary, body, actions=(), hints=None, timeout=-1, ai=False, on_action=None):
         hints = hints or {}
         nid = replaces if replaces and replaces in {h['id'] for h in self.history} else self._next
         if nid == self._next:
             self._next += 1
         entry = {'id': nid, 'app': app, 'icon': icon, 'summary': summary, 'body': body, 'time': time.time(), 'ai': ai,
                  'actions': list(actions), 'urgency': int(hints.get('urgency', 1))}
+        if on_action:self._action_handlers[nid]=on_action
+        else:self._action_handlers.pop(nid,None)
         self.history = [h for h in self.history if h['id'] != nid]
         self.history.insert(0, entry)
         del self.history[200:]
+        alive={h['id'] for h in self.history}
+        self._action_handlers={k:v for k,v in self._action_handlers.items() if k in alive}
         self._refresh_popover()
-        if not self.dnd or entry['urgency'] >= 2:
+        notifprefs.record_seen(app)
+        if notifprefs.allows(app,entry['urgency'],manual_dnd=self.dnd):
             self._toast(entry, timeout)
         return nid
 
@@ -82,9 +89,11 @@ class Notifications(GObject.Object):
 
     def set_dnd(self, on):
         self.dnd = bool(on)
+        notifprefs.set_dnd(self.dnd)
 
     def clear(self):
         self.history.clear()
+        self._action_handlers.clear()
         self._refresh_popover()
 
     # ------------------------------------------------------------------ toast windows
@@ -106,6 +115,7 @@ class Notifications(GObject.Object):
         col.append(t)
         if entry['body']:
             col.append(b)
+        self._add_actions(col,entry)
         box.append(col)
         close = Gtk.Button(icon_name='amerika-close-symbolic', valign=Gtk.Align.START)
         close.add_css_class('am-bar-icon')
@@ -171,4 +181,27 @@ class Notifications(GObject.Object):
             meta = Gtk.Label(label=f"{h['app'] or 'system'} · {time.strftime('%H:%M', time.localtime(h['time']))}", xalign=0)
             meta.add_css_class('am-label')
             card.append(meta)
+            self._add_actions(card,h)
             box.append(card)
+
+
+    def _add_actions(self,box,entry):
+        actions=entry.get('actions',[])
+        if len(actions)<2:return
+        buttons=Gtk.Box(spacing=6)
+        for i in range(0,min(len(actions)-1,20),2):
+            key,title=actions[i:i+2]
+            if key=='default':continue
+            button=Gtk.Button(label=title)
+            button.add_css_class('am-secondary')
+            button.connect('clicked',lambda _,nid=entry['id'],action=key:self.invoke_action(nid,action))
+            buttons.append(button)
+        box.append(buttons)
+
+    def invoke_action(self,nid,action):
+        handler=self._action_handlers.get(nid)
+        if handler:handler(action)
+        elif self._conn:
+            self._conn.emit_signal(None,'/org/freedesktop/Notifications','org.freedesktop.Notifications','ActionInvoked',
+                                   GLib.Variant('(us)',(nid,action)))
+        self.close(nid,2)

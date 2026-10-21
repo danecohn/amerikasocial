@@ -1,0 +1,51 @@
+Task-Name: amerika-desktop-full
+Task-Description: Amerika OS desktop, full
+Task-Long-Description: Everything in amerika-desktop plus the optional applications most people
+ want on a daily-driver machine: an offline office suite (LibreOffice, next to Amerika
+ Office), media players and viewers, graphics tools and a developer toolbox. Everything beyond
+ amerika-desktop is a Recommends, so single applications can be removed without removing this package.
+Section: metapackages
+
+Depends:
+ * amerika-desktop
+ * amerika-login
+ * amerika-boot
+ * amerika-doc
+
+Recommends:
+ # Office suite choice: Amerika Office (offline and hosted, from amerika-desktop) or the offline LibreOffice below.
+ * libreoffice-writer
+ * libreoffice-calc
+ * libreoffice-impress
+ * libreoffice-gtk3
+ * hunspell-en-us
+ # Media
+ * vlc
+ * showtime
+ * loupe
+ * papers
+ * rhythmbox
+ * snapshot
+ # Graphics
+ * gimp
+ * inkscape
+ # Everyday tools
+ * file-roller
+ * gnome-system-monitor
+ * baobab
+ * transmission-gtk
+ * simple-scan
+ # Development tools
+ * git
+ * build-essential
+ * cmake
+ * python3-venv
+ * python3-pip
+ * nodejs
+ * npm
+ * neovim
+ * jq
+ * ripgrep
+ * shellcheck
+ * gh
+ * tmux

@@ -1,0 +1,22 @@
+Task-Name: amerika-live
+Task-Description: Amerika OS live session
+Task-Long-Description: Extras for the Amerika OS live installation image: the live-boot support from
+ casper, the Calamares installer with Amerika's configuration, disk and filesystem tools for repairing
+ or preparing a machine, and the hook that logs the live user into the Amerika session.
+ This package belongs on the live image only; the installer removes it from the installed system.
+Section: metapackages
+
+Depends:
+ * amerika-desktop
+ * amerika-installer-config
+ * casper
+ * gparted
+ * ntfs-3g
+ * exfatprogs
+ * efibootmgr
+ * mokutil
+ * dmidecode
+
+Recommends:
+ * network-manager-gnome
+ * hwe-qcom-x1e-meta

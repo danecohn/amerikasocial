@@ -1,0 +1,43 @@
+.\" Copyright Amerika LLC. GPL-3.0-only.
+.TH AMERIKA-CHANNEL 8 "2026-10-21" "Amerika OS" "Amerika OS Manual"
+.SH NAME
+amerika\-channel \- choose the Amerika OS update channel
+.SH SYNOPSIS
+.B amerika\-channel
+.RB [ status | stable | testing ]
+.SH DESCRIPTION
+Amerika OS has two update channels in the signed repository: the
+.B stable
+channel, which every system uses, and the
+.B testing
+channel, which receives packages before they are promoted and may break. Testing is disabled by default and is never enabled
+by the installer.
+.PP
+.B amerika\-channel testing
+sets
+.B Enabled: yes
+in
+.IR /etc/apt/sources.list.d/amerika\-testing.sources ;
+.B stable
+sets it back to
+.BR no .
+Packages from testing are still not installed automatically: the APT pin gives testing a lower priority than the Ubuntu archive;
+install from it with
+.BR "apt install \-t testing" " " \fIpackage\fR.
+Unattended upgrades only ever consider the stable suite. Run
+.B apt update
+after changing the channel. The command needs root.
+.SH FILES
+.TP
+.I /etc/apt/sources.list.d/amerika.sources
+Stable channel (package amerika\-repo\-keyring).
+.TP
+.I /etc/apt/preferences.d/amerika.pref
+Pins.
+.TP
+.I /etc/amerika\-os/channel
+Name of the selected channel, shown in the message of the day.
+.SH SEE ALSO
+.BR apt_preferences (5),
+.BR sources.list (5),
+.BR amerika\-flavour (7)

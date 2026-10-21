@@ -1,0 +1,10 @@
+{
+  "name": "amerika-agent-engine",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pinned OpenClaw engine for the amerika-agent package. See openclaw.lock.json and docs/agent/README.md.",
+  "license": "MIT",
+  "dependencies": {
+    "openclaw": "2026.10.5"
+  }
+}

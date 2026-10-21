@@ -5,4 +5,7 @@ if [ -z "$lib" ]; then
   for c in /usr/lib/*/libgtk4-layer-shell.so.0; do [ -e "$c" ] && lib="$c" && break; done
 fi
 [ -n "$lib" ] && export LD_PRELOAD="$lib${LD_PRELOAD:+:$LD_PRELOAD}"
+host="${AMERIKA_SHELL_HOST:-/usr/libexec/amerika/amerika-shell-host}"
+if [ -x "$host" ]; then exec "$host" "$@"; fi
+# Source development can still start without a compiled host; capture is then unavailable.
 exec python3 -m amerika.shell.main "$@"

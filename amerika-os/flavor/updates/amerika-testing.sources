@@ -1,0 +1,9 @@
+# Amerika OS "testing" channel. DISABLED by default. Enable with:  sudo amerika-channel testing
+# Testing receives packages before they are promoted to stable and may break. Never enabled by the installer.
+Enabled: no
+Types: deb
+URIs: https://www.amerika.social/apt
+Suites: testing
+Components: main
+Architectures: arm64
+Signed-By: /usr/share/keyrings/amerika-archive-keyring.gpg

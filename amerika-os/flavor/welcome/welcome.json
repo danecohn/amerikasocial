@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "id": "org.amerika.welcome",
+  "version": "3.0.8",
+  "title": "Welcome to Amerika OS",
+  "tagline": "Your own desktop, with Claude and ChatGPT at the centre.",
+  "show_once_key": "welcome-3",
+  "autostart": {"when": "first-login", "skip_in_live_session": true, "env_skip": "AMERIKA_LIVE"},
+  "steps": [
+    {
+      "id": "hello",
+      "title": "Welcome",
+      "body": "Amerika OS is a desktop for Ubuntu 26.10 on ARM64. It is built on the KWin compositor with Amerika's own shell. Other sessions on this computer are never changed.",
+      "actions": [{"id": "next", "label": "Get started", "type": "next"}]
+    },
+    {
+      "id": "look",
+      "title": "Look and feel",
+      "body": "The Amerika login screen and boot screen are optional. You can switch them on and off at any time, and the system falls back to the previous ones by itself if they fail to start.",
+      "actions": [
+        {"id": "login-status", "label": "Login screen: show status", "type": "command", "argv": ["amerika-login", "status"], "privileged": false},
+        {"id": "login-enable", "label": "Use the Amerika login screen", "type": "command", "argv": ["amerika-login", "enable"], "privileged": true, "confirm": "This changes the login screen from the next start. You can switch it off again in Settings."},
+        {"id": "boot-enable", "label": "Use the Amerika boot screen", "type": "command", "argv": ["amerika-boot", "enable"], "privileged": true, "confirm": "This rebuilds the boot image (initramfs). If that fails, the previous screen is restored."},
+        {"id": "defaults", "label": "Apply Amerika app defaults to my account", "type": "command", "argv": ["amerika-apply-defaults"], "privileged": false, "optional": true}
+      ]
+    },
+    {
+      "id": "assistants",
+      "title": "Claude, ChatGPT and Amerika Agent",
+      "body": "Nothing is connected by default. Connect the AI apps you use in Settings; every action they take on this computer is shown, can be refused, and can be stopped with Ctrl+Alt+Esc.",
+      "actions": [{"id": "open-ai", "label": "Open AI & Assistants settings", "type": "settings-page", "page": "ai"}]
+    },
+    {
+      "id": "updates",
+      "title": "Updates",
+      "body": "Security updates and Amerika updates install automatically from the signed Amerika repository (stable channel). You can review them in Amerika Software.",
+      "actions": [
+        {"id": "open-software", "label": "Open Amerika Software", "type": "app", "desktop_id": "amerika-software.desktop"},
+        {"id": "channel", "label": "Show update channel", "type": "command", "argv": ["amerika-channel", "status"], "privileged": false}
+      ]
+    },
+    {
+      "id": "help",
+      "title": "Help",
+      "body": "Manual pages: man amerika-flavour, man amerika-settings. Support and release notes are on the Amerika website.",
+      "actions": [
+        {"id": "support", "label": "Open the support page", "type": "link", "url": "https://www.amerika.social/downloads/os"},
+        {"id": "finish", "label": "Done", "type": "finish"}
+      ]
+    }
+  ],
+  "notes": [
+    "This is a data specification for the first-run welcome window; the shell UI (owned by the shell team) adopts it.",
+    "Commands are run without a shell, with argv exactly as listed. privileged:true commands go through pkexec and need a confirm text.",
+    "Steps are skipped in the live session (the installer is the first thing a live user needs)."
+  ]
+}

@@ -1,0 +1,30 @@
+.\" Copyright Amerika LLC. GPL-3.0-only.
+.TH AMERIKA-APPLY-DEFAULTS 1 "2026-10-21" "Amerika OS" "Amerika OS Manual"
+.SH NAME
+amerika\-apply\-defaults \- copy the Amerika application defaults into your dconf database
+.SH SYNOPSIS
+.B amerika\-apply\-defaults
+.RB [ \-\-dry\-run | \-\-reset ]
+.SH DESCRIPTION
+The package
+.B amerika\-defaults
+ships GTK and GNOME\-stack defaults (dark colour scheme, icon theme, fonts, cursor, window button layout, wallpaper)
+as the dconf database
+.IR amerika .
+The Amerika session selects it with
+.BR DCONF_PROFILE=amerika .
+If your session does not, this command writes the same keys into your own user database, so other sessions of your account
+see them as well. It changes only the keys listed in
+.IR /etc/dconf/db/amerika.d/00\-amerika .
+.SH OPTIONS
+.TP
+.B \-\-dry\-run
+Print the
+.B dconf write
+commands without running them.
+.TP
+.B \-\-reset
+Reset exactly those keys to the system defaults.
+.SH SEE ALSO
+.BR dconf (1),
+.BR amerika\-flavour (7)

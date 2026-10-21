@@ -1,0 +1,33 @@
+.\" Copyright Amerika LLC. GPL-3.0-only.
+.TH AMERIKA-FIRST-RUN 1 "2026-10-21" "Amerika OS" "Amerika OS Manual"
+.SH NAME
+amerika\-first\-run \- one\-time look\-and\-feel setup for the Amerika session
+.SH SYNOPSIS
+.B amerika\-first\-run
+.RB [ \-\-force ]
+.SH DESCRIPTION
+Run by
+.I session\-start
+at the beginning of every Amerika session. It writes the window button layout, effects and colour scheme to
+.IR kwinrc ,
+.I kdeglobals
+and the GTK
+.I gtk.css
+files of the current user, then records the version it applied in
+.IR ~/.local/state/amerika\-os/first\-run .
+When that marker already holds the current version nothing happens.
+.PP
+The welcome pages that follow the first login are described by
+.IR /usr/share/amerika\-os/welcome/welcome.json .
+.SH OPTIONS
+.TP
+.B \-\-force
+Apply the settings again even if the marker is up to date.
+.SH FILES
+.TP
+.I ~/.local/state/amerika\-os/first\-run
+Version marker.
+.SH SEE ALSO
+.BR amerika\-settings (1),
+.BR amerika\-apply\-defaults (1),
+.BR amerika\-flavour (7)

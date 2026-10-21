@@ -1,18 +1,27 @@
 {
+  "amerika-agent_3.1.0_arm64.deb": {
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-3.0.8/amerika-agent_3.1.0_arm64.deb",
+    "size": 87767268,
+    "sha256": "ace4ce7258482b5328db827034c8c3338052079eed9818b851ce63261bfc7bf4"
+  },
   "amerika-office_0.1.0-2_arm64.deb": {
     "url": "https://github.com/danecohn/amerikasocial/releases/download/os-3.0.4/amerika-office_0.1.0-2_arm64.deb",
-    "size": 106715924
+    "size": 106715924,
+    "sha256": "81bded0545f2a13f1c1e572fbf06316c7ad5d1f213484a6b2ef9167c4caee5ce"
   },
   "amerika-office_0.2.0-1_arm64.deb": {
     "url": "https://github.com/danecohn/amerikasocial/releases/download/os-3.0.8/amerika-office_0.2.0-1_arm64.deb",
-    "size": 106704564
+    "size": 106704564,
+    "sha256": "c4c4edb6529e8c3d86b4ed8a9fb079a7428f66a221cb0d8a8a5ced436cb7bc3a"
   },
   "amerika-social_1.0.0-1_arm64.deb": {
     "url": "https://github.com/danecohn/amerikasocial/releases/download/os-3.0.4/amerika-social_1.0.0-1_arm64.deb",
-    "size": 100923588
+    "size": 100923588,
+    "sha256": "24e9215aa969bc87d225f74c03e982f4aabb5abd356e30ed31de7d3e19791cc9"
   },
   "amerika-venture_158.0.1-amerika1_arm64.deb": {
     "url": "https://github.com/danecohn/amerikasocial/releases/download/os-3.0.4/amerika-venture_158.0.1-amerika1_arm64.deb",
-    "size": 109208104
+    "size": 109208104,
+    "sha256": "c99fa58d79952f8e6ee30ac735414ff3e239125286d6c325c45ce4be54ed1b1a"
   }
 }

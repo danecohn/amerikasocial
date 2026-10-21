@@ -9,6 +9,7 @@ from gi.repository import GLib, Gtk  # noqa: E402
 
 from .. import system
 from . import apps, layer
+from .agent_chip import AgentChip  # agent-ui
 from .tray import Tray
 
 
@@ -61,14 +62,27 @@ class Bar(Gtk.Window):
         self.appname.set_ellipsize(3)
         self.appname.set_max_width_chars(48)
         start.append(self.appname)
+        from .workspaces import Pager
+        start.append(Pager(shell))
         box.set_start_widget(start)
 
         # ---- center: clock
         self.clock = _label('', 'am-clock', 0.5)
-        box.set_center_widget(self.clock)
+        clock_button = Gtk.Button()
+        clock_button.add_css_class('am-bar-btn')
+        clock_button.set_child(self.clock)
+        clock_button.connect('clicked',lambda *_:shell.action('calendar'))
+        box.set_center_widget(clock_button)
 
         # ---- end: AI chip, stop, controls, notifications
         end = Gtk.Box(spacing=6, valign=Gtk.Align.CENTER)
+        self.record_chip = Gtk.Button(label='● RECORDING')
+        self.record_chip.add_css_class('am-ai-stop')
+        self.record_chip.set_visible(False)
+        self.record_chip.connect('clicked',lambda *_:shell.action('record:toggle'))
+        end.append(self.record_chip)
+        self.agent_chip = AgentChip(shell)  # agent-ui: live Amerika Agent state (hidden until the agent is installed)
+        end.append(self.agent_chip)
         self.chip = _label('AI · IDLE', 'am-ai-chip idle')
         self.stop = Gtk.Button(label='STOP')
         self.stop.add_css_class('am-ai-stop')
@@ -206,6 +220,9 @@ class Bar(Gtk.Window):
         self.appname.set_text((active[0].get('caption') or active[0].get('cls') or '').upper() if active else '')
 
     def _on_activity(self, _broker, client, text, active):
+        if active and client == 'Amerika Agent':  # agent-ui: its own chip shows what it is doing; keep only the Stop switch
+            self.stop.set_visible(True)
+            return
         self.chip.set_text(f'{client.upper()} · {text.upper()}' if active else 'AI · IDLE')
         if active:
             self.chip.remove_css_class('idle')

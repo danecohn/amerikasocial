@@ -27,7 +27,7 @@ class Dock(Gtk.Window):
 
     def _layout(self):
         """What the dock should show: (entries, extra running apps). Entries are (id, info, running windows)."""
-        ai_ids = set(self.shell.settings.get('bar_ai_apps', []))
+        ai_ids = set(self.shell.settings.get('bar_ai_apps', [])) | {'amerika-agent'}  # agent-ui: the agent sits in the AI group
         shown, entries, extra = set(), [], []
         for desktop_id in self._pinned():
             info = apps.lookup(desktop_id)

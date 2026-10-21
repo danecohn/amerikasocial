@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Amerika Agent
+GenericName=AI Agent
+Comment=Your agent, working on this computer under your rules
+Exec=amerika-agent-window
+Icon=amerika-ai
+Terminal=false
+Categories=Utility;
+Keywords=agent;ai;assistant;openclaw;claude;gpt;
+StartupWMClass=org.amerika.AgentWindow

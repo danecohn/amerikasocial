@@ -9,6 +9,7 @@ import json
 import os
 import socket
 import struct
+import stat
 import threading
 import time
 from concurrent.futures import Future
@@ -23,8 +24,9 @@ from .. import common
 from .tools import Tools
 
 MODES = ('ask', 'safe', 'trusted')
-CLIENT_NAMES = {'claude': 'Claude', 'chatgpt': 'ChatGPT'}
+CLIENT_NAMES = {'claude': 'Claude', 'chatgpt': 'ChatGPT', 'amerika-agent': 'Amerika Agent'}  # agent-ui
 APPROVAL_TIMEOUT = 90
+MAX_REQUEST_BYTES = 2 * 1024 * 1024
 
 
 class Broker(GObject.Object):
@@ -40,12 +42,15 @@ class Broker(GObject.Object):
         self._server = None
         self._pending = set()
         self._lock = threading.Lock()
+        self._slots = threading.BoundedSemaphore(16)
+        self._socket_inode = None
 
     # ------------------------------------------------------------------ policy
     def mode_for(self, client):
         ai = self.shell.settings['ai']
         entry = ai.get('clients', {}).get(client, {})
-        mode = entry.get('mode') or ai.get('mode', 'safe')
+        # The built-in agent always shares the visible global policy.
+        mode = (ai.get('mode', 'ask') if client == 'amerika-agent' else entry.get('mode') or ai.get('mode', 'safe'))
         return mode if mode in MODES else 'safe'
 
     def client_enabled(self, client):
@@ -105,11 +110,17 @@ class Broker(GObject.Object):
                 return False, 'The user declined this action.'
             if verdict == 'always':
                 self.on_main(self.grant_always, client, name).result()
-        self.on_main(self._begin, client, label, name).result()
+        def execute():
+            if self.paused or not self.client_enabled(client):
+                raise ValueError('AI actions were paused or disabled before execution.')
+            if decision == 'allow' and self.decision(client, name) == 'ask':
+                raise ValueError('Permissions changed before execution. A fresh approval is required.')
+            self._begin(client, label, name)
+            return self.tools.call(name, args or {})
         try:
-            result = self.on_main(self.tools.call, name, args or {}).result()
+            result = self.on_main(execute).result()
             if isinstance(result, Future):  # tools that need the main loop to finish (e.g. the clipboard)
-                result = result.result(timeout=10)
+                result = result.result(timeout=35 if name == 'shell.run' else 10)
             common.audit('call', client=client, tool=name, args=shown, ok=True, ms=round((time.time() - started) * 1000))
             return True, result
         except Exception as error:  # noqa: BLE001
@@ -147,6 +158,7 @@ class Broker(GObject.Object):
         self.paused = bool(paused)
         if self.paused:
             self.shell.cancel_approvals()
+            self.tools.cancel_commands()
             common.audit('paused')
         else:
             common.audit('resumed')
@@ -154,23 +166,35 @@ class Broker(GObject.Object):
 
     # ------------------------------------------------------------------ socket server
     def start(self):
-        common.RUNTIME.mkdir(parents=True, exist_ok=True)
+        common.RUNTIME.mkdir(parents=True, exist_ok=True, mode=0o700)
+        if common.RUNTIME.is_symlink() or common.RUNTIME.stat().st_uid != os.getuid():
+            raise RuntimeError('The broker runtime directory is unsafe.')
         os.chmod(common.RUNTIME, 0o700)
         path = common.CONTROL_SOCKET
+        if path.is_symlink():raise RuntimeError('The broker socket path is unsafe.')
         try:
-            path.unlink()
+            info=path.stat()
+            if not stat.S_ISSOCK(info.st_mode) or info.st_uid!=os.getuid():
+                raise RuntimeError('The broker socket path is unsafe.')
+            with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as probe:
+                probe.settimeout(.2)
+                try:probe.connect(str(path))
+                except ConnectionRefusedError:path.unlink()
+                else:raise RuntimeError('An Amerika broker is already running in this runtime directory.')
         except FileNotFoundError:
             pass
         self._server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self._server.bind(str(path))
         os.chmod(path, 0o600)
+        self._socket_inode = path.stat().st_ino
         self._server.listen(8)
         threading.Thread(target=self._accept, daemon=True).start()
 
     def _accept(self):
+        server=self._server
         while True:
             try:
-                conn, _ = self._server.accept()
+                conn, _ = server.accept()
             except OSError:
                 return
             creds = conn.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, struct.calcsize('3i'))
@@ -178,13 +202,26 @@ class Broker(GObject.Object):
             if uid != os.getuid():
                 conn.close()
                 continue
-            threading.Thread(target=self._serve, args=(conn,), daemon=True).start()
+            if not self._slots.acquire(blocking=False):
+                conn.close();continue
+            conn.settimeout(APPROVAL_TIMEOUT+45)
+            def serve(connection):
+                try:self._serve(connection)
+                except (OSError,TimeoutError):pass
+                finally:self._slots.release()
+            threading.Thread(target=serve, args=(conn,), daemon=True).start()
 
     def _serve(self, conn):
         with conn, conn.makefile('rwb') as stream:
-            for raw in stream:
+            while True:
+                raw=stream.readline(MAX_REQUEST_BYTES+1)
+                if not raw:return
+                if len(raw)>MAX_REQUEST_BYTES:
+                    stream.write(b'{"id":null,"ok":false,"error":"request too large"}\n');stream.flush();return
                 try:
                     req = json.loads(raw)
+                    if not isinstance(req,dict) or not isinstance(req.get('args',{}),dict):
+                        raise ValueError('request must be an object with object arguments')
                     rid = req.get('id')
                     method = req.get('method')
                     client = str(req.get('client', 'unknown'))[:32]
@@ -200,6 +237,18 @@ class Broker(GObject.Object):
                     else:
                         resp = {'id': rid, 'ok': False, 'error': 'unknown method'}
                 except Exception as error:  # noqa: BLE001
-                    resp = {'id': None, 'ok': False, 'error': f'bad request: {error}'}
+                    resp = {'id': None, 'ok': False, 'error': 'bad request'}
                 stream.write((json.dumps(resp, ensure_ascii=False) + '\n').encode())
                 stream.flush()
+
+
+    def close(self):
+        self.paused=True
+        self.shell.cancel_approvals()
+        self.tools.cancel_commands()
+        if self._server:
+            self._server.close();self._server=None
+        try:
+            if common.CONTROL_SOCKET.stat().st_ino==self._socket_inode:
+                common.CONTROL_SOCKET.unlink()
+        except FileNotFoundError:pass

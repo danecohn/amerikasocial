@@ -4,6 +4,7 @@ Run at the start of every session; it only acts once per version (marker in ~/.l
 kwinrc and kdeglobals are shared with other KDE sessions on the same account, so only the keys below are touched.
 """
 import configparser
+import json
 import os
 import subprocess
 import sys
@@ -80,7 +81,38 @@ def reconfigure_kwin():
     subprocess.run(['busctl', '--user', 'call', 'org.kde.KWin', '/KWin', 'org.kde.KWin', 'reconfigure'], check=False, timeout=10)
 
 
+# ---- agent-ui: one-time migration that pins Amerika Agent in the dock of existing users
+AGENT_DOCK_ID = 'amerika-agent'
+AGENT_DOCK_AFTER = ('chatgpt', 'com.anthropic.Claude')
+
+
+def migrate_dock_agent():
+    """Append the Amerika Agent entry to an existing dock_pinned list exactly once (next to the AI apps).
+    New users get it from common.DEFAULTS and are only marked as migrated. A user who removes it later keeps it removed."""
+    path = common.CONFIG / 'settings.json'
+    try:
+        stored = json.loads(path.read_text())
+    except (OSError, ValueError):
+        stored = {}
+    if not isinstance(stored, dict):
+        return False
+    done = stored.setdefault('migrations', {})
+    if not isinstance(done, dict) or done.get('agent_dock'):
+        return False
+    pinned = stored.get('dock_pinned')
+    if isinstance(pinned, list) and AGENT_DOCK_ID not in pinned:
+        at = max([pinned.index(i) + 1 for i in AGENT_DOCK_AFTER if i in pinned] or [len(pinned)])
+        pinned.insert(at, AGENT_DOCK_ID)
+    done['agent_dock'] = True
+    common.CONFIG.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name('settings.json.tmp')
+    tmp.write_text(json.dumps(stored, indent=2))
+    tmp.replace(path)
+    return True
+
+
 def run(force=False):
+    migrate_dock_agent()
     marker = common.STATE / 'first-run'
     if not force and marker.exists() and marker.read_text().strip() == VERSION:
         return False

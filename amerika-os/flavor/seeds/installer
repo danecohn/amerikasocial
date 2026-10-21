@@ -1,0 +1,28 @@
+Task-Name: amerika-installer-config
+Task-Description: Amerika OS installer configuration
+Task-Long-Description: Calamares configuration, branding and slideshow for installing Amerika OS
+ on ARM64 UEFI machines from the live image, with the tools it needs for encrypted, Btrfs, XFS
+ and ext4 installations.
+Section: admin
+
+Depends:
+ * calamares
+ * squashfs-tools
+ * os-prober
+ * rsync
+ * cryptsetup
+ * cryptsetup-initramfs
+ * lvm2
+ * btrfs-progs
+ * xfsprogs
+ * e2fsprogs
+ * dosfstools
+ * efibootmgr
+ * grub-efi-arm64
+ * grub-efi-arm64-signed
+ * shim-signed
+ * mokutil
+ * fonts-inter
+
+Recommends:
+ * ubuntu-drivers-common

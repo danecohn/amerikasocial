@@ -16,7 +16,10 @@ rm -f "${XDG_RUNTIME_DIR:-/tmp}/amerika/shell-ready"
 "${AMERIKA_LIBEXEC:-/usr/libexec/amerika}/amerika-restore-meta"
 
 shell_pid=""
-cleanup() { [ -n "$shell_pid" ] && kill "$shell_pid" 2>/dev/null; }
+cleanup() {
+  [ -n "$shell_pid" ] && kill "$shell_pid" 2>/dev/null
+  systemctl --user --no-block stop amerika-session.target 2>/dev/null || true
+}
 trap 'cleanup' EXIT
 trap 'exit 0' TERM INT HUP
 
@@ -24,6 +27,10 @@ trap 'exit 0' TERM INT HUP
 for agent in /usr/lib/*/libexec/polkit-kde-authentication-agent-1; do
   [ -x "$agent" ] && { "$agent" >/dev/null 2>&1 & break; }
 done
+
+# Only services explicitly enabled by this user are pulled into this target.
+# Stopping it at logout also stops the opt-in Agent gateway and its children.
+systemctl --user --no-block start amerika-session.target 2>/dev/null || true
 
 # the shell: restart it if it crashes, end the session if it exits cleanly (log out)
 crashes=0

@@ -1,0 +1,7 @@
+amerika-os (3.1.0) unstable; urgency=medium
+
+  * Development continuation of Agent, Settings and desktop integration.
+  * Keep the stable local repository and hosted deployment unchanged.
+  * Source packaging covers shell/session; bundled engine packaging is separate.
+
+ -- Amerika LLC <noreply@amerika.social>  Wed, 21 Oct 2026 16:00:00 -0700

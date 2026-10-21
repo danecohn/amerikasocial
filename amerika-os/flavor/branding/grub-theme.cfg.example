@@ -1,0 +1,5 @@
+# Example only. NOT installed into /etc/default/grub.d and NOT active.
+# To enable, copy to /etc/default/grub.d/90-amerika-theme.cfg and run update-grub. See grub-README.
+GRUB_THEME=/usr/share/grub/themes/amerika/theme.txt
+GRUB_GFXMODE=1920x1080,auto
+GRUB_TERMINAL_OUTPUT=gfxterm

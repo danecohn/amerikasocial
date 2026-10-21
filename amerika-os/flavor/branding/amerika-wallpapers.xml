@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!DOCTYPE wallpapers SYSTEM "gnome-wp-list.dtd">
+<wallpapers>
+  <wallpaper deleted="false">
+    <name>Amerika Horizon</name>
+    <filename>/usr/share/backgrounds/amerika/horizon.png</filename>
+    <options>zoom</options>
+    <pcolor>#05040a</pcolor>
+    <scolor>#1a1930</scolor>
+    <shade_type>solid</shade_type>
+  </wallpaper>
+  <wallpaper deleted="false">
+    <name>Amerika Grid</name>
+    <filename>/usr/share/backgrounds/amerika/grid.png</filename>
+    <options>zoom</options>
+    <pcolor>#05040a</pcolor>
+    <scolor>#1a1930</scolor>
+    <shade_type>solid</shade_type>
+  </wallpaper>
+  <wallpaper deleted="false">
+    <name>Amerika Dusk</name>
+    <filename>/usr/share/backgrounds/amerika/dusk.png</filename>
+    <options>zoom</options>
+    <pcolor>#05040a</pcolor>
+    <scolor>#1a1930</scolor>
+    <shade_type>solid</shade_type>
+  </wallpaper>
+</wallpapers>

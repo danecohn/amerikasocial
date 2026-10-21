@@ -1,0 +1,36 @@
+# Default applications for the Amerika session ($XDG_CURRENT_DESKTOP-mimeapps.list, see the XDG MIME Applications spec).
+# The first installed application in each list wins; user choices in ~/.config/amerika-mimeapps.list override these.
+[Default Applications]
+x-scheme-handler/http=amerika-venture.desktop
+x-scheme-handler/https=amerika-venture.desktop
+x-scheme-handler/about=amerika-venture.desktop
+text/html=amerika-venture.desktop
+application/xhtml+xml=amerika-venture.desktop
+inode/directory=org.gnome.Nautilus.desktop
+text/plain=org.gnome.TextEditor.desktop
+text/markdown=org.gnome.TextEditor.desktop
+application/json=org.gnome.TextEditor.desktop
+application/x-shellscript=org.gnome.TextEditor.desktop
+application/pdf=org.gnome.Papers.desktop;org.gnome.Evince.desktop
+image/png=org.gnome.Loupe.desktop;org.gnome.eog.desktop
+image/jpeg=org.gnome.Loupe.desktop;org.gnome.eog.desktop
+image/gif=org.gnome.Loupe.desktop;org.gnome.eog.desktop
+image/webp=org.gnome.Loupe.desktop;org.gnome.eog.desktop
+image/svg+xml=org.gnome.Loupe.desktop;org.gnome.eog.desktop
+image/avif=org.gnome.Loupe.desktop
+video/mp4=org.gnome.Showtime.desktop;vlc.desktop
+video/x-matroska=org.gnome.Showtime.desktop;vlc.desktop
+video/webm=org.gnome.Showtime.desktop;vlc.desktop
+video/quicktime=org.gnome.Showtime.desktop;vlc.desktop
+audio/mpeg=org.gnome.Rhythmbox3.desktop;vlc.desktop
+audio/flac=org.gnome.Rhythmbox3.desktop;vlc.desktop
+audio/ogg=org.gnome.Rhythmbox3.desktop;vlc.desktop
+audio/x-wav=org.gnome.Rhythmbox3.desktop;vlc.desktop
+application/zip=org.gnome.FileRoller.desktop
+application/x-compressed-tar=org.gnome.FileRoller.desktop
+application/vnd.openxmlformats-officedocument.wordprocessingml.document=libreoffice-writer.desktop;amerika-office.desktop
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet=libreoffice-calc.desktop;amerika-office.desktop
+application/vnd.openxmlformats-officedocument.presentationml.presentation=libreoffice-impress.desktop;amerika-office.desktop
+application/vnd.oasis.opendocument.text=libreoffice-writer.desktop;amerika-office.desktop
+application/vnd.oasis.opendocument.spreadsheet=libreoffice-calc.desktop;amerika-office.desktop
+application/vnd.oasis.opendocument.presentation=libreoffice-impress.desktop;amerika-office.desktop

@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+"""Fake `amerika-agent` for tests and rigs. Implements the CLI contract with an on-disk JSON state.
+
+State file: $FAKE_AGENT_STATE (default $XDG_RUNTIME_DIR/amerika/fake-agent.json).
+Call log:   $FAKE_AGENT_LOG, one JSON line per invocation: argv and, for `key set`, only the SHA-256 and length of stdin
+            (the fake never writes a key anywhere, so tests can prove the UI used stdin and nothing leaked).
+Knobs:      FAKE_AGENT_FAIL=key  makes `key set` fail with a message that ECHOES the key (the UI must scrub it)
+            FAKE_AGENT_DELAY=sec delays start/stop/restart/doctor
+"""
+import hashlib
+import json
+import os
+import sys
+import time
+from pathlib import Path
+
+RUNTIME = Path(os.environ.get('XDG_RUNTIME_DIR') or '/tmp') / 'amerika'
+STATE = Path(os.environ.get('FAKE_AGENT_STATE') or RUNTIME / 'fake-agent.json')
+LOG = os.environ.get('FAKE_AGENT_LOG')
+ACTIVITY = RUNTIME / 'agent-activity.json'
+PORT = 18789
+MODELS = {'anthropic': ['claude-opus-4-fake', 'claude-sonnet-4-fake', 'claude-haiku-4-fake'],
+          'openai': ['gpt-fake-large', 'gpt-fake-mini']}
+CHANNELS = ['telegram', 'discord', 'slack']
+
+
+def load():
+    try:
+        return json.loads(STATE.read_text())
+    except (OSError, ValueError):
+        return {'keys': {}, 'running': False, 'model': None, 'mode': 'safe', 'autostart': False, 'channels': []}
+
+
+def save(st):
+    STATE.parent.mkdir(parents=True, exist_ok=True)
+    STATE.write_text(json.dumps(st))
+
+
+def log(argv, extra=None):
+    if LOG:
+        with open(LOG, 'a') as handle:
+            handle.write(json.dumps({'argv': argv, **(extra or {})}) + '\n')
+
+
+def activity(state, text=''):
+    ACTIVITY.parent.mkdir(parents=True, exist_ok=True)
+    ACTIVITY.write_text(json.dumps({'state': state, 'text': text, 'since': time.time()}))
+
+
+def delay():
+    time.sleep(float(os.environ.get('FAKE_AGENT_DELAY', '0.2')))
+
+
+def main(argv):
+    st = load()
+    cmd = argv[0] if argv else ''
+    if cmd == 'status':
+        print(json.dumps({'installed': True, 'engine': 'openclaw', 'engine_version': '2026.10.5',
+                          'gateway': {'running': st['running'], 'url': f'http://127.0.0.1:{PORT}', 'port': PORT},
+                          'providers': {p: p in st['keys'] for p in ('anthropic', 'openai')}, 'model': st['model'],
+                          'mode': st['mode'], 'channels': st['channels'], 'autostart': st['autostart']}))
+    elif cmd == 'key' and argv[1] == 'set':
+        data = sys.stdin.read()
+        log(argv, {'stdin_sha256': hashlib.sha256(data.strip().encode()).hexdigest(), 'stdin_len': len(data.strip()),
+                   'key_in_env': any(data.strip() in v for v in os.environ.values()) if data.strip() else False})
+        if os.environ.get('FAKE_AGENT_FAIL') == 'key':
+            print(f'keyring error while storing {data.strip()}', file=sys.stderr)
+            return 1
+        if not data.strip():
+            print('empty key', file=sys.stderr)
+            return 2
+        st['keys'][argv[2]] = hashlib.sha256(data.strip().encode()).hexdigest()[:8]
+        save(st)
+        return 0
+    elif cmd == 'key' and argv[1] == 'clear':
+        st['keys'].pop(argv[2], None)
+        save(st)
+    elif cmd in ('start', 'restart'):
+        delay()
+        st['running'] = True
+        save(st)
+    elif cmd == 'stop':
+        delay()
+        st['running'] = False
+        save(st)
+        activity('idle')
+    elif cmd in ('enable', 'disable'):
+        st['autostart'] = cmd == 'enable'
+        save(st)
+    elif cmd == 'config' and argv[1] == 'set':
+        name, value = argv[2], argv[3]
+        st[name] = (value == 'true') if name == 'autostart' else value
+        save(st)
+    elif cmd == 'models':
+        print('\n'.join(MODELS.get(argv[argv.index('--provider') + 1], [])))
+    elif cmd == 'ask':
+        if not st['running']:
+            print('The agent is not running.', file=sys.stderr)
+            return 3
+        activity('thinking', 'working on it')
+        for chunk in ('You asked: ' + (argv[1] if len(argv)>1 else sys.stdin.read()), 'This is a fake streamed answer.', 'Done.'):
+            print(chunk, flush=True)
+            time.sleep(0.15)
+        activity('idle')
+    elif cmd == 'dashboard-url':
+        print(f'http://127.0.0.1:{PORT}/#token=FAKE-TOKEN-NOT-REAL')
+    elif cmd == 'doctor':
+        delay()
+        print('OK    gateway reachable on loopback\nOK    keyring unlocked\nWARN  no channel enabled\nAll checks finished.')
+    elif cmd == 'channels':
+        if argv[1] == 'list':
+            for name in CHANNELS:
+                print(name + '\t' + ('enabled' if name in st['channels'] else 'disabled'))
+        elif argv[1] in ('enable', 'disable'):
+            chans = set(st['channels'])
+            (chans.add if argv[1] == 'enable' else chans.discard)(argv[2])
+            st['channels'] = sorted(chans)
+            save(st)
+    elif cmd == 'logs':
+        print('fake log line 1\nfake log line 2')
+    else:
+        print('usage: amerika-agent ...', file=sys.stderr)
+        return 64
+    return 0
+
+
+if __name__ == '__main__':
+    args = sys.argv[1:]
+    if not (len(args) >= 2 and args[:2] == ['key', 'set']):
+        log(args)
+    sys.exit(main(args))

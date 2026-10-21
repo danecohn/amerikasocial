@@ -9,6 +9,8 @@ export QT_QPA_PLATFORM=wayland
 export GDK_BACKEND=wayland,x11
 export MOZ_ENABLE_WAYLAND=1
 export _JAVA_AWT_WM_NONREPARENTING=1
+# Session-scoped application defaults do not override another desktop session.
+[ -r /usr/share/amerika-os/session-env.sh ] && . /usr/share/amerika-os/session-env.sh
 # Prepared here because KWin only reads it at startup.
 libexec="${AMERIKA_LIBEXEC:-/usr/libexec/amerika}"
 state="${XDG_STATE_HOME:-$HOME/.local/state}/amerika-os"

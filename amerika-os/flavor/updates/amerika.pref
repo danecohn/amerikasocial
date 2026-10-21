@@ -1,0 +1,17 @@
+# APT preferences for the Amerika OS repository.
+# The Amerika repository only ever supplies amerika-* packages: everything else from it is pinned below the Ubuntu archive
+# so that a mistake on the server can never replace a system package.
+Package: *
+Pin: release o=Amerika
+Pin-Priority: 100
+
+# The stable channel wins for Amerika packages.
+Package: amerika-*
+Pin: release o=Amerika,a=stable
+Pin-Priority: 600
+
+# The testing channel (disabled by default, see amerika-channel(8)) is never chosen automatically.
+# Install from it explicitly: apt install -t testing amerika-desktop-shell
+Package: *
+Pin: release o=Amerika,a=testing
+Pin-Priority: 90

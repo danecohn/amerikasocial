@@ -1,0 +1,28 @@
+#!/bin/sh
+# Switch between the Amerika OS update channels.   amerika-channel [status|stable|testing]
+# stable   only the stable suite is used (default)
+# testing  also enables the testing suite; packages from it are installed only when you ask (apt install -t testing ...)
+# Changes only /etc/apt/sources.list.d/amerika-testing.sources (the "Enabled" field) and /etc/amerika-os/channel.
+set -eu
+src=${AMERIKA_CHANNEL_SOURCES:-/etc/apt/sources.list.d/amerika-testing.sources}
+state=${AMERIKA_CHANNEL_STATE:-/etc/amerika-os/channel}
+current() {
+  if [ -r "$src" ] && grep -qi '^Enabled:[[:space:]]*yes' "$src"; then echo testing; else echo stable; fi
+}
+set_enabled() {
+  [ -w "$src" ] || { echo "amerika-channel: cannot write $src (run as root, and install amerika-updates)" >&2; exit 1; }
+  tmp=$(mktemp "$src.XXXXXX")
+  sed "s/^Enabled:.*/Enabled: $1/I" "$src" > "$tmp"
+  grep -qi '^Enabled:' "$tmp" || { rm -f "$tmp"; echo "amerika-channel: $src has no Enabled field" >&2; exit 1; }
+  chmod 0644 "$tmp"
+  mv "$tmp" "$src"
+  mkdir -p "$(dirname "$state")"
+  echo "$2" > "$state"
+}
+case "${1:-status}" in
+  status) echo "$(current)" ;;
+  stable) set_enabled no stable; echo "Channel: stable. Run 'apt update' to apply." ;;
+  testing) set_enabled yes testing; echo "Channel: testing (opt-in). Run 'apt update' to apply." ;;
+  -h|--help) echo "usage: amerika-channel [status|stable|testing]" ;;
+  *) echo "usage: amerika-channel [status|stable|testing]" >&2; exit 2 ;;
+esac

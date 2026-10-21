@@ -1,0 +1,36 @@
+.\" Copyright Amerika LLC. GPL-3.0-only.
+.TH AMERIKA-SHELL 1 "2026-10-21" "Amerika OS" "Amerika OS Manual"
+.SH NAME
+amerika\-shell \- the Amerika OS desktop shell
+.SH SYNOPSIS
+.B amerika\-shell
+.SH DESCRIPTION
+.B amerika\-shell
+is Amerika OS's own desktop shell: the top bar with system tray, the dock, the launcher, the notification daemon, the desktop
+wallpaper and the AI broker with its approval prompts. It is a GTK 4 program using gtk4\-layer\-shell and runs on the KWin
+compositor. It is started and supervised by
+.IR /usr/libexec/amerika/session\-start ;
+a crash restarts it up to five times, and a clean exit ends the session (log out).
+.PP
+Start it by choosing
+.B Amerika OS
+on the login screen. Running it by hand inside another session is not supported.
+.SH ENVIRONMENT
+.TP
+.B AMERIKA_SESSION
+Set to 1 by
+.BR amerika\-session .
+.SH FILES
+.TP
+.I $XDG_RUNTIME_DIR/amerika/control.sock
+Control socket (mode 0600) used by
+.BR amerika\-mcp .
+.TP
+.I ~/.local/state/amerika\-os/ai\-audit.log
+Audit log of AI tool calls.
+.SH KEYS
+Super opens the launcher; Ctrl+Alt+Esc pauses or resumes all AI actions. See the Amerika OS README for the full list.
+.SH SEE ALSO
+.BR amerika\-settings (1),
+.BR amerika\-first\-run (1),
+.BR amerika\-flavour (7)

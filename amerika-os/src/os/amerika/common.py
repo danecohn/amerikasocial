@@ -1,6 +1,7 @@
 """Paths, settings storage, logging and small helpers shared by the shell, settings app and MCP server."""
 import json
 import os
+import tempfile
 import time
 from pathlib import Path
 
@@ -22,11 +23,11 @@ DEFAULTS = {
     'secondary': '#19e3ff',
     'wallpaper': 'horizon',
     'dock_size': 56,
-    'dock_pinned': ['com.anthropic.Claude', 'chatgpt', 'amerika-social', 'amerika-venture', 'amerika-files',
+    'dock_pinned': ['com.anthropic.Claude', 'chatgpt', 'amerika-agent', 'amerika-social', 'amerika-venture', 'amerika-files',
                     'amerika-terminal', 'amerika-office', 'amerika-software', 'amerika-settings'],
     'bar_ai_apps': ['com.anthropic.Claude', 'chatgpt'],
     'clock_24h': False,
-    # what the Copilot key opens: claude, chatgpt or ask (a picker)
+    # what the Copilot key opens: claude, chatgpt, agent (Amerika Agent) or ask (a picker)
     'copilot_app': 'claude',
     'ai': {
         # one of: ask (confirm every action), safe (read and reversible actions run, others ask), trusted (all but sensitive run)
@@ -52,17 +53,24 @@ def load_settings():
 
 
 def save_settings(data):
-    CONFIG.mkdir(parents=True, exist_ok=True)
-    tmp = CONFIG / 'settings.json.tmp'
-    tmp.write_text(json.dumps(data, indent=2))
-    tmp.replace(CONFIG / 'settings.json')
+    CONFIG.mkdir(parents=True, exist_ok=True, mode=0o700)
+    fd,tmp = tempfile.mkstemp(dir=CONFIG,prefix='.settings-')
+    try:
+        with os.fdopen(fd,'w') as handle:
+            handle.write(json.dumps(data,indent=2))
+        os.replace(tmp,CONFIG/'settings.json')
+    finally:
+        try:os.unlink(tmp)
+        except FileNotFoundError:pass
 
 
 def audit(event, **fields):
     """Append one JSON line to the AI audit log (always on for AI-initiated actions)."""
-    STATE.mkdir(parents=True, exist_ok=True)
+    STATE.mkdir(parents=True, exist_ok=True, mode=0o700)
     line = json.dumps({'t': time.strftime('%Y-%m-%dT%H:%M:%S%z'), 'event': event, **fields}, ensure_ascii=False)
-    with open(STATE / 'ai-audit.log', 'a', encoding='utf-8') as handle:
+    fd = os.open(STATE / 'ai-audit.log', os.O_WRONLY | os.O_CREAT | os.O_APPEND | os.O_NOFOLLOW, 0o600)
+    os.fchmod(fd, 0o600)
+    with os.fdopen(fd, 'a', encoding='utf-8') as handle:
         handle.write(line + '\n')
 
 

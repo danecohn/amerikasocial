@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Amerika OS changelog feed",
+  "type": "object",
+  "required": ["schema", "source", "generated", "channel", "releases"],
+  "properties": {
+    "schema": {"const": 1},
+    "source": {"type": "string"},
+    "generated": {"type": "string"},
+    "channel": {"enum": ["stable", "testing"]},
+    "releases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["version", "date", "urgency", "security", "changes"],
+        "properties": {
+          "version": {"type": "string"},
+          "date": {"type": "string"},
+          "urgency": {"enum": ["low", "medium", "high", "critical"]},
+          "security": {"type": "boolean"},
+          "changes": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    }
+  }
+}

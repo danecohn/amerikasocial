@@ -1,0 +1,23 @@
+[Unit]
+Description=Amerika Agent gateway (built on OpenClaw)
+PartOf=amerika-session.target
+Wants=amerika-agent-activity.service
+After=amerika-agent-activity.service
+StartLimitIntervalSec=120
+StartLimitBurst=3
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/amerika-agent run
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+KillMode=control-group
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+Environment=OPENCLAW_NO_AUTO_UPDATE=1
+
+[Install]
+WantedBy=amerika-session.target

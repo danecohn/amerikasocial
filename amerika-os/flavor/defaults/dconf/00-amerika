@@ -1,0 +1,35 @@
+# Amerika OS defaults for GTK and GNOME-stack applications (dconf system database "amerika").
+# Only used in the Amerika session, which selects it with DCONF_PROFILE=amerika (see session-env.sh).
+# Other sessions of the same machine keep their own defaults. Users override any key in their own dconf database.
+
+[org/gnome/desktop/interface]
+color-scheme='prefer-dark'
+gtk-theme='Adwaita-dark'
+icon-theme='AmerikaOS'
+cursor-theme='breeze_cursors'
+cursor-size=24
+font-name='Inter 10'
+document-font-name='Inter 10'
+monospace-font-name='JetBrains Mono 10'
+font-antialiasing='rgba'
+font-hinting='slight'
+enable-animations=true
+
+[org/gnome/desktop/wm/preferences]
+button-layout='close,minimize,maximize:'
+titlebar-font='Inter Bold 10'
+
+[org/gnome/desktop/sound]
+theme-name='Amerika'
+event-sounds=true
+
+[org/gnome/desktop/background]
+picture-uri='file:///usr/share/backgrounds/amerika/horizon.png'
+picture-uri-dark='file:///usr/share/backgrounds/amerika/dusk.png'
+picture-options='zoom'
+primary-color='#05040a'
+secondary-color='#1a1930'
+
+[org/gnome/desktop/screensaver]
+picture-uri='file:///usr/share/backgrounds/amerika/horizon.png'
+picture-options='zoom'

@@ -1,0 +1,28 @@
+.\" Copyright Amerika LLC. GPL-3.0-only.
+.TH AMERIKA-SOFTWARE 1 "2026-10-21" "Amerika OS" "Amerika OS Manual"
+.SH NAME
+amerika\-software \- graphical manager for the Amerika package repository
+.SH SYNOPSIS
+.B amerika\-software
+.RB [ \-\-list ]
+.SH DESCRIPTION
+.B amerika\-software
+lists, installs, updates and removes the applications published in the signed Amerika repository
+(https://www.amerika.social/apt). It is a Qt program; package changes are made by a Polkit\-guarded helper
+.IR /usr/libexec/amerika\-software\-helper ,
+so you type your own password and the program itself never runs as root.
+.SH OPTIONS
+.TP
+.B \-\-list
+Print the catalogue as text and exit without opening a window.
+.SH FILES
+.TP
+.I /etc/apt/sources.list.d/amerika.sources
+The repository definition (package amerika\-repo\-keyring).
+.TP
+.I /usr/share/polkit\-1/actions/org.amerika.software.policy
+The Polkit action.
+.SH SEE ALSO
+.BR apt (8),
+.BR amerika\-channel (8),
+.BR amerika\-flavour (7)

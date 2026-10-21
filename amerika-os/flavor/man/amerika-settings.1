@@ -1,0 +1,30 @@
+.\" Copyright Amerika LLC. GPL-3.0-only.
+.TH AMERIKA-SETTINGS 1 "2026-10-21" "Amerika OS" "Amerika OS Manual"
+.SH NAME
+amerika\-settings \- the Amerika OS settings application
+.SH SYNOPSIS
+.B amerika\-settings
+.RB [ \-\-list ]
+.RB [ \-\-help ]
+.SH DESCRIPTION
+.B amerika\-settings
+opens the Amerika Settings window: appearance, displays, sound, network, Bluetooth, power, keyboard shortcuts, the
+login and boot screens, and AI and assistants. Changes apply to the current user unless the page says otherwise;
+actions that need administrator rights ask through
+.BR pkexec (1).
+.SH OPTIONS
+.TP
+.B \-\-list
+Print the settings pages and searchable entries as JSON and exit. Needs no display.
+.TP
+.BR \-h , " \-\-help"
+Print a usage message.
+.SH FILES
+.TP
+.I ~/.local/state/amerika\-os/
+Per\-user state (first\-run marker, AI audit log).
+.SH SEE ALSO
+.BR amerika\-shell (1),
+.BR amerika\-login (1),
+.BR amerika\-boot (1),
+.BR amerika\-first\-run (1)

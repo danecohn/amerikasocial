@@ -8,7 +8,9 @@
 import json
 import os
 import re
+import signal
 import subprocess
+import threading
 from concurrent.futures import Future
 from pathlib import Path
 
@@ -27,10 +29,26 @@ I = {'type': 'integer'}
 B = {'type': 'boolean'}
 
 
-def _safe_path(raw, must_exist=True):
+# agent-ui: places inside $HOME that tools may never read (secrets) or write (they would let an agent widen its own powers).
+NO_READ = ('.ssh', '.gnupg', '.aws', '.netrc', '.password-store', '.openclaw', '.local/share/keyrings', '.config/amerika-agent',
+           '.local/share/amerika-os/agent-window', '.config', '.local/share/keyrings', '.codex', '.claude', '.config/Claude', '.local/state/amerika-agent')
+NO_WRITE = NO_READ + ('.config/amerika-os', '.local/state/amerika-os', '.config/autostart', '.config/systemd', '.config/environment.d',
+                      '.bashrc', '.bash_profile', '.bash_login', '.bash_logout', '.profile', '.zshrc', '.zprofile', '.zshenv', '.local/bin',
+                      '.config/Claude', '.codex', '.claude', '.local/share/amerika-agent', '.local/lib', '.local/share/applications', '.local/share/dbus-1', '.local/share/systemd')
+
+
+def _protected(path, names):
+    rel = path.relative_to(HOME).as_posix() if path != HOME else ''
+    return any(rel == n or rel.startswith(n + '/') for n in names)
+
+
+def _safe_path(raw, must_exist=True, access='list'):
+    """Resolve a path inside $HOME. access: 'list' (names only), 'read' or 'write' (the latter two refuse protected places)."""
     path = Path(os.path.expanduser(str(raw))).resolve()
     if not (path == HOME or HOME in path.parents):
         raise ValueError('only files inside your home folder are available')
+    if access in ('read', 'write') and _protected(path, NO_WRITE if access == 'write' else NO_READ):
+        raise ValueError('this location is protected (keys, logins or Amerika settings); the user must handle it themselves')
     if must_exist and not path.exists():
         raise ValueError('no such file or folder')
     return path
@@ -42,6 +60,8 @@ class Tools:
     def __init__(self, shell):
         self.shell = shell
         self.table = {}
+        self._commands = {}
+        self._command_lock = threading.Lock()
         reg = self._register
         # --- read
         reg('system.info', 'read', 'Operating system, kernel, host name and uptime.', _schema(), self.system_info)
@@ -53,6 +73,9 @@ class Tools:
         reg('notifications.list', 'read', 'Recent desktop notifications.', _schema({'limit': I}), self.notifications_list)
         reg('settings.get', 'read', 'Amerika OS preferences (accent, wallpaper, dock, AI mode).', _schema(), self.settings_get)
         reg('files.list', 'read', 'List a folder inside the home directory.', _schema({'path': S}, ['path']), self.files_list)
+        # agent-ui: status of the built-in agent. There is deliberately no tool that lets an agent ask, start or message an agent.
+        reg('agent.status', 'read', 'Whether Amerika Agent is installed and running, its model and permission mode (never any key).',
+            _schema(), self.agent_status)
         # --- act
         reg('apps.launch', 'act', 'Start an application by its id from apps.list.', _schema({'id': S}, ['id']), self.apps_launch)
         reg('windows.focus', 'act', 'Bring a window to the front.', _schema({'id': S}, ['id']), self.win('activate'))
@@ -75,7 +98,7 @@ class Tools:
             _schema({'profile': {'type': 'string', 'enum': ['power-saver', 'balanced', 'performance']}}, ['profile']), self.power_set_profile)
         reg('notifications.send', 'act', 'Show a desktop notification.', _schema({'title': S, 'body': S}, ['title']), self.notifications_send)
         reg('notifications.set_dnd', 'act', 'Turn Do Not Disturb on or off.', _schema({'on': B}, ['on']), self.notifications_dnd)
-        reg('settings.set', 'act', 'Change an Amerika OS preference: accent, secondary, wallpaper (horizon, grid, dusk), dock_size (32-96), clock_24h, copilot_app (claude, chatgpt, ask).',
+        reg('settings.set', 'act', 'Change an Amerika OS preference: accent, secondary, wallpaper (horizon, grid, dusk), dock_size (32-96), clock_24h, copilot_app (claude, chatgpt, agent, ask).',
             _schema({'key': {'type': 'string', 'enum': ['accent', 'secondary', 'wallpaper', 'dock_size', 'clock_24h', 'copilot_app']}, 'value': {}}, ['key', 'value']),
             self.settings_set)
         reg('shell.show_launcher', 'act', 'Open or close the launcher.', _schema(), self.show_launcher)
@@ -83,16 +106,19 @@ class Tools:
         reg('power.lock', 'act', 'Lock the screen.', _schema(), self.power_lock)
         # --- sensitive
         reg('windows.close', 'sensitive', 'Close a window (unsaved work in it may be lost).', _schema({'id': S}, ['id']), self.win('close'))
+        reg('screenshot.take', 'sensitive', 'Capture the whole screen (or the active window) to a PNG in Amerika\'s private folder and return its path and size. The screen may show private data.',
+            _schema({'target': {'type': 'string', 'enum': ['screen', 'window']}}), self.screenshot_take)
         reg('clipboard.get', 'sensitive', 'Read the clipboard text (it may contain private data).', _schema(), self.clipboard_get)
         reg('files.read', 'sensitive', 'Read a text file inside the home directory (up to 200 KB).', _schema({'path': S}, ['path']), self.files_read)
         reg('files.write', 'sensitive', 'Write a text file inside the home directory (creates or overwrites).',
             _schema({'path': S, 'text': S}, ['path', 'text']), self.files_write)
-        reg('shell.run', 'sensitive', 'Run a shell command as you (30 s limit, output truncated). The user sees the exact command first.',
-            _schema({'command': S}, ['command']), self.shell_run)
-        reg('power.suspend', 'sensitive', 'Suspend the computer.', _schema(), lambda a: (system.power_action('suspend'), {'ok': True})[1])
+        reg('power.suspend', 'critical', 'Suspend the computer.', _schema(), lambda a: (system.power_action('suspend'), {'ok': True})[1])
         # --- critical
         reg('power.reboot', 'critical', 'Restart the computer.', _schema(), lambda a: (system.power_action('reboot'), {'ok': True})[1])
         reg('power.poweroff', 'critical', 'Shut the computer down.', _schema(), lambda a: (system.power_action('poweroff'), {'ok': True})[1])
+        # agent-ui: shell.run is critical: it asks every time, in every mode, and can never be granted "always"
+        reg('shell.run', 'critical', 'Run a shell command as you (30 s limit, output truncated). The user sees the exact command and is asked every time.',
+            _schema({'command': S}, ['command']), self.shell_run)
         reg('files.delete', 'critical', 'Move a file inside the home directory to the trash.', _schema({'path': S}, ['path']), self.files_delete)
 
     # ------------------------------------------------------------------ registry
@@ -237,23 +263,37 @@ class Tools:
 
     def settings_set(self, a):
         key, value = a['key'], a['value']
-        if key in ('accent', 'secondary'):
-            if not (isinstance(value, str) and re.fullmatch(r'#[0-9a-fA-F]{6}', value)):
-                raise ValueError('colour must look like #ff2e63')
-        elif key == 'wallpaper':
-            if value not in ('horizon', 'grid', 'dusk'):
-                raise ValueError('wallpaper must be horizon, grid or dusk')
-        elif key == 'dock_size':
-            if not (isinstance(value, int) and 32 <= value <= 96):
-                raise ValueError('dock_size must be an integer from 32 to 96')
-        elif key == 'copilot_app':
-            if value not in ('claude', 'chatgpt', 'ask'):
-                raise ValueError('copilot_app must be claude, chatgpt or ask')
-        elif key == 'clock_24h':
-            if not isinstance(value, bool):
-                raise ValueError('clock_24h must be true or false')
+        from ..settings.api import validate
+        validate(key, value)
         self.shell.update_setting(key, value)
         return {'ok': True, key: value}
+
+    def agent_status(self, a):
+        from ..agent import cli, model
+        svc = getattr(self.shell, 'agent', None)
+        if svc is not None and getattr(svc, 'status', None) is not None:
+            return model.public_status(svc.status, svc.state, svc.text)
+        fut = Future()
+
+        def work():
+            try:
+                fut.set_result(model.public_status(cli.status()))
+            except Exception as error:  # noqa: BLE001 - relayed to the caller
+                fut.set_exception(error)
+        threading.Thread(target=work, daemon=True).start()
+        return fut
+
+    def screenshot_take(self, a):
+        from ..agent import screen
+        fut = Future()
+
+        def work():
+            try:
+                fut.set_result(screen.capture(a.get('target', 'screen')))
+            except Exception as error:  # noqa: BLE001 - relayed to the caller
+                fut.set_exception(error)
+        threading.Thread(target=work, daemon=True).start()
+        return fut
 
     def show_launcher(self, a):
         self.shell.toggle_launcher()
@@ -285,14 +325,14 @@ class Tools:
         return {'path': str(path), 'entries': entries}
 
     def files_read(self, a):
-        path = _safe_path(a['path'])
+        path = _safe_path(a['path'], access='read')
         if not path.is_file():
             raise ValueError('not a file')
         data = path.read_bytes()[:200_000]
         return {'path': str(path), 'text': data.decode('utf-8', 'replace'), 'truncated': path.stat().st_size > 200_000}
 
     def files_write(self, a):
-        path = _safe_path(a['path'], must_exist=False)
+        path = _safe_path(a['path'], must_exist=False, access='write')
         path.parent.mkdir(parents=True, exist_ok=True)
         tmp = path.with_name(path.name + '.amerika-tmp')
         tmp.write_text(a['text'], encoding='utf-8')
@@ -300,15 +340,61 @@ class Tools:
         return {'path': str(path), 'bytes': len(a['text'].encode())}
 
     def files_delete(self, a):
-        path = _safe_path(a['path'])
+        path = _safe_path(a['path'], access='write')
         code = subprocess.run(['gio', 'trash', '--', str(path)], capture_output=True, timeout=15).returncode
         if code:
             raise ValueError('could not move to trash')
         return {'trashed': str(path)}
 
-    def shell_run(self, a):
+    @staticmethod
+    def _signal_command(proc, sig):
         try:
-            out = subprocess.run(['/bin/sh', '-c', a['command']], capture_output=True, text=True, timeout=30, cwd=str(HOME))
-        except subprocess.TimeoutExpired:
-            raise ValueError('the command took longer than 30 seconds')
-        return {'exit_code': out.returncode, 'stdout': out.stdout[-20000:], 'stderr': out.stderr[-8000:]}
+            os.killpg(proc.pid, sig)
+        except ProcessLookupError:
+            pass
+
+    def cancel_commands(self):
+        """Stop only process groups this broker created; never block the GTK loop."""
+        with self._command_lock:
+            for proc, cancelled in self._commands.items():
+                cancelled.set()
+                self._signal_command(proc, signal.SIGTERM)
+
+    def shell_run(self, a):
+        # The broker calls this on GTK's thread. Move communicate/wait to a
+        # worker so the Stop button remains usable throughout a long command.
+        env = dict(os.environ)
+        for key in ('LD_PRELOAD', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN',
+                    'OPENCLAW_GATEWAY_TOKEN', 'OPENCLAW_GATEWAY_PASSWORD'):
+            env.pop(key, None)
+        proc = subprocess.Popen(['/bin/sh', '-c', a['command']], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                text=True, cwd=str(HOME), env=env, start_new_session=True)
+        cancelled = threading.Event()
+        future = Future()
+        with self._command_lock:
+            self._commands[proc] = cancelled
+
+        def work():
+            import time
+            deadline = time.monotonic() + 30
+            try:
+                while True:
+                    try:
+                        stdout, stderr = proc.communicate(timeout=.2)
+                        break
+                    except subprocess.TimeoutExpired:
+                        if cancelled.is_set() or time.monotonic() >= deadline:
+                            self._signal_command(proc, signal.SIGKILL)
+                            proc.communicate()
+                            raise ValueError('The command was stopped.' if cancelled.is_set()
+                                             else 'The command took longer than 30 seconds.')
+                if cancelled.is_set():
+                    raise ValueError('The command was stopped.')
+                future.set_result({'exit_code': proc.returncode, 'stdout': stdout[-20000:], 'stderr': stderr[-8000:]})
+            except Exception as error:
+                future.set_exception(error)
+            finally:
+                with self._command_lock:
+                    self._commands.pop(proc, None)
+        threading.Thread(target=work, daemon=True).start()
+        return future

@@ -39,19 +39,19 @@ class Permissions(unittest.TestCase):
         self.assertEqual(self.broker('trusted').decision('claude', 'audio.set_volume'), 'allow')
 
     def test_sensitive_tools_ask_unless_trusted(self):
-        self.assertEqual(self.broker('safe').decision('claude', 'shell.run'), 'ask')
+        self.assertEqual(self.broker('safe').decision('claude', 'files.write'), 'ask')
         self.assertEqual(self.broker('ask').decision('claude', 'files.write'), 'ask')
-        self.assertEqual(self.broker('trusted').decision('claude', 'shell.run'), 'allow')
+        self.assertEqual(self.broker('trusted').decision('claude', 'files.write'), 'allow')
 
     def test_critical_tools_always_ask_even_when_trusted_or_granted(self):
         b = self.broker('trusted', {'claude': {'always': ['power.poweroff']}})
-        for tool in ('power.poweroff', 'power.reboot', 'files.delete'):
+        for tool in ('power.poweroff', 'power.reboot', 'files.delete', 'shell.run', 'power.suspend'):
             self.assertEqual(b.decision('claude', tool), 'ask')
 
     def test_always_grant_is_per_client_and_not_in_ask_mode(self):
-        b = self.broker('safe', {'claude': {'always': ['shell.run']}})
-        self.assertEqual(b.decision('claude', 'shell.run'), 'allow')
-        self.assertEqual(b.decision('chatgpt', 'shell.run'), 'ask')
+        b = self.broker('safe', {'claude': {'always': ['files.write']}})
+        self.assertEqual(b.decision('claude', 'files.write'), 'allow')
+        self.assertEqual(b.decision('chatgpt', 'files.write'), 'ask')
         b2 = self.broker('ask', {'claude': {'always': ['audio.set_volume']}})
         self.assertEqual(b2.decision('claude', 'audio.set_volume'), 'ask')
 
@@ -73,7 +73,7 @@ class Permissions(unittest.TestCase):
         tools = Tools(fake_shell())
         for name, tool in tools.table.items():
             self.assertIn(tool['risk'], ('read', 'act', 'sensitive', 'critical'), name)
-        self.assertEqual(tools.risk('shell.run'), 'sensitive')
+        self.assertEqual(tools.risk('shell.run'), 'critical')
         self.assertEqual(tools.risk('power.poweroff'), 'critical')
         self.assertEqual(tools.risk('windows.close'), 'sensitive')
 
@@ -109,9 +109,9 @@ class CopilotKey(unittest.TestCase):
         tools = Tools(fake_shell())
         applied = []
         tools.shell.update_setting = lambda k, v: applied.append((k, v))
-        for choice in ('claude', 'chatgpt', 'ask'):
+        for choice in ('claude', 'chatgpt', 'agent', 'ask'):
             tools.table['settings.set']['handler']({'key': 'copilot_app', 'value': choice})
-        self.assertEqual(applied, [('copilot_app', 'claude'), ('copilot_app', 'chatgpt'), ('copilot_app', 'ask')])
+        self.assertEqual(applied, [('copilot_app', 'claude'), ('copilot_app', 'chatgpt'), ('copilot_app', 'agent'), ('copilot_app', 'ask')])
 
     def test_launched_apps_never_inherit_ld_preload(self):
         import gi

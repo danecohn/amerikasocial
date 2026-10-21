@@ -1,0 +1,57 @@
+.\" Copyright Amerika LLC. GPL-3.0-only.
+.TH AMERIKA-FLAVOUR 7 "2026-10-21" "Amerika OS" "Amerika OS Manual"
+.SH NAME
+amerika\-flavour \- what Amerika OS is, and where its files live
+.SH DESCRIPTION
+Amerika OS is an Ubuntu flavour: Ubuntu 26.10 ("Stonking Stingray") on ARM64 with the Amerika desktop, which is its own shell on
+the KWin compositor (no Plasma shell, no GNOME Shell). It is installed from the signed APT repository
+https://www.amerika.social/apt or from the Amerika live image. Only ARM64 is built and tested.
+.PP
+.IR /etc/os\-release
+stays Ubuntu's, so third\-party software that checks for Ubuntu keeps working. The flavour's own identity is in
+.IR /usr/share/amerika\-os/flavour ,
+an os\-release(5) style file (NAME, VERSION, ID=amerika, BASE_VERSION_ID, CHANNEL, ...).
+.SH METAPACKAGES
+.TP
+.B amerika\-desktop
+The standard desktop including Amerika Social, Venture and Office.
+.TP
+.B amerika\-desktop\-minimal
+Session, shell, settings, theme and defaults only.
+.TP
+.B amerika\-desktop\-full
+amerika\-desktop plus LibreOffice, media apps, graphics and developer tools.
+.TP
+.B amerika\-standard
+Command line basics, update channels and unattended upgrades.
+.TP
+.B amerika\-live
+Live image extras (casper, the installer). Not for installed systems.
+.SH FILES
+.TP
+.I /usr/share/amerika\-os/flavour
+Flavour identity.
+.TP
+.I /usr/share/amerika\-os/wallpapers.json
+Default wallpapers.
+.TP
+.I /usr/share/grub/themes/amerika
+GRUB theme. Installed but never enabled automatically.
+.TP
+.I /usr/share/xdg\-desktop\-portal/amerika\-portals.conf
+Portal backends for the Amerika session (KDE and GTK).
+.TP
+.I /usr/share/applications/amerika\-mimeapps.list
+Default applications for the Amerika session.
+.TP
+.I /etc/apt/apt.conf.d/52amerika\-unattended\-upgrades
+Unattended upgrades from the Amerika repository.
+.SH SEE ALSO
+.BR amerika\-login (1),
+.BR amerika\-boot (1),
+.BR amerika\-settings (1),
+.BR amerika\-shell (1),
+.BR amerika\-software (1),
+.BR amerika\-first\-run (1),
+.BR amerika\-channel (8),
+.BR amerika\-apply\-defaults (1)

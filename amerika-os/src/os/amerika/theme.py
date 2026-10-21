@@ -64,6 +64,20 @@ window.am-dock, window.am-dock > * { background: transparent; }
 .am-dock-dot { min-width: 18px; min-height: 3px; border-radius: 2px; background: @am_accent; box-shadow: 0 0 8px @am_accent; margin-top: 1px; }
 .am-dock-sep { min-width: 1px; background: alpha(white, .18); margin: 8px 6px; }
 
+/* Desktop surfaces use an opaque panel inside a transparent layer surface. */
+window.am-overlay-clear { background: transparent; }
+.am-popup-panel {
+  background-image: linear-gradient(to bottom, #24233a, #0e0d17);
+  border: 1px solid alpha(@am_second, .45); border-radius: 20px;
+  color: @am_text; padding: 20px;
+  box-shadow: 0 0 24px alpha(@am_accent, .16), inset 0 1px 0 alpha(white, .13);
+}
+button.am-picker-card { padding: 12px; background: alpha(white, .04); border: 1px solid alpha(white, .13); border-radius: 14px; color: @am_text; }
+button.am-picker-card.selected { border: 2px solid @am_second; background: alpha(@am_second, .12); box-shadow: 0 0 16px alpha(@am_second, .22); }
+button.am-picker-card:hover { background: alpha(white, .09); }
+.am-pager-pill { padding: 2px 7px; border-radius: 7px; background: alpha(white,.05); color: @am_dim; }
+.am-pager-pill.current { color: @am_second; border: 1px solid alpha(@am_second,.5); }
+
 /* ---------- launcher / overlays ---------- */
 window.am-overlay { background: alpha(#05040a, .72); }
 .am-panel {
@@ -120,6 +134,57 @@ separator { background: alpha(white, .12); min-height: 1px; min-width: 1px; }
 listview, list { background: transparent; }
 row { border-radius: 10px; }
 row:selected { background: alpha(@am_accent, .25); }
+
+/* ---------- agent ---------- */
+.am-agent-chip {
+  border-radius: 999px; padding: 2px 12px; min-height: 18px; font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
+  color: #0b0a14; border: 1px solid alpha(white, .0);
+  background-image: linear-gradient(to right, @am_accent, shade(@am_accent, .8));
+  box-shadow: 0 0 14px alpha(@am_accent, .6);
+}
+.am-agent-chip.idle { color: @am_dim; background-image: none; background: alpha(white, .06); box-shadow: none; border-color: alpha(@am_second, .30); }
+.am-agent-chip.idle:hover { border-color: @am_second; box-shadow: 0 0 10px alpha(@am_second, .5); }
+.am-agent-chip.thinking { background-image: linear-gradient(to right, @am_second, shade(@am_second, .75)); box-shadow: 0 0 16px alpha(@am_second, .8); }
+.am-agent-chip.tool { background-image: linear-gradient(to right, @am_second, @am_accent); box-shadow: 0 0 16px alpha(@am_accent, .7); }
+.am-agent-chip.error { color: white; background-image: linear-gradient(to bottom, #ff4d4d, #9c1c1c); box-shadow: 0 0 14px alpha(#ff4d4d, .7); }
+.am-agent-chip.paused { color: #ffb02e; background-image: none; background: alpha(#ffb02e, .12); border-color: alpha(#ffb02e, .6); box-shadow: none; }
+.am-pill { border-radius: 999px; padding: 1px 10px; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; }
+.am-pill.on { color: #0b0a14; background-image: linear-gradient(to right, #39ff88, #19e3ff); box-shadow: 0 0 10px alpha(#39ff88, .55); }
+.am-pill.off { color: @am_dim; background: alpha(white, .08); }
+.am-pill.error { color: white; background: alpha(#ff4d4d, .55); border: 1px solid #ff4d4d; }
+.am-keystate { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: @am_dim; }
+.am-keystate.saved { color: #39ff88; text-shadow: 0 0 8px alpha(#39ff88, .55); }
+.am-step { font-size: 10px; font-weight: 800; letter-spacing: 1.5px; color: @am_dim; padding: 3px 10px; border-radius: 999px; border: 1px solid alpha(white, .14); }
+.am-step.active { color: white; border-color: @am_accent; background: alpha(@am_accent, .25); box-shadow: 0 0 10px alpha(@am_accent, .45); }
+.am-step.done { color: @am_second; border-color: alpha(@am_second, .5); }
+.am-agent-onboard { border-color: alpha(@am_second, .55); box-shadow: 0 0 22px alpha(@am_second, .22); }
+.am-agent-missing { border-color: alpha(#ffb02e, .55); }
+.am-agent-error { border-color: alpha(#ff4d4d, .6); }
+.am-term { background: alpha(black, .55); color: #39ff88; font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace; font-size: 12px; padding: 8px; }
+.am-term text { background: transparent; color: #39ff88; }
+window.am-agent-window { background: @am_bg; color: @am_text; }
+.am-agent-frame { border: 1px solid alpha(@am_accent, .55); box-shadow: inset 0 0 28px alpha(@am_accent, .14), inset 0 0 0 1px alpha(@am_second, .25); }
+.am-agent-header { background-image: linear-gradient(to bottom, #262535, #12111b); border-bottom: 1px solid alpha(@am_accent, .55); box-shadow: 0 1px 14px alpha(@am_accent, .30); padding: 8px 14px; }
+.am-agent-title { font-size: 13px; font-weight: 800; letter-spacing: 3px; color: @am_text; text-shadow: 0 0 12px alpha(@am_accent, .7); }
+.am-agent-dot { min-width: 10px; min-height: 10px; border-radius: 999px; background: @am_dim; }
+.am-agent-dot.idle { background: @am_second; box-shadow: 0 0 10px @am_second; }
+.am-agent-dot.thinking, .am-agent-dot.tool { background: @am_accent; box-shadow: 0 0 12px @am_accent; }
+.am-agent-dot.error { background: #ff4d4d; box-shadow: 0 0 12px #ff4d4d; }
+.am-agent-dot.off { background: @am_dim; box-shadow: none; }
+.am-agent-status { font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace; font-size: 11px; letter-spacing: 1px; color: @am_dim; }
+.am-agent-link { background: transparent; border: none; color: @am_second; font-weight: 700; padding: 4px 8px; }
+.am-agent-link:hover { text-decoration: underline; }
+.am-agent-banner { background: alpha(#ffb02e, .14); border-bottom: 1px solid alpha(#ffb02e, .5); padding: 6px 14px; color: #ffd48a; font-size: 12px; }
+.am-agent-state { background-image: radial-gradient(circle at 50%% 40%%, alpha(@am_accent, .12), transparent 60%%); }
+.am-agent-state-title { font-size: 20px; font-weight: 800; letter-spacing: 2px; }
+.am-answer { background: alpha(black, .4); border: 1px solid alpha(@am_second, .35); border-radius: 14px; padding: 12px 14px; color: @am_text; font-size: 14px; }
+.am-answer-meta { font-size: 10px; font-weight: 800; letter-spacing: 2px; color: @am_second; }
+.am-risk { border-radius: 999px; padding: 2px 12px; font-size: 10px; font-weight: 800; letter-spacing: 2px; }
+.am-risk.read { color: @am_dim; background: alpha(white, .08); }
+.am-risk.act { color: #0b0a14; background: @am_second; box-shadow: 0 0 10px alpha(@am_second, .6); }
+.am-risk.sensitive { color: #0b0a14; background: #ffb02e; box-shadow: 0 0 10px alpha(#ffb02e, .6); }
+.am-risk.critical { color: white; background: #e0243a; box-shadow: 0 0 12px alpha(#ff4d4d, .8); }
+.am-client { font-size: 11px; font-weight: 800; letter-spacing: 2px; color: @am_second; }
 '''
 
 

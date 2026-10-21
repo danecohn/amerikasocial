@@ -27,7 +27,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 SRC = ROOT / 'src'
-DIST = ROOT / 'dist'
+DE_VERSION = '3.1.0'
+DIST = Path(os.environ.get('AMERIKA_DIST', ROOT / ('dist/development' if '~' in DE_VERSION else 'dist')))
 STAGE = DIST / 'stage'
 PKG_DIR = DIST / 'packages'
 APT_DIR = DIST / 'apt'
@@ -36,7 +37,6 @@ SIGN_HOME = Path(os.environ.get('AMERIKA_SIGNING_HOME', Path.home() / '.local/sh
 KEY_NAME = 'Amerika OS Archive Signing Key'
 ARCH = 'arm64'
 SUITE = 'stable'
-DE_VERSION = '3.0.8'
 MAINTAINER = 'Amerika LLC <noreply@amerika.social>'
 HOMEPAGE = 'https://www.amerika.social/downloads/os'
 SYSTEM_SHELL = Path('/usr/share/plasma/shells/org.kde.plasma.desktop')
@@ -126,6 +126,9 @@ class Pkg:
         write(self.root / 'DEBIAN/control', '\n'.join(lines) + '\n')
         for name, text in self.scripts.items():
             write(self.root / 'DEBIAN' / name, text, 0o755)
+        conffiles = [('/'+str(f.relative_to(self.root))) for f in sorted(self.root.glob('etc/**/*')) if f.is_file() and not f.is_symlink()]
+        if conffiles:
+            write(self.root / 'DEBIAN/conffiles', '\n'.join(conffiles) + '\n')
         # md5sums for dpkg --verify
         sums = []
         for f in sorted(self.root.rglob('*')):
@@ -206,7 +209,9 @@ def build_keyring():
     p = Pkg('amerika-repo-keyring', DE_VERSION, 'Amerika OS package repository signing key and APT source\n'
             'Installs the signing key and the APT source for https://www.amerika.social/apt.',
             title='Amerika Repository', category='System', section='misc')
-    key = APT_DIR / 'amerika-archive-keyring.gpg'
+    key = ROOT / 'flavor/keys/amerika-archive-keyring.gpg'
+    if not key.is_file():
+        key = APT_DIR / 'amerika-archive-keyring.gpg'
     if not key.exists():
         sys.exit('Run --init-key and --sign-only first so the public key exists.')
     p.copy(key, '/usr/share/keyrings/amerika-archive-keyring.gpg')
@@ -245,15 +250,22 @@ def build_theme():
 
 
 def build_shell():
-    deps = ['python3 (>= 3.11)', 'python3-gi', 'gir1.2-gtk-4.0', 'gir1.2-gtk4layershell-1.0', 'libgtk4-layer-shell0',
+    deps = ['python3 (>= 3.14)', 'python3.14', 'libpython3.14', 'python3-gi', 'gir1.2-gtk-4.0', 'gir1.2-gtk4layershell-1.0', 'libgtk4-layer-shell0',
             'gir1.2-polkit-1.0', 'gir1.2-nm-1.0', 'kwin-wayland', 'kglobalacceld', 'polkit-kde-agent-1',
-            'libkscreen-bin', 'libkf6config-bin', 'libkscreenlocker6', 'plasma-desktop-data', 'wireplumber', 'pipewire-pulse', 'network-manager', 'power-profiles-daemon',
+            'libkscreen-bin', 'libkf6config-bin', 'libkscreenlocker6', 'kde-config-screenlocker', 'plasma-desktop-data', 'wireplumber', 'pipewire-pulse', 'network-manager', 'power-profiles-daemon',
             'upower', 'systemd', 'xdg-desktop-portal-gtk', 'fonts-inter', 'fonts-jetbrains-mono', 'librsvg2-common',
             f'amerika-icon-theme (>= {DE_VERSION})', f'amerika-theme (>= {DE_VERSION})']
     p = Pkg('amerika-desktop-shell', DE_VERSION,
             'Amerika Shell and Settings\nAmerika OS\'s own desktop shell (top bar, dock, launcher, notifications), its settings app, and the '
             'system-control server\nthat lets the Claude and ChatGPT apps operate the computer under your supervision.',
-            depends=', '.join(deps), recommends='nautilus, ptyxis, gnome-text-editor', title='Amerika Shell')
+            arch='arm64', depends=', '.join(deps), recommends='nautilus, ptyxis, gnome-text-editor, wl-clipboard, playerctl, network-manager-gnome, bluez, powerdevil, orca, gstreamer1.0-tools, gstreamer1.0-plugins-good', title='Amerika Shell')
+    host = DIST / 'native/amerika-shell-host'
+    src_c = OS / 'native/shell-host.c'
+    if not (host.exists() and host.stat().st_mtime >= src_c.stat().st_mtime and not os.environ.get('AMERIKA_REBUILD_HOST')):
+        sh(sys.executable, ROOT / 'tools/build-shell-host.py', '--out', host)  # reuses the existing binary while the C source is unchanged
+    p.copy(host, '/usr/libexec/amerika/amerika-shell-host', 0o755)
+    p.copy(OS / 'settings-helper/amerika-settings-helper', '/usr/libexec/amerika/amerika-settings-helper', 0o755)
+    p.copy(OS / 'settings-helper/org.amerika.settings.policy', '/usr/share/polkit-1/actions/org.amerika.settings.policy')
     pkg_dir = '/usr/lib/python3/dist-packages/amerika'
     shutil.copytree(OS / 'amerika', p.path(pkg_dir), ignore=shutil.ignore_patterns('__pycache__', '*.pyc', 'bridge'))
     p.copy(OS / 'amerika/bridge/bridge.js', '/usr/share/amerika-os/bridge/bridge.js')
@@ -274,6 +286,7 @@ def build_session():
     p.copy(OS / 'session/amerika-restore-meta', '/usr/libexec/amerika/amerika-restore-meta', 0o755)
     p.copy(OS / 'session/amerika-xkb-override', '/usr/libexec/amerika/amerika-xkb-override', 0o755)
     p.copy(OS / 'session/50-amerika-restore-meta.sh', '/etc/xdg/plasma-workspace/env/50-amerika-restore-meta.sh')
+    p.copy(OS / 'session/amerika-session.target', '/usr/lib/systemd/user/amerika-session.target')
     p.copy(OS / 'session/amerika.desktop', '/usr/share/wayland-sessions/amerika.desktop')
     p.copyright('Amerika OS session files, Copyright Amerika LLC, GPL-3.0-only.\n')
     return p
@@ -442,7 +455,8 @@ def build_meta():
             'amerika-repo-keyring')
     p = Pkg('amerika-desktop', DE_VERSION, 'Amerika OS desktop environment\nAmerika OS: its own shell on the KWin compositor, with the Claude and '
             'ChatGPT apps at the centre.\nInstalls the session, shell, settings, theme, apps and the Amerika Software manager.',
-            depends=', '.join(f'{n} (>= {DE_VERSION})' for n in ours) + ', amerika-social, amerika-venture, amerika-office',
+            depends=', '.join(f'{n} (>= {DE_VERSION})' for n in ours + tuple(META_DEPENDS)) + ', amerika-social, amerika-venture, amerika-office',
+            recommends=', '.join(META_RECOMMENDS),
             arch=ARCH, title='Amerika OS Desktop', section='metapackages')
     p.copyright('Copyright Amerika LLC, GPL-3.0-only.\n')
     return p
@@ -454,6 +468,22 @@ BUILDERS = {
     'amerika-software': build_software, 'amerika-social': build_social, 'amerika-venture': build_venture,
     'amerika-office': build_office, 'amerika-desktop': build_meta,
 }
+
+# Extra builders live in tools/builders/*.py. Each module defines register(b) -> {package name: builder function}
+# and may define META_DEPENDS (a list of package names that amerika-desktop should depend on) and META_RECOMMENDS.
+META_DEPENDS, META_RECOMMENDS = [], []
+
+
+def load_builders():
+    import importlib.util
+    for path in sorted((ROOT / 'tools/builders').glob('*.py')) if (ROOT / 'tools/builders').is_dir() else []:
+        spec = importlib.util.spec_from_file_location('amerika_builders_' + path.stem, path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        BUILDERS.update(mod.register(sys.modules[__name__]))
+        META_DEPENDS.extend(getattr(mod, 'META_DEPENDS', []))
+        META_RECOMMENDS.extend(getattr(mod, 'META_RECOMMENDS', []))
+
 
 # --------------------------------------------------------------------------- repository
 
@@ -528,21 +558,28 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--init-key', action='store_true')
     ap.add_argument('--only')
+    ap.add_argument('--no-repo', action='store_true', help='build packages without accessing a signing key or writing an APT repository')
     ap.add_argument('--sign-only', action='store_true', help='regenerate the repository from dist/packages')
     args = ap.parse_args()
     if args.init_key:
         init_key()
         return
-    init_key()
+    if args.no_repo and args.sign_only:
+        ap.error('--no-repo and --sign-only cannot be combined')
+    load_builders()
+    if not args.no_repo:
+        if not (SIGN_HOME / 'private-keys-v1.d').is_dir():
+            sys.exit('Signing key unavailable. Use --no-repo to build without signing; key creation requires explicit --init-key.')
     if not args.sign_only:
         names = args.only.split(',') if args.only else list(BUILDERS)
-        if (APT_DIR / 'amerika-archive-keyring.gpg').exists() is False:
+        if not args.no_repo and (APT_DIR / 'amerika-archive-keyring.gpg').exists() is False:
             gpg('--export', '--output', str(APT_DIR / 'amerika-archive-keyring.gpg'), KEY_NAME) if APT_DIR.mkdir(
                 parents=True, exist_ok=True) is None else None
         for name in names:
             deb = BUILDERS[name]().build()
             print('built', deb.name, deb.stat().st_size)
-    make_repo(sorted(PKG_DIR.glob('*.deb')))
+    if not args.no_repo:
+        make_repo(sorted(PKG_DIR.glob('*.deb')))
 
 
 if __name__ == '__main__':

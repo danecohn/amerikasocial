@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "engine": "openclaw",
+  "package": "openclaw",
+  "version": "2026.10.5",
+  "resolved": "https://registry.npmjs.org/openclaw/-/openclaw-2026.10.5.tgz",
+  "integrity": "sha512-9rCuXMweqVKZIK3KBtGcLzesz9G6+FmQ30lvwomRhmcNWDcOtlBoqdLbPditoJMuTP55jPqXpt1AA0L8tSzFHg==",
+  "tarball_sha256": "dbb1bdcf2346292e25f672822b6a9928c234909abe6fee0df5fc4556e769d40e",
+  "tarball_bytes": 103343430,
+  "license": "MIT",
+  "node_engines": ">=24.16.0 <25 || >=26.1.0",
+  "package_lock_sha256": "e0ac069d62d4525fd0c13e80ab7a181d01973c060b99ea78c15780e1fb7c0147",
+  "platform": {
+    "os": "linux",
+    "cpu": "arm64",
+    "libc": "glibc"
+  },
+  "locked": "2026-10-21"
+}

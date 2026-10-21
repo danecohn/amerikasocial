@@ -1,5 +1,6 @@
 """The Amerika Shell application: ties the bar, dock, desktop, launcher, notifications and the AI broker together."""
 import os
+import json
 import sys
 from concurrent.futures import Future
 from pathlib import Path
@@ -11,16 +12,19 @@ gi.require_version('Gdk', '4.0')
 gi.require_version('Gio', '2.0')
 from gi.repository import Gdk, Gio, GLib, Gtk  # noqa: E402
 
-from .. import common, theme, windows as windows_mod
+from .. import common, deskconf, theme, windows as windows_mod
 from ..ai.broker import Broker
 from . import apps, layer
 from .approval import Approval
+from .agent_service import AgentService  # agent-ui
 from .bar import Bar
 from .desktop import Desktop
 from .dock import Dock
 from .launcher import Launcher
 from .notifyd import Notifications
 from .power import PowerDialog
+
+DESKTOP_XML = '<node><interface name="org.amerika.Desktop"><method name="Config"><arg type="s" direction="out"/></method></interface></node>'
 
 CONTROL_XML = '''<node><interface name="org.amerika.Control">
   <method name="Action"><arg type="s" name="name" direction="in"/></method>
@@ -43,9 +47,14 @@ class Shell(Gtk.Application):
     def do_dbus_register(self, connection, object_path):
         self.windows = windows_mod.WindowBridge(connection)
         self.windows.export()
+        desktop_info = Gio.DBusNodeInfo.new_for_xml(DESKTOP_XML)
+        connection.register_object('/Desktop', desktop_info.interfaces[0], self._on_desktop, None, None)
         info = Gio.DBusNodeInfo.new_for_xml(CONTROL_XML)
         connection.register_object('/Control', info.interfaces[0], self._on_control, None, None)
         return Gtk.Application.do_dbus_register(self, connection, object_path)
+
+    def _on_desktop(self, conn, sender, path, iface, method, params, invocation):
+        invocation.return_value(GLib.Variant('(s)', (json.dumps(deskconf.bridge_config(self.settings)),)))
 
     def _on_control(self, conn, sender, path, iface, method, params, invocation):
         if method == 'Action':
@@ -53,6 +62,8 @@ class Shell(Gtk.Application):
         invocation.return_value(None)
 
     def action(self, name):
+        if getattr(self, 'parity', None) and self.parity.action(name):
+            return False
         ai = self.settings.get('bar_ai_apps', [])
         if name == 'launcher':
             self.toggle_launcher()
@@ -60,6 +71,8 @@ class Shell(Gtk.Application):
             self.activate_app(ai[int(name[-1]) - 1])
         elif name == 'copilot':
             self.copilot_key()
+        elif name == 'agent':  # agent-ui: Windows+A
+            self.open_agent_window()
         elif name == 'debug-dock-menu' and os.environ.get('AMERIKA_DEBUG'):
             self.dock.debug_menu()
         elif name == 'debug-report' and os.environ.get('AMERIKA_DEBUG'):
@@ -95,13 +108,17 @@ class Shell(Gtk.Application):
         self.notifications.start()
         self.broker = Broker(self)
         self.broker.start()
+        self.agent = AgentService(self)  # agent-ui: activity, status, Stop-switch coupling, Agent window
         common.CONFIG.mkdir(parents=True, exist_ok=True)
         self._monitor = Gio.File.new_for_path(str(common.CONFIG)).monitor_directory(Gio.FileMonitorFlags.NONE, None)
         self._monitor.connect('changed', self._settings_changed)
         self.desktop = Desktop(self, self.settings)
+        from .parity import DesktopServices
+        self.parity = DesktopServices(self)
         self.bar = Bar(self)
         self.dock = Dock(self)
         self.launcher = Launcher(self)
+        self.agent.start()  # agent-ui: after the bar exists so the chip receives the first update
         for w in (self.desktop, self.bar, self.dock):
             w.present()
         self.hold()
@@ -122,11 +139,19 @@ class Shell(Gtk.Application):
     def do_shutdown(self):
         if hasattr(self, 'bar'):
             self.bar.tray.close()
+        if getattr(self, 'parity', None):
+            self.parity.close()
+        if getattr(self, 'agent', None):
+            self.agent.stop_for_exit()
+        if self.broker:
+            self.broker.close()
         Gtk.Application.do_shutdown(self)
 
     def _settings_changed(self, _monitor, file, _other, event):
         if file.get_basename() != 'settings.json' or event not in (Gio.FileMonitorEvent.CHANGES_DONE_HINT, Gio.FileMonitorEvent.CREATED):
             return
+        from .. import notifprefs
+        self.notifications.dnd = notifprefs.load()['dnd']
         old = self.settings
         self.settings = common.load_settings()
         if (old.get('accent'), old.get('secondary')) != (self.settings.get('accent'), self.settings.get('secondary')):
@@ -135,6 +160,8 @@ class Shell(Gtk.Application):
             self.desktop.apply(self.settings)
         if old.get('dock_size') != self.settings.get('dock_size') or old.get('dock_pinned') != self.settings.get('dock_pinned'):
             self.dock.rebuild(force=True)
+        if old.get('desktop') != self.settings.get('desktop'):
+            self.windows.load()
         if old.get('clock_24h') != self.settings.get('clock_24h'):
             self.bar._tick()
 
@@ -165,10 +192,16 @@ class Shell(Gtk.Application):
         """The Copilot key opens the AI app chosen in Settings, or a picker."""
         choice = self.settings.get('copilot_app', 'claude')
         ids = {'claude': 'com.anthropic.Claude', 'chatgpt': 'chatgpt'}
-        if choice in ids:
+        if choice == 'agent':  # agent-ui
+            self.open_agent_window()
+        elif choice in ids:
             self.activate_app(ids[choice])
         else:
             self.launcher.present_ai()
+
+    def open_agent_window(self, start=False):
+        """agent-ui: open (or raise) the Amerika Agent window."""
+        self.agent.open_window(start=start)
 
     def hand_off_to_ai(self, desktop_id, text):
         """Put the question on the clipboard and bring the AI app forward (the apps have no prompt API)."""

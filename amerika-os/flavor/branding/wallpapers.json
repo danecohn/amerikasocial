@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "directory": "/usr/share/backgrounds/amerika",
+  "default": "horizon",
+  "default_dark": "dusk",
+  "login": "horizon",
+  "wallpapers": [
+    {"id": "horizon", "file": "horizon.png", "name": "Horizon", "style": "sunset grid", "dark": true},
+    {"id": "grid", "file": "grid.png", "name": "Grid", "style": "wireframe", "dark": true},
+    {"id": "dusk", "file": "dusk.png", "name": "Dusk", "style": "twilight", "dark": true}
+  ]
+}

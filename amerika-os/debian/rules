@@ -1,0 +1,20 @@
+#!/usr/bin/make -f
+export PYBUILD_DISABLE=1
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	AMERIKA_DIST=$(CURDIR)/debian/build python3 build.py --no-repo --only amerika-desktop-shell,amerika-session
+
+override_dh_auto_install:
+	mkdir -p debian/amerika-desktop-shell debian/amerika-session
+	cp -a debian/build/stage/amerika-desktop-shell/usr debian/amerika-desktop-shell/
+	cp -a debian/build/stage/amerika-session/usr debian/amerika-session/
+	cp -a debian/build/stage/amerika-session/etc debian/amerika-session/
+
+override_dh_auto_test:
+	python3 -m unittest discover -s tests -q
+
+override_dh_auto_clean:
+	rm -rf debian/build

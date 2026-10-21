@@ -1,0 +1,17 @@
+[Unit]
+Description=Amerika Agent activity bridge
+PartOf=amerika-agent-gateway.service
+Before=amerika-agent-gateway.service
+StopWhenUnneeded=yes
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/amerika-agent activity
+Restart=on-failure
+RestartSec=2
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%t

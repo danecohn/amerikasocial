@@ -1,5 +1,6 @@
-"""Amerika Settings: appearance, display, sound, network, power and, above all, the AI assistants."""
+"""Amerika Settings: a registry of pages (see PAGES), a searchable sidebar and the AI / login pages."""
 import json
+import copy
 import os
 import subprocess
 import sys
@@ -19,53 +20,121 @@ from ..ai import connect
 from ..shell import apps
 from ..shell.app import save_widget
 from ..shell.desktop import WALLPAPERS, wallpaper_path
+from . import pageindex, search
+from .ui import card, label, page_box, scrolled  # noqa: F401 - re-exported for the pages that still live in this file
 
 PRESETS = {'Crimson': '#ff2e63', 'Cyan': '#19e3ff', 'Magenta': '#ff3df0', 'Amber': '#ffb02e', 'Phosphor': '#39ff88', 'Violet': '#9b6bff'}
 MODES = [('ask', 'Ask every time', 'Claude and ChatGPT ask before changing anything. Read-only tools still work.'),
          ('safe', 'Balanced (recommended)', 'Everyday changes run on their own (open apps, windows, volume). Anything that could lose or expose data asks first.'),
-         ('trusted', 'Trusted', 'Also lets them run sensitive tools such as shell commands and file writes without asking. Power-off, restart and delete always ask.')]
+         ('trusted', 'Trusted', 'Also lets them use sensitive tools such as file writes, clipboard and screen capture without asking. Shell commands, power-off, restart and delete always ask.')]
+
+CONTROL_XML = '''<node><interface name="org.amerika.SettingsControl">
+  <method name="OpenPage"><arg type="s" name="page" direction="in"/><arg type="b" name="ok" direction="out"/></method>
+  <method name="Pages"><arg type="s" name="json" direction="out"/></method>
+  <method name="Get"><arg type="s" name="key" direction="in"/><arg type="s" name="json" direction="out"/></method>
+  <method name="Set"><arg type="s" name="key" direction="in"/><arg type="s" name="json_value" direction="in"/><arg type="s" name="json" direction="out"/></method>
+  <method name="Schema"><arg type="s" name="json" direction="out"/></method>
+</interface></node>'''
 
 
-def label(text, css=None, xalign=0.0, wrap=False):
-    lab = Gtk.Label(label=text, xalign=xalign, wrap=wrap)
-    for c in (css or '').split():
-        lab.add_css_class(c)
-    return lab
+# ---------------------------------------------------------------- page registry
+# (id, title, icon, builder). A builder takes the SettingsApp and returns the page widget; pages are built when first shown.
+# Adding a page: create settings/page_<name>.py with build(app), add it to pageindex.PAGE_INFO and list it here.
+def _lazy(module, attr='build'):
+    def build(app):
+        import importlib
+        return getattr(importlib.import_module(f'{__package__}.{module}'), attr)(app)
+    return build
 
 
-def card(*children, spacing=10):
-    box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=spacing)
-    box.add_css_class('am-card')
-    for c in children:
-        box.append(c)
-    return box
+PAGES = [
+    ('ai', 'AI & Assistants', 'amerika-ai-symbolic', lambda app: app._page_ai()),
+    ('agent', 'Amerika Agent', 'amerika-ai-symbolic', _lazy('page_agent')),  # agent-ui
+    ('appearance', 'Appearance', 'amerika-eye-symbolic', lambda app: app._page_appearance()),
+    ('display', 'Displays', 'amerika-brightness-symbolic', _lazy('page_display')),
+    ('sound', 'Sound', 'amerika-volume-symbolic', _lazy('page_system', 'build_sound')),
+    ('network', 'Network', 'amerika-wifi-symbolic', _lazy('page_system', 'build_network')),
+    ('power', 'Power', 'amerika-battery-symbolic', _lazy('page_system', 'build_power')),
+    ('login', 'Login screen', 'amerika-lock-symbolic', lambda app: app._page_login()),
+    ('about', 'About', 'amerika-settings-symbolic', lambda app: app._page_about()),
+]
+
+# System pages share asynchronous controls while keeping explicit backend entry points.
+for _info in pageindex.pages():
+    if _info['id'] not in {row[0] for row in PAGES}:
+        PAGES.append((_info['id'], _info['title'], _info['icon'],
+                      _lazy('page_system', 'build_' + _info['id'])))
 
 
-def page_box():
-    box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
-    for m in ('top', 'bottom', 'start', 'end'):
-        getattr(box, f'set_margin_{m}')(26)
-    return box
-
-
-def scrolled(child):
-    s = Gtk.ScrolledWindow(vexpand=True, hexpand=True)
-    s.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-    s.set_child(child)
-    return s
+def page_registry():
+    """PAGES ordered by the sidebar groups of pageindex (pages missing from the index keep their place at the end)."""
+    order = {p['id']: i for i, p in enumerate(pageindex.pages())}
+    group_order = {g: i for i, (g, _n) in enumerate(pageindex.GROUPS)}
+    info = {p['id']: p for p in pageindex.pages()}
+    return sorted(PAGES, key=lambda e: (group_order.get(info.get(e[0], {}).get('group'), 99), order.get(e[0], 999)))
 
 
 class SettingsApp(Gtk.Application):
     def __init__(self):
-        super().__init__(application_id='org.amerika.Settings')
+        super().__init__(application_id='org.amerika.Settings', flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
         self.settings = common.load_settings()
+        self._saved_settings = copy.deepcopy(self.settings)
         self.win = None
         self.pages = {}
+        self.nav = {}
+        self._built = {}
+        self._pending_page = None
+        self._current = None
 
+    # ------------------------------------------------------------------ command line and D-Bus control
+    def do_command_line(self, cmdline):
+        args = [a for a in cmdline.get_arguments()[1:] if not a.startswith('--gapplication')]
+        page = next((a for a in args if not a.startswith('-')), None)
+        if page:
+            target = pageindex.resolve(page)
+            if not target:
+                cmdline.printerr(f'Unknown settings page: {page}\n')
+                return 2
+            self._pending_page = target
+        self.activate()
+        if self._pending_page and self.win:
+            self.show_page(self._pending_page)
+            self._pending_page = None
+        return 0
+
+    def do_dbus_register(self, connection, object_path):
+        info = Gio.DBusNodeInfo.new_for_xml(CONTROL_XML)
+        connection.register_object('/org/amerika/Settings/Control', info.interfaces[0], self._on_control, None, None)
+        return Gtk.Application.do_dbus_register(self, connection, object_path)
+
+    def _on_control(self, conn, sender, path, iface, method, params, invocation):
+        from . import api
+        try:
+            if method == 'OpenPage':
+                target = pageindex.resolve(params.unpack()[0])
+                if target:
+                    GLib.idle_add(lambda: (self.activate(), self.show_page(target), False)[2])
+                invocation.return_value(GLib.Variant('(b)', (bool(target),)))
+            elif method == 'Pages':
+                invocation.return_value(GLib.Variant('(s)', (pageindex.list_json(),)))
+            elif method == 'Schema':
+                invocation.return_value(GLib.Variant('(s)', (json.dumps(api.schema()),)))
+            elif method == 'Get':
+                invocation.return_value(GLib.Variant('(s)', (json.dumps(api.get(params.unpack()[0])),)))
+            elif method == 'Set':
+                key, raw = params.unpack()
+                invocation.return_value(GLib.Variant('(s)', (json.dumps(api.set(key, json.loads(raw))),)))
+        except (ValueError, KeyError, TypeError) as error:
+            invocation.return_dbus_error('org.amerika.SettingsControl.Error', str(error))
+
+    # ------------------------------------------------------------------ window
     def do_activate(self):
         if self.win:
             self.win.present()
             return
+        if os.environ.get('AMERIKA_SETTINGS_FAKE'):
+            from . import fixtures
+            fixtures.install()
         dev_icons = os.environ.get('AMERIKA_ICONS')
         icons = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
         if dev_icons:
@@ -74,49 +143,191 @@ class SettingsApp(Gtk.Application):
         theme.apply(self.settings['accent'], self.settings['secondary'])
         self.win = Gtk.ApplicationWindow(application=self, title='Amerika Settings')
         self.win.add_css_class('am-settings')
-        self.win.set_default_size(1040, 720)
+        self.win.set_default_size(1100, 760)
         root = Gtk.Box()
         self.win.set_child(root)
         side = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         side.add_css_class('am-sidebar')
-        side.set_size_request(230, -1)
+        side.set_size_request(250, -1)
         brand = Gtk.Box(spacing=10)
         brand.append(apps.icon_image('amerika-settings', 34))
         brand.append(label('SETTINGS', 'am-heading'))
-        brand.set_margin_bottom(14)
+        brand.set_margin_bottom(8)
         side.append(brand)
+        self.search_entry = Gtk.SearchEntry(placeholder_text='Search settings  (Ctrl+F)')
+        self.search_entry.add_css_class('am-search-small')
+        self.search_entry.connect('search-changed', lambda e: self._filter(e.get_text()))
+        self.search_entry.connect('activate', lambda e: self._filter_activate())
+        self.search_entry.connect('stop-search', lambda e: (e.set_text(''), self._focus_nav()))
+        side.append(self.search_entry)
         self.stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, hexpand=True)
-        self.nav = {}
-        order = [('ai', 'AI & Assistants', 'amerika-ai', self._page_ai), ('appearance', 'Appearance', 'amerika-home', self._page_appearance),
-                 ('display', 'Display', 'amerika-display', self._page_display), ('sound', 'Sound', 'amerika-sound', self._page_sound),
-                 ('network', 'Network', 'amerika-network', self._page_network), ('power', 'Power', 'amerika-power', self._page_power),
-                 ('login', 'Login screen', 'amerika-home', self._page_login),
-                 ('about', 'About', 'amerika-settings', self._page_about)]
-        for key, title, icon, builder in order:
+        nav_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        info = {p['id']: p for p in pageindex.pages()}
+        self._headers = {}
+        last_group = None
+        for key, title, icon, builder in page_registry():
+            group = info.get(key, {}).get('group', 'system')
+            if group != last_group:
+                header = label(dict(pageindex.GROUPS).get(group, group.upper()), 'am-label')
+                header.set_margin_top(10)
+                header.set_margin_start(6)
+                nav_box.append(header)
+                self._headers[group] = header
+                last_group = group
             btn = Gtk.ToggleButton()
             btn.add_css_class('am-side-item')
+            btn.update_property([Gtk.AccessibleProperty.LABEL], [title])
             row = Gtk.Box(spacing=10)
-            row.append(apps.icon_image(icon, 24))
+            row.append(apps.icon_image(icon, 18))
             row.append(label(title))
             btn.set_child(row)
             btn.connect('toggled', lambda b, k=key: self._nav(k) if b.get_active() else None)
-            side.append(btn)
+            nav_box.append(btn)
+            btn.group = group
             self.nav[key] = btn
             self.pages[key] = builder
-            self.stack.add_named(scrolled(builder()), key)
+            self.stack.add_named(Gtk.Box(), key)  # placeholder, replaced on first visit
+        side_scroll = Gtk.ScrolledWindow(vexpand=True)
+        side_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        side_scroll.set_child(nav_box)
+        side.append(side_scroll)
         root.append(side)
         root.append(self.stack)
-        self.nav['ai'].set_active(True)
+        self._shortcuts()
+        first = self._pending_page or next(iter(self.nav))
+        self._pending_page = None
+        self.show_page(first)
         self.win.present()
         shots = os.environ.get('AMERIKA_SETTINGS_SHOTS')
         if shots:
             GLib.timeout_add(1500, self._shoot, Path(shots), list(self.pages))
 
+    # ------------------------------------------------------------------ navigation
+    def show_page(self, key):
+        if key in self.nav:
+            self.nav[key].set_active(True)
+            self._nav(key)
+
     def _nav(self, key):
         for k, b in self.nav.items():
             if k != key and b.get_active():
                 b.set_active(False)
+        if key not in self._built:
+            old = self.stack.get_child_by_name(key)
+            try:
+                widget = scrolled(self.pages[key](self))
+            except Exception as error:  # noqa: BLE001 - one broken page must not take Settings down
+                print('settings page failed:', key, type(error).__name__, error, flush=True)
+                widget = scrolled(card(label('This page could not be loaded.', 'am-appname'), label(f'{type(error).__name__}: {error}', 'am-sub', wrap=True)))
+            if old is not None:
+                self.stack.remove(old)
+            self.stack.add_named(widget, key)
+            self._built[key] = widget
         self.stack.set_visible_child_name(key)
+        self._current = key
+
+    def _shortcuts(self):
+        ctl = Gtk.ShortcutController()
+        ctl.set_scope(Gtk.ShortcutScope.GLOBAL)
+
+        def add(trigger, fn):
+            ctl.add_shortcut(Gtk.Shortcut.new(Gtk.ShortcutTrigger.parse_string(trigger), Gtk.CallbackAction.new(lambda *_: (fn(), True)[1])))
+        add('<Control>k', self.quick_jump)
+        add('<Control>f', lambda: self.search_entry.grab_focus())
+        add('<Control>Page_Down', lambda: self._step(1))
+        add('<Control>Page_Up', lambda: self._step(-1))
+        add('<Alt>Down', lambda: self._step(1))
+        add('<Alt>Up', lambda: self._step(-1))
+        self.win.add_controller(ctl)
+
+    def _visible_keys(self):
+        return [k for k, b in self.nav.items() if b.get_visible()]
+
+    def _step(self, delta):
+        keys = self._visible_keys()
+        if keys:
+            i = keys.index(self._current) if self._current in keys else -1
+            self.show_page(keys[(i + delta) % len(keys)])
+
+    def _focus_nav(self):
+        if self._current in self.nav:
+            self.nav[self._current].grab_focus()
+
+    def _filter(self, text):
+        hits = search.matching_pages(text, available=list(self.nav))
+        shown_groups = set()
+        for key, btn in self.nav.items():
+            vis = hits is None or key in hits
+            btn.set_visible(vis)
+            if vis:
+                shown_groups.add(btn.group)
+        for group, header in self._headers.items():
+            header.set_visible(group in shown_groups)
+
+    def _filter_activate(self):
+        res = search.search(self.search_entry.get_text(), 1, available=list(self.nav))
+        if res:
+            self.show_page(res[0]['page'])
+
+    def quick_jump(self):
+        """Ctrl+K: a small palette that jumps to a page or to the page holding a setting."""
+        win = Gtk.Window(transient_for=self.win, modal=True, title='Quick jump', default_width=520, decorated=False)
+        win.add_css_class('am-dialog')
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        for m in ('top', 'bottom', 'start', 'end'):
+            getattr(box, f'set_margin_{m}')(14)
+        entry = Gtk.SearchEntry(placeholder_text='Jump to a page or setting')
+        box.append(entry)
+        results = Gtk.ListBox(selection_mode=Gtk.SelectionMode.BROWSE)
+        results.set_activate_on_single_click(True)
+        box.append(results)
+        win.set_child(box)
+        items = []
+
+        def fill(*_):
+            nonlocal items
+            while results.get_first_child():
+                results.remove(results.get_first_child())
+            items = search.search(entry.get_text(), 8, available=list(self.nav))
+            for r in items:
+                line = Gtk.Box(spacing=10)
+                line.set_margin_top(4)
+                line.set_margin_bottom(4)
+                line.append(label(r['title'], 'am-appname'))
+                if r['kind'] == 'setting':
+                    line.append(label(r['page_title'], 'am-sub'))
+                results.append(line)
+            if items:
+                results.select_row(results.get_row_at_index(0))
+
+        def go(index):
+            if 0 <= index < len(items):
+                win.close()
+                self.show_page(items[index]['page'])
+        entry.connect('search-changed', fill)
+        entry.connect('activate', lambda *_: go(results.get_selected_row().get_index() if results.get_selected_row() else 0))
+        entry.connect('stop-search', lambda *_: win.close())
+        results.connect('row-activated', lambda _l, r: go(r.get_index()))
+        keys = Gtk.EventControllerKey()
+
+        def on_key(_c, keyval, _code, _state):
+            row = results.get_selected_row()
+            idx = row.get_index() if row else 0
+            if keyval in (Gdk.KEY_Down, Gdk.KEY_Up):
+                new = max(0, min(len(items) - 1, idx + (1 if keyval == Gdk.KEY_Down else -1)))
+                results.select_row(results.get_row_at_index(new))
+                return True
+            if keyval == Gdk.KEY_Escape:
+                win.close()
+                return True
+            return False
+        keys.connect('key-pressed', on_key)
+        entry.add_controller(keys)
+        fill()
+        win.present()
+        entry.grab_focus()
+        self._quick = win
+        return win
 
     def _shoot(self, outdir, keys):
         outdir.mkdir(parents=True, exist_ok=True)
@@ -124,12 +335,22 @@ class SettingsApp(Gtk.Application):
             self.quit()
             return False
         key = keys.pop(0)
-        self.nav[key].set_active(True)
-        GLib.timeout_add(500, lambda: (save_widget(self.win, outdir / f'settings-{key}.png'), GLib.timeout_add(300, self._shoot, outdir, keys), False)[2])
+        self.show_page(key)
+        GLib.timeout_add(1200, lambda: (save_widget(self.win, outdir / f'settings-{key}.png'), GLib.timeout_add(200, self._shoot, outdir, keys), False)[2])
         return False
 
     def save(self):
-        common.save_settings(self.settings)
+        def merge_changed(old,new,current):
+            for key,value in new.items():
+                if key not in old or old[key]!=value:
+                    if isinstance(value,dict) and isinstance(old.get(key),dict) and isinstance(current.get(key),dict):
+                        merge_changed(old[key],value,current[key])
+                    else:current[key]=copy.deepcopy(value)
+        current=common.load_settings()
+        merge_changed(self._saved_settings,self.settings,current)
+        common.save_settings(current)
+        self.settings=current
+        self._saved_settings=copy.deepcopy(current)
 
     # ================================================================ AI page
     def _page_ai(self):
@@ -173,7 +394,7 @@ class SettingsApp(Gtk.Application):
         key_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         key_card.append(label('COPILOT KEY', 'am-label'))
         key_card.append(label('The Copilot key on your keyboard (Win+Shift+F23) opens:', 'am-sub', wrap=True))
-        choices = [('claude', 'Claude'), ('chatgpt', 'ChatGPT'), ('ask', 'Ask me each time')]
+        choices = [('claude', 'Claude'), ('chatgpt', 'ChatGPT'), ('agent', 'Amerika Agent'), ('ask', 'Ask me each time')]  # agent: agent-ui
         drop = Gtk.DropDown.new_from_strings([c[1] for c in choices])
         current = self.settings.get('copilot_app', 'claude')
         drop.set_selected(next((i for i, c in enumerate(choices) if c[0] == current), 0))
@@ -250,6 +471,15 @@ class SettingsApp(Gtk.Application):
     def _set_mode(self, mode):
         self.settings['ai']['mode'] = mode
         self.save()
+        # agent-ui: one source of truth. Keep the AI page radios, the Amerika Agent page and the engine in step.
+        radios = getattr(self, 'mode_buttons', {})
+        if mode in radios and not radios[mode].get_active():
+            radios[mode].set_active(True)
+        if getattr(self, 'agent_page', None) is not None:
+            self.agent_page.mode_changed(mode)
+        from ..agent import cli as agent_cli
+        if agent_cli.available():
+            agent_cli.in_thread(lambda:agent_cli.config_set('mode',mode))
 
     def _fill_audit(self):
         child = self.audit_list.get_first_child()

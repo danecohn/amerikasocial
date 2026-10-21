@@ -1,0 +1,58 @@
+.\" Copyright Amerika LLC. GPL-3.0-only.
+.TH AMERIKA-LOGIN 1 "2026-10-21" "Amerika OS" "Amerika OS Manual"
+.SH NAME
+amerika\-login \- switch the Amerika OS login screen on or off
+.SH SYNOPSIS
+.B amerika\-login
+.RB { status | enable | disable | preview }
+.SH DESCRIPTION
+.B amerika\-login
+controls the retro\-futurist SDDM login theme installed by the
+.B amerika\-login
+package. Installing the package changes nothing; the login screen is used only after
+.B amerika\-login enable
+and only from the next start of the computer. The current session is never stopped or restarted.
+.PP
+.B enable
+and
+.B disable
+ask for administrator rights through
+.BR pkexec (1)
+and run
+.IR /usr/libexec/amerika/amerika\-login\-helper .
+Enabling remembers the previous display manager; disabling returns to it.
+If SDDM fails to start three times within 90 seconds, the helper switches back to the previous
+display manager on its own (the unit
+.IR amerika\-login\-fallback.service ).
+.SH COMMANDS
+.TP
+.B status
+Print the current display manager, whether the Amerika login screen is active, and the remembered previous manager, as JSON.
+.TP
+.B enable
+Use SDDM with the Amerika theme from the next start.
+.TP
+.B disable
+Go back to the previous display manager from the next start.
+.TP
+.B preview
+Show the greeter in a test window for 30 seconds (needs a running graphical session).
+.SH FILES
+.TP
+.I /usr/share/sddm/themes/amerika
+The theme.
+.TP
+.I /etc/sddm.conf.d/50\-amerika.conf
+Written by
+.BR enable ,
+removed by
+.BR disable .
+.TP
+.I /var/lib/amerika\-os/login/previous.json
+The display manager to return to.
+.SH EXIT STATUS
+0 on success, 2 for a usage error or missing privileges.
+.SH SEE ALSO
+.BR amerika\-boot (1),
+.BR amerika\-flavour (7),
+.BR sddm (1)

@@ -1,0 +1,36 @@
+.\" Copyright Amerika LLC. GPL-3.0-only.
+.TH AMERIKA-AGENT 1 "2026-10-21" "Amerika OS" "Amerika OS Manual"
+.SH NAME
+amerika\-agent \- Amerika Agent, the agentic layer of Amerika OS
+.SH SYNOPSIS
+.B amerika\-agent
+.RI [ command ]
+.SH DESCRIPTION
+.B Amerika Agent
+is built on OpenClaw (MIT licence, https://github.com/openclaw/openclaw), which it bundles and wires into the Amerika shell, the
+Settings app, the login keyring and the
+.B amerika\-mcp
+tool broker. This page is a stub written from the architecture document; the behaviour, command line and file layout are
+defined and documented by the agent package itself, which owns this page's final content.
+.PP
+Principles that hold regardless of version:
+.IP \(bu 2
+API keys are stored only in the login keyring (Secret Service). They never appear in files, command lines, logs or the
+environment of other processes.
+.IP \(bu 2
+The gateway listens on the loopback interface only and uses token authentication.
+.IP \(bu 2
+Actions that change the system go through
+.B amerika\-mcp
+and its approval broker. Critical actions always ask. The global Stop switch (Ctrl+Alt+Esc) stops the agent.
+.IP \(bu 2
+Messaging channels are off by default.
+.SH FILES
+.TP
+.I ~/.config/amerika\-agent/
+Configuration of the user service
+.IR amerika\-agent\-gateway.service .
+.SH SEE ALSO
+.BR amerika\-settings (1),
+.BR amerika\-shell (1),
+.BR amerika\-flavour (7)

@@ -1,0 +1,12 @@
+#!/bin/sh
+# Starts the Amerika MCP server for OpenClaw.
+#
+# OpenClaw launches stdio MCP servers with a minimal environment (HOME, PATH, USER...), without XDG_RUNTIME_DIR. amerika-mcp
+# finds the Amerika Shell's broker socket through that variable, so without it the agent would silently see no tools.
+# This wrapper restores the variable for the current user and tells the broker which client is calling ("amerika-agent", so that
+# the permission mode, audit log and the top-bar chip name it).
+if [ -z "${XDG_RUNTIME_DIR:-}" ]; then
+    XDG_RUNTIME_DIR="/run/user/$(id -u)"
+    export XDG_RUNTIME_DIR
+fi
+exec "${AMERIKA_MCP_BIN:-/usr/bin/amerika-mcp}" --client amerika-agent "$@"

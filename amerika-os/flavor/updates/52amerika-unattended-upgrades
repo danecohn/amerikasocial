@@ -1,0 +1,10 @@
+// Amerika OS: let unattended-upgrades install updates from the signed Amerika repository (https://www.amerika.social/apt).
+// The Ubuntu security origins stay configured in 50unattended-upgrades; list entries from this file are added to them.
+// The match is on the Release file fields Origin: Amerika, Label: Amerika OS and Suite: stable, so a "testing" channel,
+// if enabled, is never installed unattended.
+Unattended-Upgrade::Origins-Pattern {
+        "origin=Amerika,label=Amerika OS,archive=stable";
+};
+
+// Never reboot a desktop on its own; the shell shows the standard "restart required" notice instead.
+Unattended-Upgrade::Automatic-Reboot "false";

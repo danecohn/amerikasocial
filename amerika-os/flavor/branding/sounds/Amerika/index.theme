@@ -1,0 +1,8 @@
+[Sound Theme]
+Name=Amerika
+Comment=Retro-futurist synth blips for Amerika OS
+Inherits=freedesktop
+Directories=stereo
+
+[stereo]
+OutputProfile=stereo

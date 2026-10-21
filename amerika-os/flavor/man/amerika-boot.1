@@ -1,0 +1,41 @@
+.\" Copyright Amerika LLC. GPL-3.0-only.
+.TH AMERIKA-BOOT 1 "2026-10-21" "Amerika OS" "Amerika OS Manual"
+.SH NAME
+amerika\-boot \- switch the Amerika OS boot screen on or off
+.SH SYNOPSIS
+.B amerika\-boot
+.RB { status | enable | disable }
+.SH DESCRIPTION
+.B amerika\-boot
+selects the Plymouth boot and shutdown theme installed by the
+.B amerika\-boot
+package. Installing the package registers the theme as an alternative of
+.I default.plymouth
+at a low priority and does not select it. Only
+.B enable
+selects it and rebuilds the initial RAM disk with
+.BR update\-initramfs (8);
+if the rebuild fails the previous selection is restored.
+.PP
+The command never edits GRUB, the kernel command line, the EFI System Partition or the disk layout.
+.SH COMMANDS
+.TP
+.B status
+Print whether the Amerika theme is the active one, as JSON.
+.TP
+.B enable
+Select the Amerika theme. It appears at the next start.
+.TP
+.B disable
+Restore the previous theme (or the automatic choice).
+.SH FILES
+.TP
+.I /usr/share/plymouth/themes/amerika
+The theme.
+.TP
+.I /var/lib/amerika\-os/boot/previous.json
+The theme to restore.
+.SH SEE ALSO
+.BR amerika\-login (1),
+.BR amerika\-flavour (7),
+.BR plymouthd (8)

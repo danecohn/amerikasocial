@@ -1,0 +1,16 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Amerika OS desktop integration
+Source: https://github.com/danecohn/amerikasocial/tree/main/amerika-os
+
+Files: *
+Copyright: Amerika LLC
+License: GPL-3.0-only
+ The full GPL version 3 is available on Debian systems in
+ /usr/share/common-licenses/GPL-3.
+
+Files: src/os/agent/activity-plugin/*
+Copyright: Amerika LLC
+License: GPL-3.0-only
+ The OpenClaw engine is not part of this source archive. Its separately pinned
+ npm binary package retains the OpenClaw Foundation MIT licence and dependency
+ notices. The pinned origin, integrity and licence are in openclaw.lock.json.

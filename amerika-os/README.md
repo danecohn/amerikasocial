@@ -1,3 +1,5 @@
+> **Amerika OS 3.1.0**: adds the opt-in Amerika Agent (OpenClaw engine, MIT, bundled and pinned), native Settings, virtual desktops, switcher/overview, clipboard, calendar, OSD, KWin-enforced lock screen and the flavour packaging (branding, defaults, update channels, manuals, ISO and installer preparation). Items that need real hardware, your own API key, or a VM install are listed honestly in [release gates](docs/RELEASE-GATES.md); the bootable ISO and installer are **not** finished. Nothing has been pushed, uploaded or deployed. See the [Agent guide](docs/agent/README.md), [testing](docs/DEVELOPMENT-TESTING.md) and [flavour status](docs/FLAVOR.md).
+
 # Amerika OS 3.0
 
 Amerika OS is its own desktop environment for Ubuntu 26.10 (ARM64), designed so that the **Claude** and **ChatGPT** desktop

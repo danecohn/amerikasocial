@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 LIMIT = 5 * 1024 * 1024
-RELEASE = 'os-3.0.7'
+RELEASE = 'os-3.0.8'
 BASE = 'https://github.com/danecohn/amerikasocial/releases/download/'
 root = Path(__file__).resolve().parent.parent
 social = Path(sys.argv[1])

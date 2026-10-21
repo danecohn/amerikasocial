@@ -119,6 +119,11 @@ class Shell(Gtk.Application):
             pass
         return False
 
+    def do_shutdown(self):
+        if hasattr(self, 'bar'):
+            self.bar.tray.close()
+        Gtk.Application.do_shutdown(self)
+
     def _settings_changed(self, _monitor, file, _other, event):
         if file.get_basename() != 'settings.json' or event not in (Gio.FileMonitorEvent.CHANGES_DONE_HINT, Gio.FileMonitorEvent.CREATED):
             return

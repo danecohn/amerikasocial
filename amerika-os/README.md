@@ -15,7 +15,7 @@ GDM  ->  amerika-session  ->  kwin_wayland --exit-with-session=session-start
                                    |
                          session-start: first-run look and feel, polkit agent, supervised amerika-shell
                                    |
-amerika-shell (GTK4 + gtk4-layer-shell):  desktop (wallpaper) | bar | dock | launcher | notifications daemon
+amerika-shell (GTK4 + gtk4-layer-shell):  desktop (wallpaper) | bar + tray | dock | launcher | notifications daemon
         |   \                              AI broker (permissions, approvals, audit, Stop switch)
         |    D-Bus org.amerika.Windows  <-  KWin script (bridge.js): window list, shortcuts, one-shot window commands
         |
@@ -57,6 +57,29 @@ tile, move/resize, to desktop, close), desktops, audio, brightness, display scal
 Do Not Disturb, preferences, clipboard, files (home folder only), lock, suspend, restart, shut down, delete, and `shell.run`.
 
 Not included yet: screenshots and synthetic keyboard/mouse input (they need a portal or libei integration).
+
+## System tray (3.0.8)
+
+The bar hosts StatusNotifierItem / AppIndicator icons through the session bus. It runs
+`org.kde.StatusNotifierWatcher` when no watcher exists, or joins an existing watcher as a host.
+It supports named icons (including app-specific theme paths), ARGB pixmaps, passive/attention
+states, tooltips, primary/secondary clicks and scrolling. Exported `com.canonical.dbusmenu`
+menus support actions, disabled/hidden entries, checked states, submenus and live updates.
+App exit removes its icons. All app calls have timeouts and run asynchronously.
+
+This is a Wayland StatusNotifier host; old XEmbed-only icons are not supported. Attention
+movie animations, overlay badges and menu shortcut/icon decoration are not implemented.
+Apps without an exported menu receive the legacy `ContextMenu(0, 0)` request; placement
+depends on the app because Wayland does not expose global window coordinates to clients.
+
+Validated with a synthetic application in the private KWin rig, including rapid menu
+reopening, service disappearance and joining another watcher. Steam, Discord, Nextcloud
+and NetworkManager applets still need testing in the real laptop session.
+
+```bash
+sh tools/kwin-rig.sh 'sh tests/rig/tray_test.sh'
+cat "$(cat dist/rig-dir)/script.log"
+```
 
 ## Keys
 

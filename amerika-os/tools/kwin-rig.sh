@@ -22,5 +22,7 @@ exec dbus-run-session -- sh -c '
   sleep 4
   export WAYLAND_DISPLAY=rig-wl GDK_BACKEND=wayland QT_QPA_PLATFORM=wayland
   sh -c "$RIG_SCRIPT $RIG_ARGS" >"$T/script.log" 2>&1
+  RESULT=$?
   kill $KW 2>/dev/null
+  exit $RESULT
 ' 2>"$T/dbus.log"

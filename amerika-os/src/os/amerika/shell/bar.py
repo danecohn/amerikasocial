@@ -9,6 +9,7 @@ from gi.repository import GLib, Gtk  # noqa: E402
 
 from .. import system
 from . import apps, layer
+from .tray import Tray
 
 
 def _label(text, css=None, xalign=0.0):
@@ -75,6 +76,10 @@ class Bar(Gtk.Window):
         self.stop.connect('clicked', lambda *_: shell.broker.stop_all())
         end.append(self.chip)
         end.append(self.stop)
+
+        self.tray = Tray()
+        end.append(self.tray)
+        self.tray.start()
 
         self.status = Gtk.MenuButton()
         self.status.add_css_class('am-bar-icon')

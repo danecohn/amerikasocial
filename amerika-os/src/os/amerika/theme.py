@@ -37,6 +37,10 @@ window.am-bar, window.am-bar > * { background: transparent; }
 .am-bar-btn.ai:hover { border-color: @am_second; box-shadow: 0 0 12px alpha(@am_second, .65); }
 .am-bar-icon { background: transparent; border: none; border-radius: 8px; padding: 3px 7px; color: @am_text; min-height: 24px; }
 .am-bar-icon:hover { background: alpha(white, .10); }
+.am-tray-icon { padding: 3px 5px; min-width: 20px; }
+.am-tray-icon.attention { background: alpha(@am_accent, .24); box-shadow: inset 0 -2px @am_accent; }
+.am-tray-menu-item { background: transparent; border: none; color: @am_text; padding: 7px 10px; border-radius: 8px; }
+.am-tray-menu-item:hover { background: alpha(@am_second, .15); }
 .am-ai-chip {
   border-radius: 999px; padding: 2px 12px; font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
   color: #0b0a14; background-image: linear-gradient(to right, @am_second, @am_accent);

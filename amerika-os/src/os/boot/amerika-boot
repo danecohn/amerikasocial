@@ -1,0 +1,8 @@
+#!/bin/sh
+# User-facing front end for the Amerika boot screen.   amerika-boot status | enable | disable
+helper=/usr/libexec/amerika/amerika-boot-helper
+case "$1" in
+  status) exec "$helper" status ;;
+  enable|disable) exec pkexec "$helper" "$1" ;;
+  *) echo "usage: amerika-boot status|enable|disable" >&2; exit 2 ;;
+esac

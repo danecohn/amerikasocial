@@ -36,7 +36,7 @@ SIGN_HOME = Path(os.environ.get('AMERIKA_SIGNING_HOME', Path.home() / '.local/sh
 KEY_NAME = 'Amerika OS Archive Signing Key'
 ARCH = 'arm64'
 SUITE = 'stable'
-DE_VERSION = '3.0.4'
+DE_VERSION = '3.0.7'
 MAINTAINER = 'Amerika LLC <noreply@amerika.social>'
 HOMEPAGE = 'https://www.amerika.social/downloads/os'
 SYSTEM_SHELL = Path('/usr/share/plasma/shells/org.kde.plasma.desktop')
@@ -296,6 +296,33 @@ def build_login():
     return p
 
 
+def build_boot():
+    p = Pkg('amerika-boot', DE_VERSION, 'Amerika OS boot screen\nA retro-futurist Plymouth boot and shutdown screen that replaces the '
+            'Ubuntu logo and hides the firmware logo once the kernel is up.\nNothing changes until you switch it on in Amerika Settings or with '
+            '"amerika-boot enable"; "amerika-boot disable" restores the previous one.',
+            depends='python3, plymouth, plymouth-theme-spinner, initramfs-tools, pkexec', title='Amerika Boot Screen', category='Appearance')
+    theme = p.path('/usr/share/plymouth/themes/amerika')
+    shutil.copytree(OS / 'boot/amerika', theme)
+    stock = Path('/usr/share/plymouth/themes/spinner')  # password-prompt art, from plymouth-theme-spinner (GPL-2.0-or-later)
+    for name in ('bullet.png', 'capslock.png', 'entry.png', 'keyboard.png', 'keymap-render.png', 'lock.png'):
+        shutil.copy(stock / name, theme / name)
+    for n in range(1, 31):
+        shutil.copy(stock / f'animation-{n:04d}.png', theme / f'animation-{n:04d}.png')
+    p.copy(OS / 'boot/amerika-boot-helper', '/usr/libexec/amerika/amerika-boot-helper', 0o755)
+    p.copy(OS / 'boot/amerika-boot', '/usr/bin/amerika-boot', 0o755)
+    p.copy(OS / 'boot/org.amerika.boot.policy', '/usr/share/polkit-1/actions/org.amerika.boot.policy')
+    alt = '/usr/share/plymouth/themes/amerika/amerika.plymouth'
+    # Registered below the stock themes' priority, so installing never selects it: only "amerika-boot enable" does.
+    p.scripts['postinst'] = ('#!/bin/sh\nset -e\nif [ "$1" = configure ]; then\n'
+                             f'  update-alternatives --install /usr/share/plymouth/themes/default.plymouth default.plymouth {alt} 50\nfi\nexit 0\n')
+    p.scripts['prerm'] = ('#!/bin/sh\nset -e\nif [ "$1" = remove ] || [ "$1" = purge ]; then\n'
+                          '  /usr/libexec/amerika/amerika-boot-helper disable >/dev/null 2>&1 || true\n'
+                          f'  update-alternatives --remove default.plymouth {alt} || true\nfi\nexit 0\n')
+    p.copyright('Amerika OS boot theme, Copyright Amerika LLC, GPL-3.0-only. Password-prompt and animation images are copied from '
+                'plymouth-theme-spinner (GPL-2.0-or-later, see /usr/share/doc/plymouth-theme-spinner/copyright).\n')
+    return p
+
+
 def build_apps():
     p = Pkg('amerika-apps', DE_VERSION, 'Amerika core apps\nAmerika Files, Terminal, Text and Settings launchers. Files, Terminal and Text are '
             'Amerika-branded launchers\nfor GNOME Files (Nautilus), Ptyxis and GNOME Text Editor, which stay installed and unmodified.',
@@ -423,7 +450,7 @@ def build_meta():
 
 BUILDERS = {
     'amerika-repo-keyring': build_keyring, 'amerika-icon-theme': build_icons, 'amerika-theme': build_theme,
-    'amerika-desktop-shell': build_shell, 'amerika-session': build_session, 'amerika-apps': build_apps, 'amerika-login': build_login,
+    'amerika-desktop-shell': build_shell, 'amerika-session': build_session, 'amerika-apps': build_apps, 'amerika-login': build_login, 'amerika-boot': build_boot,
     'amerika-software': build_software, 'amerika-social': build_social, 'amerika-venture': build_venture,
     'amerika-office': build_office, 'amerika-desktop': build_meta,
 }

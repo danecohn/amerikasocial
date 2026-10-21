@@ -28,6 +28,10 @@ SDDM_UNIT = 'sddm.service'
 CONF_TEXT = '''# Written by amerika-login-helper. Remove with: amerika-login disable
 [General]
 DisplayServer=wayland
+# No on-screen keyboard: the greeter has a physical-keyboard layout and the Qt virtual keyboard grabs focus.
+InputMethod=
+# Ubuntu Budgie's login theme (budgie-sddm-theme) forces the Qt virtual keyboard through GreeterEnvironment; override it.
+GreeterEnvironment=QT_IM_MODULE=compose
 
 [Theme]
 Current=amerika

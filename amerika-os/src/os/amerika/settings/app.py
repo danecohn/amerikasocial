@@ -470,7 +470,60 @@ class SettingsApp(Gtk.Application):
                               'screen anyway: press Ctrl+Alt+F3, log in on the text console, and run  sudo /usr/libexec/amerika/amerika-login-helper '
                               'disable  then  sudo reboot.', 'am-sub', wrap=True)))
         self._refresh_login()
+
+        box.append(label('BOOT SCREEN', 'am-heading'))
+        box.append(label('Replaces the Ubuntu logo shown while the computer starts and shuts down (the firmware logo drawn before Linux '
+                         'loads, such as the Surface or Windows logo, belongs to the laptop firmware and cannot be changed). Takes effect at the next start.',
+                         'am-sub', wrap=True))
+        bcol = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        self.boot_status = label('', 'am-appname', wrap=True)
+        bcol.append(self.boot_status)
+        self.boot_btn = Gtk.Button()
+        self.boot_btn.add_css_class('am-primary')
+        self.boot_btn.set_halign(Gtk.Align.START)
+        self.boot_btn.connect('clicked', lambda *_: self._boot_change())
+        bcol.append(self.boot_btn)
+        self.boot_note = label('', 'am-sub', wrap=True)
+        bcol.append(self.boot_note)
+        box.append(card(bcol))
+        self._refresh_boot()
         return box
+
+    BOOT_HELPER = os.environ.get('AMERIKA_BOOT_HELPER', '/usr/libexec/amerika/amerika-boot-helper')
+
+    def _refresh_boot(self):
+        try:
+            st = json.loads(subprocess.run([self.BOOT_HELPER, 'status'], capture_output=True, text=True, timeout=10).stdout)
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            st = None
+        if not st or not st.get('theme_installed'):
+            self.boot_status.set_text('The Amerika boot screen is not installed (sudo apt install amerika-boot).')
+            self.boot_btn.set_sensitive(False)
+            return
+        self._boot_active = bool(st.get('amerika_active'))
+        self.boot_status.set_text('The Amerika boot screen is on.' if self._boot_active else 'You are using the standard Ubuntu boot screen.')
+        self.boot_btn.set_label('Go back to the previous boot screen' if self._boot_active else 'Use the Amerika boot screen')
+        self.boot_btn.set_sensitive(True)
+
+    def _boot_change(self):
+        action = 'disable' if getattr(self, '_boot_active', False) else 'enable'
+        self.boot_note.set_text('Asking for your password, then rebuilding the boot image (about a minute)…')
+        self.boot_btn.set_sensitive(False)
+
+        def work():
+            res = subprocess.run(['pkexec', self.BOOT_HELPER, action], capture_output=True, text=True)
+            GLib.idle_add(self._boot_changed, res)
+        threading.Thread(target=work, daemon=True).start()
+
+    def _boot_changed(self, res):
+        self._refresh_boot()
+        if res.returncode == 0:
+            self.boot_note.set_text('Done. It applies the next time you start or restart the computer.')
+        elif res.returncode in (126, 127):
+            self.boot_note.set_text('Cancelled: no changes were made.')
+        else:
+            self.boot_note.set_text('Could not change it: ' + (res.stderr or res.stdout).strip()[:300])
+        return False
 
     def _refresh_login(self):
         st = self._login_status()

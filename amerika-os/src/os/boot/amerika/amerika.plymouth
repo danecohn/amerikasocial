@@ -1,0 +1,65 @@
+[Plymouth Theme]
+Name=Amerika OS
+Description=Retro-futurist Amerika OS boot screen. Hides the firmware logo as soon as it starts.
+ModuleName=two-step
+
+[two-step]
+Font=Inter 12
+TitleFont=Inter 30
+ImageDir=/usr/share/plymouth/themes/amerika
+DialogHorizontalAlignment=.5
+DialogVerticalAlignment=.62
+TitleHorizontalAlignment=.5
+TitleVerticalAlignment=.382
+HorizontalAlignment=.5
+VerticalAlignment=.76
+WatermarkHorizontalAlignment=.5
+WatermarkVerticalAlignment=.38
+Transition=none
+TransitionDuration=0.0
+BackgroundStartColor=0x05040a
+BackgroundEndColor=0x1a1930
+ProgressBarBackgroundColor=0x3a3950
+ProgressBarForegroundColor=0x19e3ff
+DialogClearsFirmwareBackground=true
+MessageBelowAnimation=true
+
+[boot-up]
+UseEndAnimation=false
+UseFirmwareBackground=false
+
+[shutdown]
+UseEndAnimation=false
+UseFirmwareBackground=false
+
+[reboot]
+UseEndAnimation=false
+UseFirmwareBackground=false
+
+[updates]
+SuppressMessages=true
+ProgressBarShowPercentComplete=true
+UseProgressBar=true
+Title=Installing Updates...
+SubTitle=Do not turn off your computer
+
+[system-upgrade]
+SuppressMessages=true
+ProgressBarShowPercentComplete=true
+UseProgressBar=true
+Title=Upgrading System...
+SubTitle=Do not turn off your computer
+
+[firmware-upgrade]
+SuppressMessages=true
+ProgressBarShowPercentComplete=true
+UseProgressBar=true
+Title=Upgrading Firmware...
+SubTitle=Do not turn off your computer
+
+[system-reset]
+SuppressMessages=true
+ProgressBarShowPercentComplete=true
+UseProgressBar=true
+Title=Resetting System...
+SubTitle=Do not turn off your computer

@@ -1,0 +1,80 @@
+#!/usr/bin/python3
+"""Root helper for the Amerika boot screen (Plymouth). Actions: status | enable | disable.
+
+Only selects which Plymouth theme the default.plymouth alternative points to and rebuilds the initramfs; it never
+touches GRUB, the kernel command line or the disk. If the initramfs rebuild fails the previous selection is restored.
+"""
+import json
+import os
+import subprocess
+import sys
+
+ALT = os.environ.get('AMERIKA_BOOT_ALT', 'default.plymouth')
+THEME = os.environ.get('AMERIKA_BOOT_THEME', '/usr/share/plymouth/themes/amerika/amerika.plymouth')
+STATE = os.environ.get('AMERIKA_BOOT_STATE', '/var/lib/amerika-os/boot')
+
+
+def run(*cmd):
+    return subprocess.run(cmd, capture_output=True, text=True)
+
+
+def current():
+    out = run('update-alternatives', '--query', ALT).stdout
+    for line in out.splitlines():
+        if line.startswith('Value:'):
+            return line.split(':', 1)[1].strip()
+    return ''
+
+
+def status():
+    cur = current()
+    print(json.dumps({'amerika_active': cur == THEME, 'theme': cur, 'theme_installed': os.path.exists(THEME),
+                      'plymouth_installed': run('which', 'update-initramfs').returncode == 0}))
+
+
+def rebuild():
+    r = run('update-initramfs', '-u')
+    if r.returncode:
+        sys.stderr.write(r.stderr or r.stdout)
+    return r.returncode == 0
+
+
+def enable():
+    if not os.path.exists(THEME):
+        sys.exit('The Amerika boot theme is not installed.')
+    prev = current()
+    os.makedirs(STATE, exist_ok=True)
+    if prev != THEME:
+        with open(os.path.join(STATE, 'previous.json'), 'w') as f:
+            json.dump({'previous': prev}, f)
+    if run('update-alternatives', '--set', ALT, THEME).returncode:
+        sys.exit('Could not select the Amerika boot theme.')
+    if not rebuild():
+        run('update-alternatives', '--auto', ALT)
+        rebuild()
+        sys.exit('Rebuilding the boot image failed; the previous boot screen was restored.')
+    print('Amerika boot screen enabled. It appears at the next start.')
+
+
+def disable():
+    prev = ''
+    try:
+        prev = json.load(open(os.path.join(STATE, 'previous.json'))).get('previous', '')
+    except (OSError, ValueError):
+        pass
+    if prev and prev != THEME and os.path.exists(prev):
+        run('update-alternatives', '--set', ALT, prev)
+    else:
+        run('update-alternatives', '--auto', ALT)
+    if not rebuild():
+        sys.exit('Rebuilding the boot image failed.')
+    print('Previous boot screen restored. It returns at the next start.')
+
+
+if __name__ == '__main__':
+    action = sys.argv[1] if len(sys.argv) > 1 else ''
+    if action not in ('status', 'enable', 'disable'):
+        sys.exit('usage: amerika-boot-helper status|enable|disable')
+    if action != 'status' and os.geteuid() != 0 and not os.environ.get('AMERIKA_BOOT_TEST'):
+        sys.exit('must run as root')
+    {'status': status, 'enable': enable, 'disable': disable}[action]()

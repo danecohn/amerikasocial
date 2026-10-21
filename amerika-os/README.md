@@ -62,7 +62,7 @@ Not included yet: screenshots and synthetic keyboard/mouse input (they need a po
 
 | Key | Action |
 | --- | --- |
-| Super (Windows), tap | Launcher |
+| Super (Windows), tap | Launcher (a KWin script shortcut on "Meta") |
 | Super+Space | Launcher |
 | Copilot key | Claude, ChatGPT or a picker (Settings > AI & Assistants) |
 | Super+1 / Super+2 | First / second AI app |
@@ -72,10 +72,10 @@ Not included yet: screenshots and synthetic keyboard/mouse input (they need a po
 | Super+Left/Right/Up/Down | Tile left, tile right, maximize, restore |
 | Ctrl+Alt+Esc | Pause or resume all AI actions |
 
-Two things must happen before KWin starts, so `amerika-session` does them: it binds the Super key (`ModifierOnlyShortcuts` in
-`kwinrc`, with the previous binding saved and restored when the session ends) and it points `XKB_CONFIG_EXTRA_PATH` at a
-generated copy of the `inet` layout in which Shift+Super+F23 stays F23. The stock layout turns the Copilot key's
-Shift+Super+F23 into `XF86Assistant`, which KWin's shortcut system cannot bind.
+The Windows key is a KWin script shortcut on `Meta` (Plasma 6.7's KWin binds modifier-only keys through the global shortcut
+system; the old `ModifierOnlyShortcuts` setting in `kwinrc` is no longer used). The Copilot key needs one thing before KWin
+starts, so `amerika-session` points `XKB_CONFIG_EXTRA_PATH` at a generated copy of the `inet` layout in which Shift+Super+F23
+stays F23. The stock layout turns the Copilot key's Shift+Super+F23 into `XF86Assistant`, which KWin cannot bind.
 
 ## Build and test
 

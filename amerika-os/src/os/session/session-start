@@ -8,19 +8,11 @@ dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY XDG_CURRENT
 # one-time look and feel (window buttons, effects, colours); safe to re-run
 "${AMERIKA_BIN:-/usr/bin}/amerika-first-run"
 
-# amerika-session bound the Super key before KWin started and saved the old binding; put it back when the session ends
-state="${XDG_STATE_HOME:-$HOME/.local/state}/amerika-os"
-restore_meta() {
-  saved=$(cat "$state/meta-shortcut.saved" 2>/dev/null)
-  if [ -n "$saved" ] && [ "$saved" != "-" ]; then
-    kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta "$saved"
-  else
-    kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta --delete
-  fi
-  rm -f "$state/meta-shortcut.saved"
-}
+# clean up the Super-key binding that Amerika OS 3.0.0 to 3.0.2 wrote into kwinrc (the Windows key is now a KWin script shortcut)
+"${AMERIKA_LIBEXEC:-/usr/libexec/amerika}/amerika-restore-meta"
+
 shell_pid=""
-cleanup() { [ -n "$shell_pid" ] && kill "$shell_pid" 2>/dev/null; restore_meta; }
+cleanup() { [ -n "$shell_pid" ] && kill "$shell_pid" 2>/dev/null; }
 trap 'cleanup' EXIT
 trap 'exit 0' TERM INT HUP
 

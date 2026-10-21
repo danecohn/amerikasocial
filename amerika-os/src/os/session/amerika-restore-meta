@@ -1,12 +1,20 @@
 #!/bin/sh
-# Sourced by startplasma-style environments and runnable by hand: if the Super-key binding still points at the Amerika
-# shell (the Amerika session was killed before it could restore it), put the previous binding back.
+# Housekeeping, safe to run any time. Amerika OS 3.0.0 to 3.0.2 bound the Windows key through kwinrc's
+# ModifierOnlyShortcuts; Plasma 6.7's KWin does not use that, and the entry could shadow Plasma's own binding in a Plasma
+# session. This puts the previous value back (or removes the entry). When run from a Plasma session (AMERIKA_SESSION unset)
+# it also drops the stale "Amerika:" entries from the KWin shortcut list so they cannot compete with Plasma's keys.
 state="${XDG_STATE_HOME:-$HOME/.local/state}/amerika-os"
 cur=$(kreadconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta 2>/dev/null)
 case "$cur" in
   org.amerika.Shell*)
     saved=$(cat "$state/meta-shortcut.saved" 2>/dev/null)
     if [ -n "$saved" ] && [ "$saved" != "-" ]; then kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta "$saved"
-    else kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta "org.kde.plasmashell,/PlasmaShell,org.kde.PlasmaShell,activateLauncherMenu"; fi
-    rm -f "$state/meta-shortcut.saved" ;;
+    else kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta --delete; fi ;;
 esac
+rm -f "$state/meta-shortcut.saved"
+if [ "$AMERIKA_SESSION" != "1" ] && [ -r "$HOME/.config/kglobalshortcutsrc" ]; then
+  grep -o '^Amerika[^=]*' "$HOME/.config/kglobalshortcutsrc" 2>/dev/null | while IFS= read -r key; do
+    kwriteconfig6 --file kglobalshortcutsrc --group kwin --key "$key" --delete
+  done
+fi
+exit 0

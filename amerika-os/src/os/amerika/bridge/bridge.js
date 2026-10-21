@@ -45,6 +45,7 @@ report();
 
 // ---- global shortcuts (registered through KWin, so they work everywhere in the session)
 function control(name) { callDBus(SERVICE, "/Control", "org.amerika.Control", "Action", name); }
+registerShortcut("Amerika: Launcher (Windows key)", "Tap the Windows key to open the launcher", "Meta", function () { control("launcher"); });
 registerShortcut("Amerika: Launcher", "Open the launcher", "Meta+Space", function () { control("launcher"); });
 registerShortcut("Amerika: First AI app", "Open or focus the first AI app", "Meta+1", function () { control("ai1"); });
 registerShortcut("Amerika: Second AI app", "Open or focus the second AI app", "Meta+2", function () { control("ai2"); });

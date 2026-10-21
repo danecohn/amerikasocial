@@ -1,60 +1,60 @@
 Package: amerika-apps
-Version: 3.0.2
+Version: 3.0.3
 Architecture: all
 Maintainer: Amerika LLC <noreply@amerika.social>
 Installed-Size: 1
 Section: x11
 Priority: optional
 Homepage: https://www.amerika.social/downloads/os
-Depends: nautilus, ptyxis, gnome-text-editor, amerika-desktop-shell (>= 3.0.2), amerika-icon-theme (>= 3.0.2)
+Depends: nautilus, ptyxis, gnome-text-editor, amerika-desktop-shell (>= 3.0.3), amerika-icon-theme (>= 3.0.3)
 Amerika-Title: Amerika Core Apps
 Amerika-Category: System
 Description: Amerika core apps
  Amerika Files, Terminal, Text and Settings launchers. Files, Terminal and Text are Amerika-branded launchers
  for GNOME Files (Nautilus), Ptyxis and GNOME Text Editor, which stay installed and unmodified.
-Filename: pool/main/a/amerika-apps/amerika-apps_3.0.2_all.deb
-Size: 1788
-SHA256: 96804c31b53f5f77e6b385e417967a033bc480ed30df5a0ca5c4e47cac8cd025
+Filename: pool/main/a/amerika-apps/amerika-apps_3.0.3_all.deb
+Size: 1792
+SHA256: 5b61c22f5df98545828235493103faaf1680a06f740b0b5ad2b17a42aa44f110
 
 Package: amerika-desktop-shell
-Version: 3.0.2
+Version: 3.0.3
 Architecture: all
 Maintainer: Amerika LLC <noreply@amerika.social>
 Installed-Size: 135
 Section: x11
 Priority: optional
 Homepage: https://www.amerika.social/downloads/os
-Depends: python3 (>= 3.11), python3-gi, gir1.2-gtk-4.0, gir1.2-gtk4layershell-1.0, libgtk4-layer-shell0, gir1.2-polkit-1.0, gir1.2-nm-1.0, kwin-wayland, kglobalacceld, polkit-kde-agent-1, libkscreen-bin, libkf6config-bin, libkscreenlocker6, plasma-desktop-data, wireplumber, pipewire-pulse, network-manager, power-profiles-daemon, upower, systemd, xdg-desktop-portal-gtk, fonts-inter, fonts-jetbrains-mono, librsvg2-common, amerika-icon-theme (>= 3.0.2), amerika-theme (>= 3.0.2)
+Depends: python3 (>= 3.11), python3-gi, gir1.2-gtk-4.0, gir1.2-gtk4layershell-1.0, libgtk4-layer-shell0, gir1.2-polkit-1.0, gir1.2-nm-1.0, kwin-wayland, kglobalacceld, polkit-kde-agent-1, libkscreen-bin, libkf6config-bin, libkscreenlocker6, plasma-desktop-data, wireplumber, pipewire-pulse, network-manager, power-profiles-daemon, upower, systemd, xdg-desktop-portal-gtk, fonts-inter, fonts-jetbrains-mono, librsvg2-common, amerika-icon-theme (>= 3.0.3), amerika-theme (>= 3.0.3)
 Recommends: nautilus, ptyxis, gnome-text-editor
 Amerika-Title: Amerika Shell
 Amerika-Category: System
 Description: Amerika Shell and Settings
  Amerika OS's own desktop shell (top bar, dock, launcher, notifications), its settings app, and the system-control server
  that lets the Claude and ChatGPT apps operate the computer under your supervision.
-Filename: pool/main/a/amerika-desktop-shell/amerika-desktop-shell_3.0.2_all.deb
-Size: 34988
-SHA256: 75ec2e2c3c3da0f0ccdaf7257d757df3a2a1e7a599dbd3ea108ed89da34e3322
+Filename: pool/main/a/amerika-desktop-shell/amerika-desktop-shell_3.0.3_all.deb
+Size: 35004
+SHA256: ef6b42d7e889f0dc9873aa31cf27bef3091f8c097b46909cbf1d8f1b73c20a3c
 
 Package: amerika-desktop
-Version: 3.0.2
+Version: 3.0.3
 Architecture: arm64
 Maintainer: Amerika LLC <noreply@amerika.social>
 Installed-Size: 0
 Section: metapackages
 Priority: optional
 Homepage: https://www.amerika.social/downloads/os
-Depends: amerika-session (>= 3.0.2), amerika-desktop-shell (>= 3.0.2), amerika-theme (>= 3.0.2), amerika-icon-theme (>= 3.0.2), amerika-apps (>= 3.0.2), amerika-software (>= 3.0.2), amerika-repo-keyring (>= 3.0.2), amerika-social, amerika-venture, amerika-office
+Depends: amerika-session (>= 3.0.3), amerika-desktop-shell (>= 3.0.3), amerika-theme (>= 3.0.3), amerika-icon-theme (>= 3.0.3), amerika-apps (>= 3.0.3), amerika-software (>= 3.0.3), amerika-repo-keyring (>= 3.0.3), amerika-social, amerika-venture, amerika-office
 Amerika-Title: Amerika OS Desktop
 Amerika-Category: System
 Description: Amerika OS desktop environment
  Amerika OS: its own shell on the KWin compositor, with the Claude and ChatGPT apps at the centre.
  Installs the session, shell, settings, theme, apps and the Amerika Software manager.
-Filename: pool/main/a/amerika-desktop/amerika-desktop_3.0.2_arm64.deb
+Filename: pool/main/a/amerika-desktop/amerika-desktop_3.0.3_arm64.deb
 Size: 1160
-SHA256: e3cdc059679d940113113352e48b9ce4778b616f29ec6561ecda759689b9e76c
+SHA256: a091bf23568bc3d61f7c09326f9d9d0f925cdb3eba6cd9b9bc34002817dc657c
 
 Package: amerika-icon-theme
-Version: 3.0.2
+Version: 3.0.3
 Architecture: all
 Maintainer: Amerika LLC <noreply@amerika.social>
 Installed-Size: 149
@@ -66,9 +66,9 @@ Amerika-Title: Amerika Icons
 Amerika-Category: Appearance
 Description: Amerika OS icon theme
  Retro-futurist neon cartridge app icons and panel icons.
-Filename: pool/main/a/amerika-icon-theme/amerika-icon-theme_3.0.2_all.deb
-Size: 9116
-SHA256: 7825b4067769c5b761f942d7261accc4e02e93bf5a8bb424000d4381bd65bb79
+Filename: pool/main/a/amerika-icon-theme/amerika-icon-theme_3.0.3_all.deb
+Size: 9108
+SHA256: ee7e7f473e9f20867b6e4beac06b7bb533a28a2d88ca2d79cc4f9245a76bc882
 
 Package: amerika-office
 Version: 0.1.0-1
@@ -89,7 +89,7 @@ Size: 106706996
 SHA256: 609b749edabc6c5cbf3e320c8b0c1849de838144bc58207d13d90916f72b0924
 
 Package: amerika-repo-keyring
-Version: 3.0.2
+Version: 3.0.3
 Architecture: all
 Maintainer: Amerika LLC <noreply@amerika.social>
 Installed-Size: 0
@@ -100,27 +100,27 @@ Amerika-Title: Amerika Repository
 Amerika-Category: System
 Description: Amerika OS package repository signing key and APT source
  Installs the signing key and the APT source for https://www.amerika.social/apt.
-Filename: pool/main/a/amerika-repo-keyring/amerika-repo-keyring_3.0.2_all.deb
+Filename: pool/main/a/amerika-repo-keyring/amerika-repo-keyring_3.0.3_all.deb
 Size: 1780
-SHA256: 2df70520f25d23d627ad5d89444b6d55392ed0780f552cc042c923ddff50adfa
+SHA256: 0bbbdae38577774e6c12ee384c4b7f651620a67ee0950821209675bd5eed0346
 
 Package: amerika-session
-Version: 3.0.2
+Version: 3.0.3
 Architecture: all
 Maintainer: Amerika LLC <noreply@amerika.social>
-Installed-Size: 5
+Installed-Size: 4
 Section: x11
 Priority: optional
 Homepage: https://www.amerika.social/downloads/os
-Depends: amerika-desktop-shell (>= 3.0.2), kwin-wayland
+Depends: amerika-desktop-shell (>= 3.0.3), kwin-wayland
 Amerika-Title: Amerika Session
 Amerika-Category: System
 Description: Amerika OS login session
  Adds "Amerika OS" to the login screen. KWin runs as the compositor; everything else is Amerika's own shell.
  Other sessions are not changed.
-Filename: pool/main/a/amerika-session/amerika-session_3.0.2_all.deb
+Filename: pool/main/a/amerika-session/amerika-session_3.0.3_all.deb
 Size: 3856
-SHA256: 31a5c436cc68d400533d0ca33e29117d81ae95a8e477e0150bf0e5c546db61ab
+SHA256: 1a37244117298c80293280d202e463d5333706457875399db1c3191c4f44be4f
 
 Package: amerika-social
 Version: 1.0.0-1
@@ -140,7 +140,7 @@ Size: 100922608
 SHA256: 99669615b544285dcd248fdc6f9fc5579743c37541994356fca5152129499ffe
 
 Package: amerika-software
-Version: 3.0.2
+Version: 3.0.3
 Architecture: all
 Maintainer: Amerika LLC <noreply@amerika.social>
 Installed-Size: 16
@@ -152,12 +152,12 @@ Amerika-Title: Amerika Software
 Amerika-Category: System
 Description: Amerika Software
  Graphical manager for the Amerika package repository: install, update and remove Amerika apps.
-Filename: pool/main/a/amerika-software/amerika-software_3.0.2_all.deb
-Size: 6788
-SHA256: fc3c87f9b20bf82f4ab3eaa34cdd96ec411d079ed2fc6abdc1cab1a03d72c293
+Filename: pool/main/a/amerika-software/amerika-software_3.0.3_all.deb
+Size: 6792
+SHA256: 1a07e6abd1491171841721e0137da394786b02ee7ebe80ab3a784645088748e1
 
 Package: amerika-theme
-Version: 3.0.2
+Version: 3.0.3
 Architecture: all
 Maintainer: Amerika LLC <noreply@amerika.social>
 Installed-Size: 1693
@@ -168,9 +168,9 @@ Amerika-Title: Amerika Theme
 Amerika-Category: Appearance
 Description: Amerika OS theme
  Retro-futurist wallpapers and the Amerika Retro colour scheme.
-Filename: pool/main/a/amerika-theme/amerika-theme_3.0.2_all.deb
-Size: 1682132
-SHA256: f035b143c9a2a2720cea6f4c0e986caae02ad8faefcceed6bfada64b42e4df60
+Filename: pool/main/a/amerika-theme/amerika-theme_3.0.3_all.deb
+Size: 1682136
+SHA256: 8ff1f2b236dfaa28ca164d56ece55c57971a55b83c01f4825c56cc7e6a10d80c
 
 Package: amerika-venture
 Version: 158.0.1-amerika1

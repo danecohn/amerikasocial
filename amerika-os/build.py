@@ -403,7 +403,7 @@ def build_venture():
 
 def build_office():
     root = extract(app_archive('office'), STAGE / '_payload-office')
-    p = Pkg('amerika-office', '0.1.0-2', 'Amerika Office desktop\nDesktop app for the hosted Amerika Office portal '
+    p = Pkg('amerika-office', '0.2.0-1', 'Amerika Office desktop\nDesktop app for the hosted Amerika Office portal '
             '(documents, spreadsheets and presentations).\nIt connects to the hosted portal and is not an offline '
             'office suite. The editor is ONLYOFFICE Community Edition.',
             arch=ARCH, title='Amerika Office', category='Office',

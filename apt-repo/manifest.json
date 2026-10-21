@@ -2,7 +2,7 @@
   "suite": "stable",
   "architecture": "arm64",
   "fingerprint": "9F52BD98A8EE9096B1BE7AAC1063BBC989A11133",
-  "generated": "Wed, 21 Oct 2026 19:25:03 UTC",
+  "generated": "Wed, 21 Oct 2026 19:56:04 UTC",
   "packages": {
     "amerika-apps_3.0.3_all.deb": {
       "path": "pool/main/a/amerika-apps/amerika-apps_3.0.3_all.deb",
@@ -168,6 +168,11 @@
       "path": "pool/main/a/amerika-office/amerika-office_0.1.0-2_arm64.deb",
       "size": 106715924,
       "sha256": "81bded0545f2a13f1c1e572fbf06316c7ad5d1f213484a6b2ef9167c4caee5ce"
+    },
+    "amerika-office_0.2.0-1_arm64.deb": {
+      "path": "pool/main/a/amerika-office/amerika-office_0.2.0-1_arm64.deb",
+      "size": 106704564,
+      "sha256": "c4c4edb6529e8c3d86b4ed8a9fb079a7428f66a221cb0d8a8a5ced436cb7bc3a"
     },
     "amerika-repo-keyring_3.0.3_all.deb": {
       "path": "pool/main/a/amerika-repo-keyring/amerika-repo-keyring_3.0.3_all.deb",

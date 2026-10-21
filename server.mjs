@@ -1,4 +1,5 @@
 import {createSoftwareDownloads} from './software-downloads.mjs';
+import {createAptRepository} from './apt-repository.mjs';
 const softwareDownloads=createSoftwareDownloads();
 import {createGaming} from './gaming.mjs';
 import {createGamingPublisher,gamingMcp} from './gaming-mcp.mjs';
@@ -39,6 +40,7 @@ import { verifyLocation, locationVerified } from './location.mjs';
 import { createMedia, validateMedia, maxMediaBytes } from './media.mjs';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
+const aptRepository=createAptRepository({dir:join(root,'apt-repo')});
 const pds = process.env.PDS_URL?.replace(/\/$/, '');
 // Explicit public origin supports HTTPS behind a hosting provider's proxy.
 const publicOrigin = process.env.PUBLIC_ORIGIN ? new URL(process.env.PUBLIC_ORIGIN).origin : null;
@@ -371,11 +373,13 @@ const server = http.createServer(async(req,res)=>{
       if(auth){const bucket='mcp:'+id;const l=limits.get(bucket)||{n:0,until:Date.now()+60000};if(l.until<Date.now()){l.n=0;l.until=Date.now()+60000;}limits.set(bucket,l);if(++l.n>120)fail(429,'Too many MCP requests. Retry shortly.');}
       return serveMcp(req,res,{auth,readBody:body,request:id==='gaming'?gamingPublisher.request:mcpRequest,events:id==='gaming'?undefined:mcpEvents,custom:id==='gaming'?gamingMcp:undefined,origin:allowedOrigin&&req.headers.origin?req.headers.origin:origin});
     }
+    if(path==='/apt'||path==='/apt/'){res.statusCode=302;res.setHeader('Location','/downloads/os');return res.end();}
+    if(path.startsWith('/apt/'))return aptRepository(req,res,path);
     if(path==='/api/software-downloads'){if(req.method!=='GET')fail(405,'Use GET.');const data=await softwareDownloads(url.searchParams.get('product'));res.setHeader('Cache-Control','public,max-age=30');return json(res,200,data);}
     if (!path.startsWith('/api/')) {
       if(req.method!=='GET') fail(405,'Method not allowed.');
       const files={'/desktop-ui.css':['desktop-ui.css','text/css'],'/fonts/Inter.ttf':['fonts/Inter.ttf','font/ttf'],'/fonts/Inter-OFL.txt':['fonts/Inter-OFL.txt','text/plain'],'/gaming':['gaming.html','text/html'],'/gaming/':['gaming.html','text/html'],'/gaming.js':['gaming.js','text/javascript'],'/gaming.css':['gaming.css','text/css'],'/gaming/developers':['gaming-guide.html','text/html'],'/gaming/sdk.js':['gaming-bridge.js','text/javascript'],'/downloads':['downloads.html','text/html'],'/downloads/':['downloads.html','text/html'],'/downloads.css':['downloads.css','text/css'],'/':['index.html','text/html'],'/moderate':['index.html','text/html'],'/privacy':['privacy.html','text/html'],'/terms':['terms.html','text/html'],'/plugin':['plugin.html','text/html'],'/support':['support.html','text/html'],'/legal.css':['legal.css','text/css'],'/moderation-webhooks.md':['moderation-webhooks.md','text/plain'],'/webhook-receivers.md':['webhook-receivers.md','text/plain'],'/moderation.js':['moderation.js','text/javascript'],'/app.js':['app.js','text/javascript'],'/account.js':['account.js','text/javascript'],'/dating.js':['dating.js','text/javascript'],'/communities.js':['communities.js','text/javascript'],'/features.css':['features.css','text/css'],'/style.css':['style.css','text/css'],'/agent.md':['agent.md','text/plain'],'/logo.svg':['logo.svg','image/svg+xml'],'/manifest.webmanifest':['manifest.webmanifest','application/manifest+json'],'/icon-32.png':['icon-32.png','image/png'],'/icon-180.png':['icon-180.png','image/png'],'/icon-192.png':['icon-192.png','image/png'],'/icon-512.png':['icon-512.png','image/png'],'/icon-maskable-512.png':['icon-maskable-512.png','image/png']};
-      Object.assign(files,{'/venture':['venture-downloads.html','text/html'],'/downloads/venture':['venture-downloads.html','text/html'],'/downloads/office':['office-downloads.html','text/html'],'/software-downloads.js':['software-downloads.js','text/javascript'],'/software-downloads.css':['software-downloads.css','text/css'],'/venture-icon.svg':['venture-icon.svg','image/svg+xml']});
+      Object.assign(files,{'/venture':['venture-downloads.html','text/html'],'/downloads/venture':['venture-downloads.html','text/html'],'/downloads/office':['office-downloads.html','text/html'],'/downloads/os':['os-downloads.html','text/html'],'/os':['os-downloads.html','text/html'],'/os-downloads.css':['os-downloads.css','text/css'],'/os-downloads.js':['os-downloads.js','text/javascript'],'/software-downloads.js':['software-downloads.js','text/javascript'],'/software-downloads.css':['software-downloads.css','text/css'],'/venture-icon.svg':['venture-icon.svg','image/svg+xml']});
       files['/mobile-verification']=['mobile-verification.html','text/html'];
       const f=files[path]; if(!f) fail(404,'Not found.');
       res.setHeader('Content-Type',f[1]); if(['desktop-ui.css','gaming.html','gaming.js','gaming.css','gaming-guide.html','gaming-bridge.js','downloads.html','downloads.css','index.html','app.js','account.js','style.css','dating.js','communities.js','features.css','privacy.html','terms.html','plugin.html','support.html','legal.css','moderation.js'].includes(f[0]))res.setHeader('Cache-Control','no-store'); res.end(await readFile(join(root,'public',f[0]))); return;

@@ -1,0 +1,7 @@
+#!/bin/sh
+# Opens the configured AI assistant site. Override with AMERIKA_AI_URL or /etc/amerika/ai-url.
+url="${AMERIKA_AI_URL:-}"
+[ -z "$url" ] && [ -r /etc/amerika/ai-url ] && url=$(head -n1 /etc/amerika/ai-url)
+case "$url" in https://*) ;; *) url=https://chatgpt.com ;; esac
+if command -v amerika-venture >/dev/null 2>&1; then exec amerika-venture --new-window "$url"; fi
+exec xdg-open "$url"

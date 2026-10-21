@@ -1,0 +1,90 @@
+#!/usr/bin/python3
+"""Privileged helper for Amerika Software. Run through pkexec only.
+
+It accepts a fixed set of actions and only operates on packages that are listed in
+the signed Amerika repository index that APT has already verified. Nothing from the
+caller is ever passed to a shell.
+"""
+import os
+import re
+import subprocess
+import sys
+
+SOURCES = '/etc/apt/sources.list.d/amerika.sources'
+SITE = 'www.amerika.social'
+NAME = re.compile(r'^[a-z0-9][a-z0-9+.-]{1,63}$')
+PROTECTED = {'amerika-repo-keyring'}
+ENV = {'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'LANG': 'C.UTF-8', 'DEBIAN_FRONTEND': 'noninteractive',
+       'APT_LISTCHANGES_FRONTEND': 'none', 'NEEDRESTART_MODE': 'a'}
+APT = ['/usr/bin/apt-get', '-y', '-o', 'APT::Status-Fd=1', '-o', 'Dpkg::Options::=--force-confold',
+       '-o', 'Dpkg::Options::=--force-confdef']
+
+
+def fail(message, code=2):
+    print('error: ' + message, file=sys.stderr)
+    sys.exit(code)
+
+
+def catalog():
+    """Names of packages whose candidate comes from the verified Amerika repository."""
+    import apt
+    names = set()
+    for pkg in apt.Cache():
+        cand = pkg.candidate
+        if cand is not None and any(o.origin == 'Amerika' and o.site == SITE and o.trusted for o in cand.origins):
+            names.add(pkg.name)
+    return names
+
+
+def installed():
+    import apt
+    return {pkg.name for pkg in apt.Cache() if pkg.is_installed}
+
+
+def checked(names):
+    if not names or len(names) > 16:
+        fail('Provide between one and sixteen package names.')
+    known = catalog()
+    for name in names:
+        if not NAME.match(name):
+            fail('Invalid package name.')
+        if name not in known:
+            fail(f'{name} is not in the Amerika repository.')
+    return names
+
+
+def run(argv):
+    return subprocess.call(argv, env=ENV)
+
+
+def main():
+    if os.geteuid() != 0:
+        fail('This helper must be run as root through pkexec.')
+    if len(sys.argv) < 2:
+        fail('Missing action.')
+    action, args = sys.argv[1], sys.argv[2:]
+    if action == 'update':
+        if args:
+            fail('update takes no arguments.')
+        sys.exit(run(['/usr/bin/apt-get', '-o', 'APT::Status-Fd=1', '-o', 'Dir::Etc::sourceparts=/nonexistent',
+                      '-o', 'APT::Get::List-Cleanup=0', '-o', f'Dir::Etc::sourcelist={SOURCES}', 'update']))
+    if action == 'install':
+        sys.exit(run(APT + ['install', '--'] + checked(args)))
+    if action == 'remove':
+        names = checked(args)
+        if PROTECTED & set(names):
+            fail('That package cannot be removed from here.')
+        sys.exit(run(APT + ['remove', '--'] + names))
+    if action == 'upgrade':
+        if args:
+            fail('upgrade takes no arguments.')
+        targets = sorted(catalog() & installed())
+        if not targets:
+            print('Nothing to upgrade.')
+            sys.exit(0)
+        sys.exit(run(APT + ['install', '--only-upgrade', '--'] + targets))
+    fail('Unknown action.')
+
+
+if __name__ == '__main__':
+    main()

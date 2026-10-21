@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0d0d13">
+<title>Amerika OS · Desktop Environment and Package Repository</title>
+<meta name="description" content="Install the Amerika OS desktop environment from the signed Amerika package repository. Ubuntu 26.10 ARM64 with KDE Plasma 6.7.">
+<link rel="icon" href="/logo.svg" type="image/svg+xml"><link rel="stylesheet" href="/os-downloads.css"><script src="/os-downloads.js" defer></script></head>
+<body>
+<header class="bar"><a class="brand" href="/"><img src="/logo.svg" width="30" height="30" alt="">amerika<span>os</span></a>
+<nav aria-label="Amerika software"><a href="/downloads">Apps</a><a href="/downloads/venture">Venture</a><a href="/downloads/office">Office</a><a href="/downloads/os" aria-current="page">OS</a><a class="pill" href="/">Open Social</a></nav></header>
+<main>
+<section class="hero">
+ <div class="sun" aria-hidden="true"></div><div class="grid" aria-hidden="true"></div>
+ <div class="hero-copy"><p class="eyebrow">AMERIKA OS · 1.0 · EARLY ACCESS</p>
+ <h1>The Amerika desktop.<br>One command away.</h1>
+ <p class="lead">A top menu bar, a floating dock that never hides, and a signed package repository hosted right here on Amerika Social. Social, AI, browsing, files and terminal, built on KDE Plasma.</p>
+ <div class="window" role="group" aria-label="Quick install">
+  <div class="chrome"><i class="r"></i><i class="y"></i><i class="g"></i><span>Terminal — quick install</span></div>
+  <pre id="quick"><code>sudo apt install amerika-desktop</code></pre>
+  <p class="hint">After adding the repository below. Then pick <b>Amerika OS</b> on the login screen.</p>
+ </div></div>
+</section>
+
+<section id="install" class="block"><h2>Install</h2>
+<p class="muted">Ubuntu 26.10 ("Stonking Stingray") for ARM64 with KDE Plasma 6.7, using ordinary APT with a dedicated signing key. No <code>trusted=yes</code>, no unauthenticated packages.</p>
+<ol class="steps">
+<li><h3>Add the signing key</h3><div class="window"><div class="chrome"><i class="r"></i><i class="y"></i><i class="g"></i><span>bash</span><button class="copy" data-copy="key">Copy</button></div><pre id="key"><code>sudo install -d -m 0755 /usr/share/keyrings
+curl -fsSL https://www.amerika.social/apt/amerika-archive-keyring.gpg | sudo tee /usr/share/keyrings/amerika-archive-keyring.gpg &gt;/dev/null
+gpg --show-keys --with-fingerprint /usr/share/keyrings/amerika-archive-keyring.gpg</code></pre></div>
+<p class="muted">Compare the fingerprint with <code id="fpr">9F52 BD98 A8EE 9096 B1BE  7AAC 1063 BBC9 89A1 1133</code>. The same fingerprint is published in the <a href="https://github.com/danecohn/amerikasocial/tree/main/amerika-os">source repository</a>.</p></li>
+<li><h3>Add the repository</h3><div class="window"><div class="chrome"><i class="r"></i><i class="y"></i><i class="g"></i><span>bash</span><button class="copy" data-copy="src">Copy</button></div><pre id="src"><code>sudo tee /etc/apt/sources.list.d/amerika.sources &gt;/dev/null &lt;&lt;'EOF'
+Types: deb
+URIs: https://www.amerika.social/apt
+Suites: stable
+Components: main
+Architectures: arm64
+Signed-By: /usr/share/keyrings/amerika-archive-keyring.gpg
+EOF</code></pre></div></li>
+<li><h3>Install the desktop</h3><div class="window"><div class="chrome"><i class="r"></i><i class="y"></i><i class="g"></i><span>bash</span><button class="copy" data-copy="inst">Copy</button></div><pre id="inst"><code>sudo apt update
+sudo apt install amerika-desktop</code></pre></div>
+<p class="muted">Log out and choose <b>Amerika OS</b> from the session menu on the login screen. Your existing Plasma session is left untouched, so you can always switch back. Install only the pieces you want with <code>apt install amerika-software</code>, <code>amerika-venture</code>, <code>amerika-office</code> or <code>amerika-social</code>.</p></li>
+</ol></section>
+
+<section class="block"><h2>What you get</h2>
+<div class="cards">
+<article><h3>Amerika shell</h3><p>Top menu bar with the Amerika menu, global menu, tray and clock. A floating dock for Social, AI, Venture, Files, Terminal and Software. Both stay visible.</p></article>
+<article><h3>Amerika apps</h3><p>Social, Venture (Firefox-based), Office, AI shortcut, Files, Terminal, Text and Settings, all with Amerika branding.</p></article>
+<article><h3>Amerika Software</h3><p>A graphical package manager for this repository: install, update and remove with the normal administrator prompt.</p></article>
+<article><h3>Retro-future look</h3><p>Dark glass, chrome and crimson neon, a horizon wallpaper and the AmerikaOS icon set.</p></article>
+</div></section>
+
+<section class="block"><h2>Packages</h2>
+<p class="muted" id="pkg-status">Loading the current package list…</p>
+<div class="table-wrap"><table id="packages"><thead><tr><th>Package</th><th>Version</th><th>Architecture</th><th>Size</th><th>SHA-256</th></tr></thead><tbody></tbody></table></div></section>
+
+<section class="block"><h2>Supported systems</h2>
+<table class="spec"><tbody>
+<tr><th>Release</th><td>Ubuntu 26.10 (stonking)</td></tr>
+<tr><th>Architecture</th><td>ARM64 (aarch64) only for this release. x86-64 packages are not built or tested yet, so they are not offered.</td></tr>
+<tr><th>Desktop base</th><td>KDE Plasma 6.7 and KWin on Wayland. Packages depend on the matching Plasma 6.7 packages and install them automatically.</td></tr>
+<tr><th>Updates</th><td><code>sudo apt update &amp;&amp; sudo apt upgrade</code>, or Amerika Software. Removal: <code>sudo apt remove amerika-desktop</code>.</td></tr>
+</tbody></table></section>
+
+<section class="block"><h2>Source, licenses and honesty</h2>
+<ul class="plain">
+<li>Everything is built from public sources: <a href="https://github.com/danecohn/amerikasocial/tree/main/amerika-os">desktop, packaging and repository tooling</a>, <a href="https://github.com/danecohn/AmerikaLinux">Social</a>, <a href="https://github.com/danecohn/AmerikaVenture">Venture</a>, <a href="https://github.com/danecohn/AmerikaOffice">Office</a>.</li>
+<li>Amerika OS is a desktop environment built on KDE Plasma and KWin, not a new Linux distribution or kernel. The shell links to the stock Plasma views so it receives upstream fixes.</li>
+<li>Files, Terminal, Text and Settings are Amerika-branded launchers for KDE Dolphin, Konsole, Kate and System Settings, which stay installed under their own licenses.</li>
+<li>Venture is Mozilla Firefox 158.0.1 with Amerika branding (MPL-2.0), not a full rebuild of Gecko. Office is an Electron wrapper for the hosted portal and keeps ONLYOFFICE Community Edition branding and notices.</li>
+<li>Amerika AI is a shortcut to a web assistant (configurable in <code>/etc/amerika/ai-url</code>); no AI model is bundled.</li>
+<li>Early access: the Amerika session has been tested in an isolated nested compositor and package-by-package, not yet across a wide range of machines. Report problems from the <a href="/support">support page</a>.</li>
+</ul></section>
+</main>
+<footer><span>© Amerika LLC · Amerika OS</span><nav><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/support">Support</a></nav></footer>
+</body></html>

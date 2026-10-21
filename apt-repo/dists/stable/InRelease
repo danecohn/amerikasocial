@@ -1,0 +1,22 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+Origin: Amerika
+Label: Amerika OS
+Suite: stable
+Codename: stable
+Date: Wed, 21 Oct 2026 05:19:04 UTC
+Architectures: arm64
+Components: main
+Description: Amerika OS packages
+SHA256:
+ ee6fab571ce12197d99cee7c4c27a08018701049dd9e132ca7f997cbadaea97e             8593 main/binary-arm64/Packages
+ feb2fa8e09f71729da1ebd7efce8a8052a00c1b89323808800d39af68ace508c             2535 main/binary-arm64/Packages.gz
+ a60c1e10ee0203e656f93f751cd3a4d9c0ca3b060cacc3aecb792eaecd4dfdf4             2536 main/binary-arm64/Packages.xz
+-----BEGIN PGP SIGNATURE-----
+
+iHUEARYKAB0WIQSfUr2YqO6QlrG+eqwQY7vJiaERMwUCathLSAAKCRAQY7vJiaER
+MyzuAP0UTiNHMcC/uRNi3l87yaCFHDR76TUsEUEorB861aH8vgD7BPHh93aHWeJl
+Byn/yPZVGZ3Bbcw47TkBNWaYn36/WQ4=
+=x5yn
+-----END PGP SIGNATURE-----

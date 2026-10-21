@@ -1,0 +1,12 @@
+{
+    "KPackageStructure": "Plasma/LookAndFeel",
+    "KPlugin": {
+        "Authors": [{"Name": "Amerika LLC"}],
+        "Description": "Amerika OS dark look and feel",
+        "Id": "org.amerika.os.desktop",
+        "License": "GPL-3.0",
+        "Name": "Amerika OS",
+        "Version": "1.0.0",
+        "Website": "https://www.amerika.social"
+    }
+}

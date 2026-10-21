@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Amerika Settings
+GenericName=System Settings
+Comment=Configure Amerika OS (Amerika-branded launcher for KDE System Settings)
+Exec=systemsettings
+Icon=preferences-system
+Terminal=false
+Categories=Settings;Qt;KDE;
+StartupWMClass=systemsettings

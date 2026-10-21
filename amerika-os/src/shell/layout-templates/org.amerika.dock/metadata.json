@@ -1,0 +1,15 @@
+{
+    "KPackageStructure": "Plasma/LayoutTemplate",
+    "KPlugin": {
+        "Authors": [{"Name": "Amerika LLC"}],
+        "Category": "",
+        "Description": "Floating always-visible application dock",
+        "EnabledByDefault": true,
+        "Id": "org.amerika.dock",
+        "License": "GPL-3.0",
+        "Name": "Amerika Dock"
+    },
+    "X-Plasma-APIVersion": "2",
+    "X-Plasma-ProvidedTypes": ["panel"],
+    "X-Plasma-Shell": "plasmashell"
+}

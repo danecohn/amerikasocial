@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Amerika Software
+GenericName=Software Manager
+Comment=Install, update and remove Amerika apps
+Exec=/usr/bin/amerika-software
+Icon=amerika-software
+Terminal=false
+Categories=System;PackageManager;Settings;
+Keywords=software;apps;install;update;packages;apt;

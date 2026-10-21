@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Amerika Text
+GenericName=Text Editor
+Comment=Edit text and code (Amerika-branded launcher for KDE Kate)
+Exec=kate %U
+Icon=accessories-text-editor
+Terminal=false
+Categories=Utility;TextEditor;Development;Qt;KDE;
+MimeType=text/plain;
+StartupWMClass=kate

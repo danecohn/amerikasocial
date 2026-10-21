@@ -1,0 +1,160 @@
+#!/usr/bin/python3
+"""Amerika Hub: the Amerika OS start screen."""
+import subprocess
+import sys
+from datetime import datetime
+
+from PyQt6.QtCore import QSize, Qt, QTimer
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import (QApplication, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMainWindow,
+                             QMessageBox, QPushButton, QVBoxLayout, QWidget)
+
+# (title, description, icon, desktop file id)
+APPS = [
+    ('Amerika Social', 'Your people, your square', 'amerika-social', 'amerika-social'),
+    ('Amerika AI', 'Your AI assistant', 'amerika-ai', 'amerika-ai'),
+    ('Amerika Venture', 'Browse the web', 'amerika-venture', 'amerika-venture'),
+    ('Amerika Files', 'Your files and folders', 'system-file-manager', 'amerika-files'),
+    ('Amerika Terminal', 'The command line', 'utilities-terminal', 'amerika-terminal'),
+    ('Amerika Office', 'Documents, sheets, slides', 'amerika-office', 'amerika-office'),
+    ('Amerika Software', 'Install and update apps', 'amerika-software', 'amerika-software'),
+    ('Amerika Settings', 'Make it yours', 'preferences-system', 'amerika-settings'),
+]
+
+STYLE = '''
+QWidget{background:#0d0d13;color:#ecebf2;font-size:13px}
+QFrame#rail{background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #1c1c26,stop:1 #101017);border-right:1px solid #3a3a4a}
+QLabel{background:transparent}
+QPushButton{background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #30303d,stop:0.5 #20202a,stop:1 #181820);
+ border:1px solid #4a4a5e;border-radius:14px;padding:12px;text-align:left}
+QPushButton:hover{background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #3c2a36,stop:1 #241a22);border-color:#ff3d6e}
+QPushButton:focus{border:1px solid #ff6b8a}
+QPushButton#nav{border:0;background:transparent;padding:11px 0}
+QPushButton#nav:hover{color:#ff7c99}
+QPushButton#tile{font-size:14px;padding:17px}
+QLineEdit{background:#14141b;border:1px solid #4a4a5e;border-radius:16px;padding:14px 18px;color:#f5f3f8;selection-background-color:#e0243a}
+QLineEdit:focus{border-color:#ff3d6e}
+'''
+
+
+def launch_desktop(app_id):
+    """Launch an installed application through its desktop entry."""
+    try:
+        subprocess.Popen(['gtk-launch', app_id], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         start_new_session=True)
+        return True
+    except OSError:
+        return False
+
+
+class Hub(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Amerika Hub')
+        self.setWindowIcon(QIcon.fromTheme('amerika-hub'))
+        self.resize(1040, 700)
+        outer = QWidget()
+        self.setCentralWidget(outer)
+        box = QHBoxLayout(outer)
+        box.setContentsMargins(0, 0, 0, 0)
+        box.setSpacing(0)
+
+        rail = QFrame()
+        rail.setObjectName('rail')
+        rail.setFixedWidth(220)
+        r = QVBoxLayout(rail)
+        r.setContentsMargins(26, 35, 26, 28)
+        brand = QLabel('amerika<span style="color:#ff3d6e">.</span>')
+        brand.setStyleSheet('font-size:30px;font-weight:800')
+        r.addWidget(brand)
+        r.addWidget(QLabel('O S   ·   1 . 0'))
+        r.addSpacing(45)
+        for title, _desc, icon, desktop_id in APPS[:5]:
+            b = QPushButton(QIcon.fromTheme(icon), title)
+            b.setIconSize(QSize(26, 26))
+            b.setObjectName('nav')
+            b.clicked.connect(lambda checked=False, d=desktop_id: self.launch(d))
+            r.addWidget(b)
+        r.addStretch()
+        r.addWidget(QLabel('AMERIKA LLC'))
+        box.addWidget(rail)
+
+        page = QVBoxLayout()
+        page.setContentsMargins(38, 30, 38, 28)
+        page.setSpacing(18)
+        box.addLayout(page, 1)
+        top = QHBoxLayout()
+        status = QLabel('●  AMERIKA OS')
+        status.setStyleSheet('color:#ff3d6e;letter-spacing:4px;font-size:11px')
+        top.addWidget(status)
+        top.addStretch()
+        self.clock = QLabel()
+        top.addWidget(self.clock)
+        page.addLayout(top)
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.tick)
+        self.timer.start(1000)
+        self.tick()
+        title = QLabel('Welcome to\nAmerika OS.')
+        title.setStyleSheet('font-size:43px;font-weight:300;color:#f4f2f8')
+        page.addWidget(title)
+        sub = QLabel('Social. Intelligence. Everything within reach.')
+        sub.setStyleSheet('color:#a3a1ad;font-size:14px')
+        page.addWidget(sub)
+        self.search = QLineEdit()
+        self.search.setPlaceholderText('Find an app…')
+        self.search.textChanged.connect(self.filter)
+        self.search.returnPressed.connect(self.search_enter)
+        page.addWidget(self.search)
+
+        grid = QGridLayout()
+        grid.setSpacing(12)
+        self.tiles = []
+        for i, (name, desc, icon, desktop_id) in enumerate(APPS):
+            tile = QPushButton(QIcon.fromTheme(icon), name + '\n' + desc)
+            tile.setIconSize(QSize(48, 48))
+            tile.setMinimumHeight(88)
+            tile.setObjectName('tile')
+            tile.clicked.connect(lambda checked=False, d=desktop_id: self.launch(d))
+            grid.addWidget(tile, i // 2, i % 2)
+            self.tiles.append((tile, name.lower(), desktop_id))
+        page.addLayout(grid)
+        page.addStretch()
+        self.setStyleSheet(STYLE)
+
+    def tick(self):
+        self.clock.setText(datetime.now().strftime('%a, %d %b   %H:%M'))
+
+    def launch(self, desktop_id):
+        if not launch_desktop(desktop_id):
+            QMessageBox.warning(self, 'Could not launch app', f'{desktop_id} could not be started.')
+
+    def filter(self, text):
+        for tile, name, _ in self.tiles:
+            tile.setVisible(text.lower() in name)
+
+    def search_enter(self):
+        visible = [t for t in self.tiles if not t[0].isHidden()]
+        if visible:
+            self.launch(visible[0][2])
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key.Key_Escape:
+            self.close()
+        else:
+            super().keyPressEvent(event)
+
+
+def main():
+    app = QApplication(sys.argv)
+    app.setDesktopFileName('amerika-hub')
+    window = Hub()
+    window.show()
+    if '--smoke-test' in sys.argv:
+        out = sys.argv[sys.argv.index('--smoke-test') + 1] if len(sys.argv) > sys.argv.index('--smoke-test') + 1 else 'hub-preview.png'
+        QTimer.singleShot(300, lambda: (window.grab().save(out), app.quit()))
+    return app.exec()
+
+
+if __name__ == '__main__':
+    sys.exit(main())

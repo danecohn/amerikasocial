@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Amerika Terminal
+GenericName=Terminal
+Comment=Command line (Amerika-branded launcher for KDE Konsole)
+Exec=konsole --profile Amerika
+Icon=utilities-terminal
+Terminal=false
+Categories=System;TerminalEmulator;Qt;KDE;
+StartupWMClass=konsole
+Keywords=shell;command;console;

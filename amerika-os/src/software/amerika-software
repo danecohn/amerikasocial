@@ -1,0 +1,236 @@
+#!/usr/bin/python3
+"""Amerika Software: graphical manager for the Amerika package repository.
+
+All changes go through /usr/libexec/amerika-software-helper using pkexec, so the
+normal Polkit administrator prompt appears. The helper accepts only fixed actions
+and package names listed in the verified Amerika repository index.
+"""
+import os
+import re
+import sys
+
+from PyQt6.QtCore import QProcess, Qt, QTimer
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import (QApplication, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QMainWindow, QMessageBox,
+                             QPlainTextEdit, QProgressBar, QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout,
+                             QWidget)
+
+HELPER = os.environ.get('AMERIKA_SOFTWARE_HELPER', '/usr/libexec/amerika-software-helper')
+SITE = os.environ.get('AMERIKA_SOFTWARE_SITE', 'www.amerika.social')
+PKEXEC = os.environ.get('AMERIKA_SOFTWARE_PKEXEC', '/usr/bin/pkexec')
+STATUS = re.compile(r'^(pmstatus|dlstatus):([^:]*):([0-9.]+):(.*)$')
+STYLE = '''
+QWidget{background:#0d0d13;color:#ecebf2;font-size:13px}
+QLineEdit,QPlainTextEdit{background:#14141b;border:1px solid #4a4a5e;border-radius:12px;padding:8px 12px}
+QPushButton{background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #34343f,stop:0.5 #24242d,stop:1 #1a1a22);
+ border:1px solid #4a4a5e;border-radius:12px;padding:8px 16px}
+QPushButton:hover{border-color:#ff3d6e}
+QPushButton:disabled{color:#6c6a74}
+QTableWidget{background:#111118;border:1px solid #34344a;gridline-color:#22222c;border-radius:10px}
+QHeaderView::section{background:#181822;border:0;padding:6px;color:#a3a1b4;letter-spacing:1px}
+QProgressBar{border:1px solid #4a4a5e;border-radius:8px;text-align:center;background:#14141b}
+QProgressBar::chunk{background:qlineargradient(x1:0,y1:0,x2:1,y2:0,stop:0 #e0243a,stop:1 #ff3d9a);border-radius:7px}
+'''
+
+
+def load_packages():
+    """Packages offered by the Amerika repository (origin Amerika at the Amerika site), with install state."""
+    import apt
+    import apt_pkg
+    cache = apt.Cache()
+    items = []
+    for pkg in cache:
+        cand = pkg.candidate
+        if cand is None or not any(o.origin == 'Amerika' and o.site == SITE for o in cand.origins):
+            continue
+        installed = pkg.installed.version if pkg.installed else None
+        if installed is None:
+            state = 'available'
+        elif apt_pkg.version_compare(cand.version, installed) > 0:
+            state = 'update'
+        else:
+            state = 'installed'
+        record = cand.record
+        items.append({'name': pkg.name, 'title': record.get('Amerika-Title') or pkg.name,
+                      'description': (cand.summary or '').strip(), 'homepage': cand.homepage or '',
+                      'installed': installed, 'available': cand.version, 'state': state})
+    return sorted(items, key=lambda i: i['name'])
+
+
+class Window(QMainWindow):
+    COLUMNS = ['Name', 'Description', 'Installed', 'Available', 'Status', '']
+
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('Amerika Software')
+        self.setWindowIcon(QIcon.fromTheme('amerika-software'))
+        self.resize(1000, 680)
+        self.proc = None
+        self.catalog = {}
+        central = QWidget()
+        self.setCentralWidget(central)
+        layout = QVBoxLayout(central)
+        layout.setContentsMargins(20, 18, 20, 18)
+        header = QHBoxLayout()
+        title = QLabel('Amerika Software')
+        title.setStyleSheet('font-size:24px;font-weight:600')
+        header.addWidget(title)
+        header.addStretch()
+        self.search = QLineEdit()
+        self.search.setPlaceholderText('Search')
+        self.search.setFixedWidth(240)
+        self.search.textChanged.connect(self.apply_filter)
+        header.addWidget(self.search)
+        self.refresh_button = QPushButton('Refresh')
+        self.refresh_button.clicked.connect(lambda: self.run('update', []))
+        header.addWidget(self.refresh_button)
+        self.upgrade_button = QPushButton('Update all')
+        self.upgrade_button.clicked.connect(lambda: self.run('upgrade', []))
+        header.addWidget(self.upgrade_button)
+        layout.addLayout(header)
+        self.table = QTableWidget(0, len(self.COLUMNS))
+        self.table.setHorizontalHeaderLabels(self.COLUMNS)
+        self.table.verticalHeader().hide()
+        self.table.verticalHeader().setDefaultSectionSize(44)
+        self.table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
+        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        for col in (0, 2, 3, 4, 5):
+            self.table.horizontalHeader().setSectionResizeMode(col, QHeaderView.ResizeMode.ResizeToContents)
+        layout.addWidget(self.table, 1)
+        self.progress = QProgressBar()
+        self.progress.setRange(0, 100)
+        self.progress.setValue(0)
+        layout.addWidget(self.progress)
+        self.message = QLabel('')
+        layout.addWidget(self.message)
+        self.log = QPlainTextEdit()
+        self.log.setReadOnly(True)
+        self.log.setMaximumHeight(140)
+        layout.addWidget(self.log)
+        self.setStyleSheet(STYLE)
+        self.reload()
+
+    def reload(self):
+        try:
+            packages = load_packages()
+        except Exception as error:  # a broken apt cache must not close the window
+            packages = []
+            self.log.appendPlainText(f'Could not read the package cache: {error}')
+        self.catalog = {p['name']: p for p in packages}
+        self.table.setRowCount(0)
+        updates = 0
+        labels = {'available': 'Not installed', 'installed': 'Installed', 'update': 'Update available'}
+        for entry in packages:
+            name, state = entry['name'], entry['state']
+            updates += state == 'update'
+            row = self.table.rowCount()
+            self.table.insertRow(row)
+            cells = [entry['title'], entry['description'], entry['installed'] or '', entry['available'], labels[state]]
+            for col, text in enumerate(cells):
+                item = QTableWidgetItem(text)
+                item.setData(Qt.ItemDataRole.UserRole, name)
+                item.setToolTip(entry['homepage'] or name)
+                self.table.setItem(row, col, item)
+            box = QWidget()
+            hl = QHBoxLayout(box)
+            hl.setContentsMargins(4, 2, 4, 2)
+            if state == 'available':
+                button = QPushButton('Install')
+                button.clicked.connect(lambda checked=False, n=name: self.run('install', [n]))
+                hl.addWidget(button)
+            else:
+                if state == 'update':
+                    button = QPushButton('Update')
+                    button.clicked.connect(lambda checked=False, n=name: self.run('install', [n]))
+                    hl.addWidget(button)
+                if name != 'amerika-repo-keyring':
+                    button = QPushButton('Remove')
+                    button.clicked.connect(lambda checked=False, n=name: self.confirm_remove(n))
+                    hl.addWidget(button)
+            self.table.setCellWidget(row, 5, box)
+        self.upgrade_button.setEnabled(updates > 0 and self.proc is None)
+        self.message.setText(f'{len(packages)} packages in the Amerika repository, {updates} update(s) available.'
+                             if packages else 'No Amerika package list found. Press Refresh to download it.')
+        self.apply_filter(self.search.text())
+
+    def apply_filter(self, text):
+        needle = text.lower()
+        for row in range(self.table.rowCount()):
+            hay = ' '.join((self.table.item(row, c).text() if self.table.item(row, c) else '') for c in (0, 1)).lower()
+            self.table.setRowHidden(row, needle not in hay)
+
+    def confirm_remove(self, name):
+        title = self.catalog.get(name, {}).get('title') or name
+        if QMessageBox.question(self, 'Remove software', f'Remove {title}?') == QMessageBox.StandardButton.Yes:
+            self.run('remove', [name])
+
+    def set_busy(self, busy):
+        for button in self.findChildren(QPushButton):
+            button.setEnabled(not busy)
+        if not busy:
+            self.upgrade_button.setEnabled(True)
+
+    def run(self, action, packages):
+        if self.proc is not None:
+            return
+        self.log.clear()
+        self.progress.setValue(0)
+        self.message.setText({'update': 'Refreshing package list…', 'install': 'Installing…',
+                              'remove': 'Removing…', 'upgrade': 'Updating…'}[action])
+        self.action = action
+        self.proc = QProcess(self)
+        self.proc.setProcessChannelMode(QProcess.ProcessChannelMode.MergedChannels)
+        self.proc.readyReadStandardOutput.connect(self.read_output)
+        self.proc.finished.connect(self.finished)
+        self.proc.errorOccurred.connect(self.failed_to_start)
+        self.buffer = ''
+        self.set_busy(True)
+        self.proc.start(PKEXEC, [HELPER, action] + packages)
+
+    def read_output(self):
+        self.buffer += bytes(self.proc.readAllStandardOutput()).decode('utf-8', 'replace')
+        *lines, self.buffer = self.buffer.split('\n')
+        for line in lines:
+            match = STATUS.match(line.strip())
+            if match:
+                self.progress.setValue(int(float(match.group(3))))
+                if match.group(4):
+                    self.message.setText(match.group(4))
+            elif line.strip():
+                self.log.appendPlainText(line.strip())
+
+    def failed_to_start(self, _error):
+        if self.proc is not None and self.proc.state() == QProcess.ProcessState.NotRunning:
+            self.log.appendPlainText('Could not start the administrator helper.')
+
+    def finished(self, code, _status):
+        self.proc = None
+        self.set_busy(False)
+        if code == 0:
+            self.progress.setValue(100)
+            self.message.setText('Done.')
+        elif code in (126, 127):
+            self.message.setText('Administrator authentication was cancelled or is unavailable.')
+        else:
+            self.message.setText(f'The operation failed (exit code {code}). See the details below.')
+        self.reload()
+
+
+def main():
+    if '--list' in sys.argv:  # non-graphical catalog dump used by tests
+        for p in load_packages():
+            print(p['name'], p['available'], p['state'])
+        return 0
+    app = QApplication(sys.argv)
+    app.setDesktopFileName('amerika-software')
+    window = Window()
+    window.show()
+    if '--smoke-test' in sys.argv:
+        out = sys.argv[sys.argv.index('--smoke-test') + 1]
+        QTimer.singleShot(400, lambda: (window.grab().save(out), app.quit()))
+    return app.exec()
+
+
+if __name__ == '__main__':
+    sys.exit(main())

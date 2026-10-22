@@ -1,0 +1,12 @@
+[Icon Theme]
+Name=Amerika Tesla
+Comment=Amerika OS matte app icons
+Inherits=AmerikaOS,Adwaita,hicolor
+Directories=scalable/apps
+
+[scalable/apps]
+Size=256
+MinSize=16
+MaxSize=512
+Type=Scalable
+Context=Applications

@@ -225,10 +225,112 @@ window.am-caster { background: alpha(#05040a, .84); }
 '''
 
 
-def apply(accent='#ff2e63', secondary='#19e3ff'):
+# Tesla-style look (ui_style = tesla): matte near-black surfaces, large rounded touch targets, flat solid controls, one calm
+# accent, no neon glows. Loaded after CSS, so equal-specificity rules here win. Contains no percent signs on purpose.
+TESLA_CSS = """
+@define-color am_bg #0c0d10;
+@define-color am_panel #17181c;
+@define-color am_panel_hi #202228;
+@define-color am_line #2a2c33;
+@define-color am_text #f4f5f7;
+@define-color am_dim #8b8f98;
+@define-color am_accent #3e6ae1;
+@define-color am_second #3e6ae1;
+* { font-family: "Inter", "Noto Sans", sans-serif; }
+.am-mono, .am-clock { font-family: "Inter", "Noto Sans", sans-serif; letter-spacing: 0; }
+.am-label { letter-spacing: 1.5px; font-weight: 600; color: @am_dim; }
+
+window.am-bar, window.am-bar > * { background: transparent; }
+.am-bar-box { background: alpha(#0c0d10, .88); background-image: none; border-bottom: 1px solid alpha(white, .06); box-shadow: none; padding: 0 18px; min-height: 44px; }
+.am-bar-btn { background: transparent; background-image: none; border: none; border-radius: 14px; padding: 4px 14px; min-height: 30px; font-size: 14px; font-weight: 600; letter-spacing: 0; color: @am_text; }
+.am-bar-btn:hover { background: alpha(white, .08); box-shadow: none; border: none; }
+.am-bar-btn.ai { border: none; }
+.am-bar-btn.ai:hover { background: alpha(white, .10); box-shadow: none; }
+.am-bar-btn.home { border: none; background: alpha(@am_accent, .20); }
+.am-bar-btn.flat-time { background: transparent; }
+.am-bar-icon { border-radius: 14px; padding: 5px 10px; }
+.am-bar-icon:hover { background: alpha(white, .08); }
+.am-clock { font-size: 20px; font-weight: 600; }
+.am-appname { font-size: 14px; font-weight: 600; letter-spacing: 0; }
+.am-ai-chip { background: alpha(white, .08); background-image: none; color: @am_text; box-shadow: none; letter-spacing: 0; font-weight: 600; padding: 4px 14px; }
+.am-ai-chip.idle { background: alpha(white, .05); color: @am_dim; }
+.am-ai-stop { background: #e82127; border: none; letter-spacing: 0; }
+
+window.am-dock, window.am-dock > * { background: transparent; }
+.am-dock-box { background: alpha(#17181c, .94); background-image: none; border: 1px solid alpha(white, .07); border-radius: 30px; padding: 10px 12px;
+  box-shadow: 0 18px 50px alpha(black, .55); }
+.am-dock-box.vertical { padding: 14px 10px; }
+.am-dock-item { border-radius: 22px; padding: 8px; margin: 0; background: transparent; }
+.am-dock-item:hover { background: alpha(white, .09); box-shadow: none; }
+.am-dock-ai { background: alpha(@am_accent, .14); border: none; }
+.am-dock-dot { background: @am_text; box-shadow: none; min-width: 5px; min-height: 5px; border-radius: 999px; margin-top: 2px; }
+.am-dock-sep { background: alpha(white, .10); margin: 8px 6px; }
+.am-dock-sep.vertical { min-height: 1px; min-width: 0; margin: 6px 10px; }
+
+window.am-overlay { background: alpha(#050506, .78); }
+.am-panel { background: #17181c; background-image: none; border: 1px solid alpha(white, .07); border-radius: 26px; box-shadow: 0 24px 70px alpha(black, .6); }
+.am-search { background: #0c0d10; border: 1px solid alpha(white, .08); border-radius: 18px; padding: 12px 18px; font-size: 18px; box-shadow: none; }
+.am-search:focus-within { border-color: @am_accent; box-shadow: none; }
+.am-app { border-radius: 22px; border: 1px solid transparent; }
+.am-app:hover, .am-app:focus { background: alpha(white, .07); border-color: transparent; }
+.am-ask { background: alpha(@am_accent, .16); background-image: none; border: none; border-radius: 18px; }
+.am-ask:hover { box-shadow: none; background: alpha(@am_accent, .26); }
+.am-chip { border-radius: 999px; letter-spacing: 0; font-weight: 600; border: none; background: alpha(white, .07); }
+.am-chip.active { background: @am_accent; color: white; box-shadow: none; border: none; }
+.am-footer-btn { border-radius: 16px; border: none; background: alpha(white, .07); }
+.am-footer-btn:hover, .am-footer-btn:focus { background: alpha(white, .12); box-shadow: none; }
+
+window.am-caster { background: alpha(#050506, .88); }
+.am-caster-title { text-shadow: none; letter-spacing: 6px; font-weight: 600; }
+.am-caster-sub, .am-caster-hint { font-family: "Inter", "Noto Sans", sans-serif; letter-spacing: 1px; color: @am_dim; }
+.am-caster-card { border-radius: 32px; background: #17181c; background-image: none; border: 1px solid alpha(white, .07); box-shadow: 0 18px 50px alpha(black, .5); }
+.am-caster-card.focused, .am-caster-card.chatgpt.focused { border: 2px solid @am_accent; box-shadow: 0 0 0 6px alpha(@am_accent, .22), 0 24px 70px alpha(black, .6); }
+.am-caster-name { letter-spacing: 1px; font-weight: 600; }
+.am-caster-action { letter-spacing: 1px; font-weight: 600; }
+.am-caster-card.focused .am-caster-action { color: @am_accent; text-shadow: none; }
+
+.am-toast { background: #17181c; background-image: none; border: 1px solid alpha(white, .07); border-left: 3px solid @am_accent; border-radius: 22px; box-shadow: 0 14px 40px alpha(black, .55); }
+.am-primary { background: @am_accent; background-image: none; border: none; border-radius: 16px; padding: 10px 22px; box-shadow: none; font-weight: 600; }
+.am-secondary { background: alpha(white, .08); background-image: none; border: none; border-radius: 16px; padding: 10px 22px; font-weight: 600; }
+.am-card { background: #17181c; background-image: none; border: 1px solid alpha(white, .06); border-radius: 22px; }
+.am-heading { font-weight: 600; letter-spacing: 0; }
+.am-sidebar { background: #111215; background-image: none; border-right: 1px solid alpha(white, .06); }
+.am-side-item { border-radius: 16px; font-weight: 600; }
+.am-side-item:checked, .am-side-item.active { background: alpha(@am_accent, .22); background-image: none; border-color: transparent; box-shadow: none; }
+scale highlight { background: @am_accent; background-image: none; }
+scale slider { box-shadow: none; }
+switch:checked { background: @am_accent; background-image: none; }
+entry:focus-within { border-color: @am_accent; }
+.am-mode-card { border-radius: 22px; }
+.am-mode-card.selected { border: 2px solid @am_accent; background: alpha(@am_accent, .14); box-shadow: none; }
+.am-claude-first { border-color: alpha(@am_accent, .6); box-shadow: none; }
+/* slick: motion and finish */
+.am-dock-item, .am-bar-btn, .am-bar-icon, .am-chip, .am-footer-btn, .am-app, .am-ask, .am-secondary, .am-primary, .am-side-item { transition: background 180ms ease, transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease; }
+.am-dock-item:hover { transform: scale(1.08); }
+.am-dock-item:active { transform: scale(0.96); background: alpha(white, .05); }
+.am-app:hover { transform: translateY(-2px); }
+.am-primary:hover { background: shade(@am_accent, 1.12); }
+.am-secondary:hover { background: alpha(white, .13); }
+.am-caster-card { transition: transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease; }
+.am-caster-card.focused { transform: scale(1.04); }
+.am-clock { font-feature-settings: "tnum"; font-weight: 500; letter-spacing: -0.3px; }
+.am-bar-box { box-shadow: 0 1px 0 alpha(white, .04), 0 8px 30px alpha(black, .35); }
+.am-dock-box { border: 1px solid alpha(white, .09); box-shadow: inset 0 1px 0 alpha(white, .06), 0 20px 56px alpha(black, .6); }
+.am-panel { box-shadow: inset 0 1px 0 alpha(white, .05), 0 28px 80px alpha(black, .65); }
+"""
+
+
+def apply(accent='#ff2e63', secondary='#19e3ff', style='retro'):
     """Install the CSS for the default display. Returns the provider so callers can reload it."""
     provider = Gtk.CssProvider()
-    provider.load_from_string(CSS % {'accent': accent, 'secondary': secondary})
+    text = CSS % {'accent': accent, 'secondary': secondary}
+    if style == 'tesla':
+        text += TESLA_CSS
+    provider.load_from_string(text)
     Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
     Gtk.Settings.get_default().set_property('gtk-application-prefer-dark-theme', True)
+    try:  # the Tesla look has its own matte app icons (theme AmerikaTesla, falls back to AmerikaOS)
+        Gtk.Settings.get_default().set_property('gtk-icon-theme-name', 'AmerikaTesla' if style == 'tesla' else 'AmerikaOS')
+    except (TypeError, ValueError):
+        pass
     return provider

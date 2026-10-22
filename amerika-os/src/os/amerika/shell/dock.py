@@ -15,9 +15,18 @@ class Dock(Gtk.Window):
         super().__init__(application=shell, title='Amerika Dock')
         self.shell = shell
         self.add_css_class('am-dock')
-        layer.setup(self, 'top', anchors=('bottom',), margins={'bottom': 10}, exclusive='auto', keyboard=os.environ.get('AMERIKA_DOCK_KEYBOARD', 'on_demand'), namespace='amerika-dock')
-        self.box = Gtk.Box(spacing=2)
+        self.position = shell.settings.get('dock_position', 'bottom')
+        if self.position not in ('bottom', 'right', 'left'):
+            self.position = 'bottom'
+        edge = {'bottom': ('bottom',), 'right': ('right',), 'left': ('left',)}[self.position]
+        layer.setup(self, 'top', anchors=edge, margins={self.position: 10 if self.position == 'bottom' else 14}, exclusive='auto',
+                    keyboard=os.environ.get('AMERIKA_DOCK_KEYBOARD', 'on_demand'), namespace='amerika-dock')
+        self.vertical = self.position != 'bottom'
+        self.box = Gtk.Box(spacing=2 if not self.vertical else 6, orientation=Gtk.Orientation.VERTICAL if self.vertical else Gtk.Orientation.HORIZONTAL)
         self.box.add_css_class('am-dock-box')
+        if self.vertical:
+            self.add_css_class('vertical')
+            self.box.add_css_class('vertical')
         self.set_child(self.box)
         shell.windows.connect('changed', lambda *_: self.rebuild())
         self.rebuild()
@@ -48,7 +57,7 @@ class Dock(Gtk.Window):
         """Rebuild only when something the dock shows has changed, and never under an open menu."""
         entries, extra, ai_ids = self._layout()
         size = int(self.shell.settings.get('dock_size', 56))
-        signature = (size, tuple((i, r) for i, _, r in entries), tuple(k for k, _, _ in extra), tuple(sorted(ai_ids)))
+        signature = (size, self.position, tuple((i, r) for i, _, r in entries), tuple(k for k, _, _ in extra), tuple(sorted(ai_ids)))
         if not force and signature == getattr(self, '_signature', None):
             return
         menu = getattr(self, '_open_menu', None)
@@ -71,10 +80,14 @@ class Dock(Gtk.Window):
             if sep_after and i + 1 == sep_after and i + 1 < len(entries):
                 sep = Gtk.Box()
                 sep.add_css_class('am-dock-sep')
+                if self.vertical:
+                    sep.add_css_class('vertical')
                 self.box.append(sep)
         if extra:
             sep = Gtk.Box()
             sep.add_css_class('am-dock-sep')
+            if self.vertical:
+                sep.add_css_class('vertical')
             self.box.append(sep)
             for desktop_id, info, _ in extra:
                 self.box.append(self._item(desktop_id, info, size, ai=False))
@@ -102,7 +115,7 @@ class Dock(Gtk.Window):
     def _menu(self, button, desktop_id, info, running):
         pop = Gtk.Popover()
         pop.add_css_class('am-panel')
-        pop.set_position(Gtk.PositionType.TOP)
+        pop.set_position({'right': Gtk.PositionType.LEFT, 'left': Gtk.PositionType.RIGHT}.get(self.position, Gtk.PositionType.TOP))
         pop.set_autohide(True)
         pop.set_parent(button)
         self._open_menu = pop

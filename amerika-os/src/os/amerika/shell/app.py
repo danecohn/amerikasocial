@@ -200,7 +200,8 @@ class Shell(Gtk.Application):
         accent, second = self.settings.get('accent', '#ff2e63'), self.settings.get('secondary', '#19e3ff')
         if self._provider is not None:
             Gtk.StyleContext.remove_provider_for_display(Gdk.Display.get_default(), self._provider)
-        self._provider = theme.apply(accent, second)
+        self._ui_style = self.settings.get('ui_style', 'retro')
+        self._provider = theme.apply(accent, second, self._ui_style)
 
     # ------------------------------------------------------------------ actions used by the UI and the AI tools
     def toggle_launcher(self):
@@ -279,7 +280,12 @@ class Shell(Gtk.Application):
     # ------------------------------------------------------------------ settings -> live shell
     def reconcile(self):
         """Make the running shell match the settings: dock present or not, bar layout, home app and its window rules."""
+        if self.settings.get('ui_style', 'retro') != getattr(self, '_ui_style', self.settings.get('ui_style', 'retro')):
+            self._apply_theme()
         want_dock = bool(self.settings.get('dock_enabled', True))
+        if self.dock is not None and want_dock and self.dock.position != self.settings.get('dock_position', 'bottom'):
+            dock, self.dock = self.dock, None  # moved to another screen edge: rebuild the layer-shell window
+            dock.destroy()
         if want_dock and self.dock is None:
             self.dock = Dock(self)
             self.dock.present()

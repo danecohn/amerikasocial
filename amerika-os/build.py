@@ -27,7 +27,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 SRC = ROOT / 'src'
-DE_VERSION = '3.3.0'
+DE_VERSION = '3.3.1'
 DIST = Path(os.environ.get('AMERIKA_DIST', ROOT / ('dist/development' if '~' in DE_VERSION else 'dist')))
 STAGE = DIST / 'stage'
 PKG_DIR = DIST / 'packages'
@@ -228,11 +228,12 @@ def build_keyring():
 
 
 def build_icons():
-    p = Pkg('amerika-icon-theme', DE_VERSION, 'Amerika OS icon theme\nRetro-futurist neon cartridge app icons and panel icons.',
+    p = Pkg('amerika-icon-theme', DE_VERSION, 'Amerika OS icon theme\nRetro-futurist neon cartridge app icons and panel icons, plus the matte AmerikaTesla app icon set.',
             depends='adwaita-icon-theme', title='Amerika Icons', category='Appearance', section='gnome')
     shutil.copytree(OS / 'icons/AmerikaOS', p.path('/usr/share/icons/AmerikaOS'))
+    shutil.copytree(OS / 'icons/AmerikaTesla', p.path('/usr/share/icons/AmerikaTesla'))
     p.scripts['postinst'] = ('#!/bin/sh\nset -e\nif [ "$1" = configure ] && command -v gtk-update-icon-cache >/dev/null;'
-                             ' then gtk-update-icon-cache -q -f /usr/share/icons/AmerikaOS || true; fi\nexit 0\n')
+                             ' then gtk-update-icon-cache -q -f /usr/share/icons/AmerikaOS || true; gtk-update-icon-cache -q -f /usr/share/icons/AmerikaTesla || true; fi\nexit 0\n')
     p.copyright('Icon theme generated for Amerika OS by Amerika LLC (tools/make_icons.py); GPL-3.0-only.\n'
                 'The icons named claude-desktop and chatgpt are generic stand-ins in the Amerika style; they are not\n'
                 'the logos of Anthropic or OpenAI, whose applications keep their own window icons.\n')

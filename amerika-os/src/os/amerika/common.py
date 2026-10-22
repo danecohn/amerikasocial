@@ -23,6 +23,8 @@ DEFAULTS = {
     'secondary': '#19e3ff',
     'wallpaper': 'horizon',
     'dock_size': 56,
+    'dock_position': 'bottom',
+    'ui_style': 'retro',
     'dock_pinned': ['com.anthropic.Claude', 'chatgpt', 'amerika-agent', 'amerika-social', 'amerika-venture', 'amerika-files',
                     'amerika-terminal', 'amerika-office', 'amerika-software', 'amerika-settings'],
     'bar_ai_apps': ['com.anthropic.Claude', 'chatgpt'],

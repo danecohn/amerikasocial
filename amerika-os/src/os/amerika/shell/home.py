@@ -22,7 +22,7 @@ SCALE_DEFAULTS = {'chatgpt': 1.25, 'claude': 1.0}
 SCALE_FLAG = '--force-device-scale-factor'
 
 # Settings keys that "Switch to Claude-first mode" changes; the previous values are snapshotted so one click restores them.
-MANAGED_KEYS = ('home_mode', 'dock_enabled', 'copilot_app', 'bar_layout', 'bar_preset')
+MANAGED_KEYS = ('home_mode', 'dock_enabled', 'copilot_app', 'bar_layout', 'bar_preset', 'dock_position', 'ui_style', 'dock_size')
 
 
 def key_for_desktop_id(desktop_id):
@@ -94,9 +94,12 @@ def scale_for_desktop_id(settings, desktop_id):
 
 # ---------------------------------------------------------------- mode presets (opt-in, reversible)
 PRESETS = {
-    'claude': {'home_mode': 'claude', 'dock_enabled': False, 'copilot_app': 'caster', 'bar_preset': 'home'},
-    'chatgpt': {'home_mode': 'chatgpt', 'dock_enabled': False, 'copilot_app': 'caster', 'bar_preset': 'home'},
-    'off': {'home_mode': 'off', 'dock_enabled': True, 'copilot_app': 'claude', 'bar_preset': 'classic'},
+    'claude': {'home_mode': 'claude', 'dock_enabled': True, 'copilot_app': 'caster', 'bar_preset': 'home', 'dock_position': 'right',
+               'ui_style': 'tesla', 'dock_size': 64},
+    'chatgpt': {'home_mode': 'chatgpt', 'dock_enabled': True, 'copilot_app': 'caster', 'bar_preset': 'home', 'dock_position': 'right',
+                'ui_style': 'tesla', 'dock_size': 64},
+    'off': {'home_mode': 'off', 'dock_enabled': True, 'copilot_app': 'claude', 'bar_preset': 'classic', 'dock_position': 'bottom',
+            'ui_style': 'retro', 'dock_size': 56},
 }
 
 
@@ -119,7 +122,7 @@ def apply_style(settings, style):
     if style != 'off' and not out.get('claude_first_snapshot'):
         out['claude_first_snapshot'] = snapshot(settings)
     preset = PRESETS[style]
-    for k in ('home_mode', 'dock_enabled', 'copilot_app'):
+    for k in ('home_mode', 'dock_enabled', 'copilot_app', 'dock_position', 'ui_style', 'dock_size'):
         out[k] = preset[k]
     out['bar_preset'] = preset['bar_preset']
     out['bar_layout'] = barlayout.preset(preset['bar_preset'])

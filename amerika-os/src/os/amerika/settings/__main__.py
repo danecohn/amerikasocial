@@ -13,8 +13,14 @@ def main(argv):
         common.save_settings(home.apply_style(common.load_settings(), 'off'))
         print('Classic desktop restored: home mode off, dock on, classic top bar.')
         return 0
+    if '--claude-first' in argv:  # one command to switch the whole desktop to Claude-first with the Tesla look (reversible: --classic)
+        from .. import common
+        from ..shell import home
+        common.save_settings(home.apply_style(common.load_settings(), 'claude'))
+        print('Claude-first mode on: Claude home screen, apps bar on the right, Tesla look. Undo with: amerika-settings --classic')
+        return 0
     if '--help' in argv or '-h' in argv:
-        print('usage: amerika-settings [--list] [--classic] [PAGE]\n  PAGE is one of: ' + ', '.join(pageindex.page_ids()))
+        print('usage: amerika-settings [--list] [--classic] [--claude-first] [PAGE]\n  PAGE is one of: ' + ', '.join(pageindex.page_ids()))
         return 0
     from .app import main as run
     return run()

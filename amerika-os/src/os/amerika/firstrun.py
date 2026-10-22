@@ -133,9 +133,33 @@ def migrate_claude_os():
     return True
 
 
+def migrate_tesla_look():
+    """Users who already switched to Claude-first mode get the new look once: apps bar on the right, Tesla style. Classic users and
+    anyone who never opted in are not touched, and the Home & Caster page can undo it (Classic restores the old values)."""
+    path = common.CONFIG / 'settings.json'
+    try:
+        stored = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return False
+    if not isinstance(stored, dict):
+        return False
+    done = stored.setdefault('migrations', {})
+    if not isinstance(done, dict) or done.get('tesla_look'):
+        return False
+    done['tesla_look'] = True
+    if stored.get('home_mode') in ('claude', 'chatgpt') and 'ui_style' not in stored:
+        stored.update({'dock_enabled': True, 'dock_position': 'right', 'ui_style': 'tesla', 'dock_size': 64})
+    common.CONFIG.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name('settings.json.tmp')
+    tmp.write_text(json.dumps(stored, indent=2))
+    tmp.replace(path)
+    return True
+
+
 def run(force=False):
     migrate_dock_agent()
     migrate_claude_os()
+    migrate_tesla_look()
     marker = common.STATE / 'first-run'
     if not force and marker.exists() and marker.read_text().strip() == VERSION:
         return False

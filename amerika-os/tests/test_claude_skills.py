@@ -535,7 +535,7 @@ class NewTools(unittest.TestCase):
         shell.update_settings = lambda c: (changes.append(c), shell.settings.update(c))
         shell.settings.update({'home_mode': 'off', 'dock_enabled': True, 'copilot_app': 'claude'})
         out = self.tools.call('ui.mode', {'mode': 'claude'})
-        self.assertEqual((out['home_mode'], out['dock_enabled']), ('claude', False))
+        self.assertEqual((out['home_mode'], out['dock_enabled']), ('claude', True))
         self.assertEqual(shell.settings['copilot_app'], 'caster')
         self.assertIn('claude_first_snapshot', shell.settings)
         self.tools.call('ui.mode', {'mode': 'revert'})

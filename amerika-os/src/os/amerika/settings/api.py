@@ -13,6 +13,8 @@ RULES = {
     'secondary': {'type':'string','pattern':'#[0-9a-fA-F]{6}'},
     'wallpaper': {'type':'string','enum':['horizon','grid','dusk']},
     'dock_size': {'type':'integer','minimum':32,'maximum':96},
+    'dock_position': {'type':'string','enum':['bottom','right','left']},
+    'ui_style': {'type':'string','enum':['retro','tesla']},
     'clock_24h': {'type':'boolean'},
     'copilot_app': {'type':'string','enum':['caster','claude','chatgpt','agent','ask']},
     'home_mode': {'type':'string','enum':['claude','chatgpt','off']},

@@ -54,7 +54,7 @@ class Bar(Gtk.Window):
         launcher.add_css_class('am-bar-btn')
         inner = Gtk.Box(spacing=7)
         inner.append(apps.icon_image('amerika-home', 18))
-        inner.append(_label('AMERIKA', None))
+        inner.append(_label('Amerika' if shell.settings.get('ui_style') == 'tesla' else 'AMERIKA', None))
         launcher.set_child(inner)
         launcher.connect('clicked', lambda *_: shell_.toggle_launcher())
         self.parts['launcher'] = launcher
@@ -173,7 +173,7 @@ class Bar(Gtk.Window):
             button.add_css_class('ai')
             row = Gtk.Box(spacing=7)
             row.append(apps.icon_image(info, 18))
-            row.append(_label(info.get_display_name().upper()))
+            row.append(_label(info.get_display_name() if shell.settings.get('ui_style') == 'tesla' else info.get_display_name().upper()))
             button.set_child(row)
             button.set_tooltip_text(f'Open {info.get_display_name()}')
             button.connect('clicked', lambda _b, i=desktop_id: self.shell.activate_app(i))
@@ -307,8 +307,9 @@ class Bar(Gtk.Window):
     def _tick(self):
         conf = barlayout.clock_format(self.shell.settings)
         now = time.localtime()
-        self.clock.set_text(barlayout.format_time(conf, now))
-        self.date.set_text(barlayout.format_date(conf, now))
+        up = self.shell.settings.get('ui_style') != 'tesla'
+        self.clock.set_text(barlayout.format_time(conf, now, up))
+        self.date.set_text(barlayout.format_date(conf, now, up))
         return True
 
     def _poll(self):
@@ -337,7 +338,8 @@ class Bar(Gtk.Window):
 
     def _windows_changed(self):
         active = [w for w in self.shell.windows.app_windows() if w.get('active')]
-        self.appname.set_text((active[0].get('caption') or active[0].get('cls') or '').upper() if active else '')
+        name = (active[0].get('caption') or active[0].get('cls') or '') if active else ''
+        self.appname.set_text(name if self.shell.settings.get('ui_style') == 'tesla' else name.upper())
 
     def _on_activity(self, _broker, client, text, active):
         if active and client == 'Amerika Agent':  # agent-ui: its own chip shows what it is doing; keep only the Stop switch

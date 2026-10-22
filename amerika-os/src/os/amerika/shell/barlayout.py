@@ -136,14 +136,18 @@ def clock_format(settings):
     return conf
 
 
-def format_time(conf, now=None):
+def format_time(conf, now=None, upper=True):
     pattern = ('%H:%M' if conf['hour24'] else '%I:%M') + (':%S' if conf['seconds'] else '') + ('' if conf['hour24'] else ' %p')
-    return time.strftime(pattern, now or time.localtime()).upper()
+    out = time.strftime(pattern, now or time.localtime())
+    return out.upper() if upper else out
 
 
-def format_date(conf, now=None):
+def format_date(conf, now=None, upper=True):
     pattern = DATE_FORMATS.get(conf['date'])
-    return time.strftime(pattern, now or time.localtime()).upper() if pattern else ''
+    if not pattern:
+        return ''
+    out = time.strftime(pattern, now or time.localtime())
+    return out.upper() if upper else out
 
 
 def height(settings):
@@ -181,4 +185,4 @@ def signature(settings):
     conf = clock_format(settings)
     ai = tuple(settings.get('bar_ai_apps', []))
     return (tuple((k, tuple(v)) for k, v in z.items()), conf['hour24'], conf['seconds'], conf['date'], height(settings),
-            round(opacity(settings), 2), ai, bool(settings.get('home_mode', 'off') != 'off'))
+            round(opacity(settings), 2), ai, bool(settings.get('home_mode', 'off') != 'off'), settings.get('ui_style', 'retro'))

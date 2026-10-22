@@ -103,7 +103,8 @@ class ModeSnapshot(unittest.TestCase):
 
     def test_apply_claude_style_sets_coherent_defaults(self):
         out = home.apply_style(self.base(), 'claude')
-        self.assertEqual((out['home_mode'], out['dock_enabled'], out['copilot_app'], out['bar_preset']), ('claude', False, 'caster', 'home'))
+        self.assertEqual((out['home_mode'], out['dock_enabled'], out['copilot_app'], out['bar_preset']), ('claude', True, 'caster', 'home'))
+        self.assertEqual((out['dock_position'], out['ui_style']), ('right', 'tesla'))
         self.assertEqual(barlayout.zones(out['bar_layout'])['center'], ['clock', 'date'])
         self.assertEqual(out['dock_pinned'], ['x'])               # dock_pinned is never touched
         self.assertEqual(out['claude_first_snapshot']['copilot_app'], 'chatgpt')

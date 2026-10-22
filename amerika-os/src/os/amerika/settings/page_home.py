@@ -120,7 +120,12 @@ def build(app):
         tests = Gtk.Box(spacing=8)
         tests.append(ui.button('Open Caster', lambda: shell_action('caster')))
         tests.append(ui.button('Go home (Win+H)', lambda: shell_action('home')))
-        body.append(ui.section('Home & keys', home_choice, dock_row, copilot_row, ui.row('Try it', 'Needs the Amerika shell to be running', tests)))
+        dock_pos = ui.dropdown_row('Apps bar position', 'Which screen edge the apps bar sits on', [('right', 'Right'), ('left', 'Left'), ('bottom', 'Bottom')],
+                                   s.get('dock_position', 'bottom'), lambda v: change(dock_position=v))
+        look = ui.dropdown_row('Look', 'Tesla: matte dark, large rounded controls. Retro: neon on chrome', [('tesla', 'Tesla'), ('retro', 'Retro-futurist')],
+                               s.get('ui_style', 'retro'), lambda v: change(ui_style=v))
+        box.dock_pos_row, box.look_row = dock_pos, look
+        body.append(ui.section('Home & keys', home_choice, dock_row, dock_pos, look, copilot_row, ui.row('Try it', 'Needs the Amerika shell to be running', tests)))
 
         # ---- text size
         rows = []

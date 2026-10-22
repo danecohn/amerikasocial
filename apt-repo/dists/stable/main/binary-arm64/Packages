@@ -124,6 +124,24 @@ Filename: pool/main/a/amerika-agent/amerika-agent_3.3.1_arm64.deb
 Size: 87767552
 SHA256: fdc146a3fbd4946ec29e83b50da4ba304d926377f9012525ac0dcb94105e5cff
 
+Package: amerika-agent
+Version: 3.3.2
+Architecture: arm64
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 350586
+Section: x11
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: nodejs (>= 24.16), nodejs (<< 25), libsecret-tools, python3, ca-certificates, amerika-desktop-shell (>= 3.3.2), gir1.2-webkit-6.0
+Recommends: gnome-keyring, ffmpeg, libnotify-bin, geoclue-2.0
+Amerika-Title: Amerika Agent
+Amerika-Category: System
+Description: Amerika Agent, built on OpenClaw
+ The opt-in, keyring-backed agent for Amerika OS. Includes the pinned OpenClaw engine, local authenticated gateway, Settings integration and desktop tools.
+Filename: pool/main/a/amerika-agent/amerika-agent_3.3.2_arm64.deb
+Size: 87767550
+SHA256: 1ef552304c4b6ef0a8d504e79bdcd9462fbc8f1406a8e3e0ccf1bb58e9525633
+
 Package: amerika-apps
 Version: 3.0.3
 Architecture: all
@@ -358,6 +376,24 @@ Filename: pool/main/a/amerika-apps/amerika-apps_3.3.1_all.deb
 Size: 1792
 SHA256: 710ed0e8b56f64d0da6eec357d9728aecd7c171297c9d778dae11f872f352642
 
+Package: amerika-apps
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 1
+Section: x11
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: nautilus, ptyxis, gnome-text-editor, amerika-desktop-shell (>= 3.3.2), amerika-icon-theme (>= 3.3.2)
+Amerika-Title: Amerika Core Apps
+Amerika-Category: System
+Description: Amerika core apps
+ Amerika Files, Terminal, Text and Settings launchers. Files, Terminal and Text are Amerika-branded launchers
+ for GNOME Files (Nautilus), Ptyxis and GNOME Text Editor, which stay installed and unmodified.
+Filename: pool/main/a/amerika-apps/amerika-apps_3.3.2_all.deb
+Size: 1788
+SHA256: e5059bdeb9008f8b27869189239081c242ab70e33897feb5323c41a1c7d9ebcc
+
 Package: amerika-boot
 Version: 3.0.6
 Architecture: all
@@ -538,6 +574,24 @@ Filename: pool/main/a/amerika-boot/amerika-boot_3.3.1_all.deb
 Size: 399248
 SHA256: 2cd52a96d1b8a8eb3d62c2c07861f217e2d778d51314c8618567b56d87a069e0
 
+Package: amerika-boot
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 407
+Section: x11
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: python3, plymouth, plymouth-theme-spinner, initramfs-tools, pkexec
+Amerika-Title: Amerika Boot Screen
+Amerika-Category: Appearance
+Description: Amerika OS boot screen
+ A retro-futurist Plymouth boot and shutdown screen that replaces the Ubuntu logo and hides the firmware logo once the kernel is up.
+ Nothing changes until you switch it on in Amerika Settings or with "amerika-boot enable"; "amerika-boot disable" restores the previous one.
+Filename: pool/main/a/amerika-boot/amerika-boot_3.3.2_all.deb
+Size: 399232
+SHA256: ad2f1ec40739829d23359c0ddb115d7ba2beb0a04b7a6adfc6b0d80a7d9ba3f1
+
 Package: amerika-box
 Version: 3.2.0
 Architecture: all
@@ -627,6 +681,24 @@ Description: AmerikaBox, a chiptune maker built on BeepBox
 Filename: pool/main/a/amerika-box/amerika-box_3.3.1_all.deb
 Size: 234040
 SHA256: 8e6fb9bcaf0b4f8de7ee63b2db8e3b5cc29a27acd4f593e1d39ff40893eaed88
+
+Package: amerika-box
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 1189
+Section: x11
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: amerika-studio (>= 3.3.2), gir1.2-webkit-6.0, python3
+Recommends: ffmpeg
+Amerika-Title: AmerikaBox
+Amerika-Category: Audio
+Description: AmerikaBox, a chiptune maker built on BeepBox
+ A desktop copy of BeepBox (by John Nesky, MIT licence; not affiliated) in the Amerika Studio window, with an AI composer that writes and edits songs through BeepBox's own song format, WAV/MP3/MIDI export and "Export for game" loop bundles.
+Filename: pool/main/a/amerika-box/amerika-box_3.3.2_all.deb
+Size: 234068
+SHA256: 58241f604ecdf2a12532d1cf3ba70cc47a61b9013f354b93605321eeabba6e12
 
 Package: amerika-branding
 Version: 3.1.0
@@ -733,6 +805,21 @@ Filename: pool/main/a/amerika-branding/amerika-branding_3.3.1_all.deb
 Size: 503012
 SHA256: 400b89de9d3a052dc7b1b7b94dda7d6e9d52211067511abfcd8bad396c85b403
 
+Package: amerika-branding
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 1161
+Section: x11
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Amerika-Category: System
+Description: Amerika desktop flavour branding
+ Artwork and sounds for the Amerika session. Keeps Ubuntu system identity intact.
+Filename: pool/main/a/amerika-branding/amerika-branding_3.3.2_all.deb
+Size: 502956
+SHA256: 8836539e93b9df20ad188cc700a2fefa2d00e7ca37a4b7e833ce1ac2a77e1d02
+
 Package: amerika-claude
 Version: 3.3.0
 Architecture: all
@@ -768,6 +855,24 @@ Description: Skills and plugin that let Claude operate Amerika OS
 Filename: pool/main/a/amerika-claude/amerika-claude_3.3.1_all.deb
 Size: 42796
 SHA256: 5ad6369c6bf1b8ec4d46605bc55231e0d968a0d1f1028503a60de780d71b89e6
+
+Package: amerika-claude
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 169
+Section: x11
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: amerika-desktop-shell (>= 3.3.2), python3
+Amerika-Title: Amerika Claude Skills
+Amerika-Category: System
+Description: Skills and plugin that let Claude operate Amerika OS
+ Eleven skills, slash commands and the amerika MCP registration for Claude Desktop and Claude Code, plus the amerika-claude command to install them (with backup and undo), export them as zips for the Skills upload, and check the setup.
+ Nothing is installed into your home folder until you run "amerika-claude install" or press the button in Settings > AI.
+Filename: pool/main/a/amerika-claude/amerika-claude_3.3.2_all.deb
+Size: 42808
+SHA256: f363b904da2688dd00298966af863ee648bf71aaee115f7df58466f17d3ebbb2
 
 Package: amerika-defaults
 Version: 3.1.0
@@ -880,6 +985,22 @@ Description: Amerika session application defaults
 Filename: pool/main/a/amerika-defaults/amerika-defaults_3.3.1_all.deb
 Size: 4424
 SHA256: 8540370a98c701a7f7cf46190079a788681ff65acb33154e59ae0d5bae19b0b7
+
+Package: amerika-defaults
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 7
+Section: x11
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: dconf-cli, dconf-gsettings-backend, fontconfig, xdg-desktop-portal, xdg-desktop-portal-gtk, xdg-desktop-portal-kde
+Amerika-Category: System
+Description: Amerika session application defaults
+ Default colours, portals, fonts and file associations. Existing user settings take precedence.
+Filename: pool/main/a/amerika-defaults/amerika-defaults_3.3.2_all.deb
+Size: 4420
+SHA256: 6c80bb9d513ffecc255553791c0e52f91c82eeb96afdad656ae59a9dc07915f6
 
 Package: amerika-desktop-shell
 Version: 3.0.3
@@ -1128,6 +1249,25 @@ Filename: pool/main/a/amerika-desktop-shell/amerika-desktop-shell_3.3.1_arm64.de
 Size: 164352
 SHA256: 6acd893723e195b2c0d0ce4f2458d2f19b93d47247622b91516f36e35bc69531
 
+Package: amerika-desktop-shell
+Version: 3.3.2
+Architecture: arm64
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 764
+Section: x11
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: python3 (>= 3.14), python3.14, libpython3.14, python3-gi, gir1.2-gtk-4.0, gir1.2-gtk4layershell-1.0, libgtk4-layer-shell0, gir1.2-polkit-1.0, gir1.2-nm-1.0, kwin-wayland, kglobalacceld, polkit-kde-agent-1, libkscreen-bin, libkf6config-bin, libkscreenlocker6, kde-config-screenlocker, plasma-desktop-data, wireplumber, pipewire-pulse, network-manager, power-profiles-daemon, upower, systemd, xdg-desktop-portal-gtk, fonts-inter, fonts-jetbrains-mono, librsvg2-common, amerika-icon-theme (>= 3.3.2), amerika-theme (>= 3.3.2)
+Recommends: nautilus, ptyxis, gnome-text-editor, wl-clipboard, playerctl, network-manager-gnome, bluez, powerdevil, orca, gstreamer1.0-tools, gstreamer1.0-plugins-good
+Amerika-Title: Amerika Shell
+Amerika-Category: System
+Description: Amerika Shell and Settings
+ Amerika OS's own desktop shell (top bar, dock, launcher, notifications), its settings app, and the system-control server
+ that lets the Claude and ChatGPT apps operate the computer under your supervision.
+Filename: pool/main/a/amerika-desktop-shell/amerika-desktop-shell_3.3.2_arm64.deb
+Size: 164336
+SHA256: 54a6187d4f5590b53e18fc5b8c0ffbfd834d4a7efded40f6c47b0d41a5e9a2a3
+
 Package: amerika-desktop
 Version: 3.0.3
 Architecture: arm64
@@ -1369,6 +1509,25 @@ Filename: pool/main/a/amerika-desktop/amerika-desktop_3.3.1_arm64.deb
 Size: 1200
 SHA256: 426289f50b003d06499f9a4b09b9c93b144a6d61b04c590d1089275fe5c47e77
 
+Package: amerika-desktop
+Version: 3.3.2
+Architecture: arm64
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 0
+Section: metapackages
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: amerika-session (>= 3.3.2), amerika-desktop-shell (>= 3.3.2), amerika-theme (>= 3.3.2), amerika-icon-theme (>= 3.3.2), amerika-apps (>= 3.3.2), amerika-software (>= 3.3.2), amerika-repo-keyring (>= 3.3.2), amerika-agent (>= 3.3.2), amerika-claude (>= 3.3.2), amerika-branding (>= 3.3.2), amerika-defaults (>= 3.3.2), amerika-updates (>= 3.3.2), amerika-social, amerika-venture, amerika-office
+Recommends: amerika-doc
+Amerika-Title: Amerika OS Desktop
+Amerika-Category: System
+Description: Amerika OS desktop environment
+ Amerika OS: its own shell on the KWin compositor, with the Claude and ChatGPT apps at the centre.
+ Installs the session, shell, settings, theme, apps and the Amerika Software manager.
+Filename: pool/main/a/amerika-desktop/amerika-desktop_3.3.2_arm64.deb
+Size: 1200
+SHA256: 8c2a59812767adf04a9b80193cacb84bb8322492f2fcec3a2c13e4098c124721
+
 Package: amerika-developer
 Version: 3.2.0
 Architecture: all
@@ -1458,6 +1617,24 @@ Description: Amerika OS Developer Edition
 Filename: pool/main/a/amerika-developer/amerika-developer_3.3.1_all.deb
 Size: 1380
 SHA256: 75268c150a2c1b1034e747fa0b78c41e8a5d23da077eca2c2e8b0a475196da33
+
+Package: amerika-developer
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 0
+Section: metapackages
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: amerika-studio (>= 3.3.2), amerika-render (>= 3.3.2), amerika-engine (>= 3.3.2), amerika-sprite (>= 3.3.2), amerika-box (>= 3.3.2), amerika-gamedev (>= 3.3.2)
+Recommends: git, ffmpeg, vulkan-tools, mesa-utils-bin, audacity, gimp, inkscape
+Amerika-Title: Amerika Developer Edition
+Amerika-Category: Development
+Description: Amerika OS Developer Edition
+ Turns this computer into an agentic game-making machine: Amerika Studio, Amerika Render (Blender), Amerika Engine (Godot), Amerika Sprite and AmerikaBox. Install it to opt in.
+Filename: pool/main/a/amerika-developer/amerika-developer_3.3.2_all.deb
+Size: 1384
+SHA256: 6342881bcdf116a8681d3479f144b6abc62da5413794e41b0bf9140ba19a755a
 
 Package: amerika-doc
 Version: 3.1.0
@@ -1557,6 +1734,20 @@ Filename: pool/main/a/amerika-doc/amerika-doc_3.3.1_all.deb
 Size: 24136
 SHA256: 0350a818fde397e09372728ae8bb7962c3ef71cc258ed60f158c2ea9b75169c2
 
+Package: amerika-doc
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 43
+Section: doc
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Amerika-Category: System
+Description: Amerika desktop manuals and recovery documentation
+Filename: pool/main/a/amerika-doc/amerika-doc_3.3.2_all.deb
+Size: 24144
+SHA256: 045701587952dabe7f05942bc25d2171d38f1cdd080fe24fb65888aeea002fcf
+
 Package: amerika-engine
 Version: 3.2.0
 Architecture: all
@@ -1647,6 +1838,24 @@ Filename: pool/main/a/amerika-engine/amerika-engine_3.3.1_all.deb
 Size: 81856
 SHA256: 7e4a7f3a3433f8480936400d154bef0ef69ecaba886aba7ef96324b8f590c179
 
+Package: amerika-engine
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 318
+Section: devel
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: amerika-studio (>= 3.3.2), godot (>= 4.4), python3
+Recommends: godot-templates, vulkan-tools, python3-pil
+Amerika-Title: Amerika Engine
+Amerika-Category: Development
+Description: Amerika Engine, powered by Godot
+ Godot 4 with an AI game assembler: a chat dock, a game recipe that generates scenes, scripts and settings, tested behaviour components, starter templates and a control endpoint for Amerika Agent. Godot itself comes from the distro package. Godot is a trademark of the Godot Foundation; Amerika Engine is not affiliated with or endorsed by it.
+Filename: pool/main/a/amerika-engine/amerika-engine_3.3.2_all.deb
+Size: 81852
+SHA256: 124a31bb3242eef01ffa8f2dcd9b4752af4e3803a81720c126341230b6f974b0
+
 Package: amerika-gamedev
 Version: 3.2.1
 Architecture: all
@@ -1722,6 +1931,25 @@ Description: Amerika game-development toolchain for Snapdragon X laptops
 Filename: pool/main/a/amerika-gamedev/amerika-gamedev_3.3.1_all.deb
 Size: 9356
 SHA256: 264215d346dcd4462837a42747b9fa113162ab24606e6f372878950e98c2b535
+
+Package: amerika-gamedev
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 19
+Section: x11
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: python3, pkexec, build-essential, clang, lld, mold, cmake, ninja-build, ccache, pkgconf, git, git-lfs, gdb, lldb, libsdl3-dev, libvulkan-dev, libwayland-dev, libxkbcommon-dev, libopenal-dev, vulkan-tools, vulkan-validationlayers, spirv-tools, glslang-tools, mesa-utils, vkmark, glmark2-wayland, gamemode, lm-sensors, systemd-zram-generator, ffmpeg, imagemagick, python3-pip
+Recommends: mangohud, box64, dotnet-sdk-10.0, rustc, cargo, valgrind, heaptrack, godot-template-release
+Amerika-Title: Amerika Game Dev Tools
+Amerika-Category: Development
+Description: Amerika game-development toolchain for Snapdragon X laptops
+ Compilers, Vulkan/GL tools, profilers, benchmarks and the amerika-hw tool: hardware report, temporary performance mode and opt-in system tuning (compressed swap, larger file-watch limits, bigger shader cache).
+ Nothing is changed until you run "amerika-hw tune apply" or "amerika-hw perf game".
+Filename: pool/main/a/amerika-gamedev/amerika-gamedev_3.3.2_all.deb
+Size: 9364
+SHA256: 26ee219f4a2dc9b096996ecb6d4afce636a19901d0a14341802ce14032c3ba5c
 
 Package: amerika-icon-theme
 Version: 3.0.3
@@ -1944,6 +2172,23 @@ Filename: pool/main/a/amerika-icon-theme/amerika-icon-theme_3.3.1_all.deb
 Size: 13516
 SHA256: 99ea4ebe4047e340299a03885fe995a278e07e3904f7354b2f8568169242066e
 
+Package: amerika-icon-theme
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 9944
+Section: gnome
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: adwaita-icon-theme
+Amerika-Title: Amerika Icons
+Amerika-Category: Appearance
+Description: Amerika OS icon theme
+ Retro-futurist neon cartridge app icons and panel icons, plus the matte AmerikaTesla app icon set.
+Filename: pool/main/a/amerika-icon-theme/amerika-icon-theme_3.3.2_all.deb
+Size: 7767188
+SHA256: 86aa78295a299b6629159e4bda5ad6bc3814457ceff1927a716ea5d62a05ba8d
+
 Package: amerika-login
 Version: 3.0.4
 Architecture: all
@@ -2160,6 +2405,24 @@ Filename: pool/main/a/amerika-login/amerika-login_3.3.1_all.deb
 Size: 996040
 SHA256: d8beab2aef04ad797bf46c07b6e65131c18c2a078925064fc89fea78d2504741
 
+Package: amerika-login
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 1009
+Section: x11
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: python3, sddm, kwin-wayland, pkexec, qml6-module-qt5compat-graphicaleffects, qml6-module-qtquick-controls, fonts-inter, fonts-jetbrains-mono
+Amerika-Title: Amerika Login Screen
+Amerika-Category: Appearance
+Description: Amerika OS login screen
+ A retro-futurist SDDM login theme. Nothing changes until you switch it on in Amerika Settings (or with "amerika-login enable");
+ it can be switched off the same way, and falls back to the previous login screen by itself if SDDM cannot start.
+Filename: pool/main/a/amerika-login/amerika-login_3.3.2_all.deb
+Size: 996044
+SHA256: 4239bc0dfac8df15fc741536a37e2e3e58258a34cc7f8985030a61c4516dd7f6
+
 Package: amerika-office
 Version: 0.1.0-2
 Architecture: arm64
@@ -2288,6 +2551,24 @@ Filename: pool/main/a/amerika-phone/amerika-phone_3.3.1_all.deb
 Size: 13224
 SHA256: 2cb9ec0be51a2210eb6419962361af74159bb6280ffddb5b547d6635f627094f
 
+Package: amerika-phone
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 32
+Section: x11
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: python3, python3-cryptography, usbmuxd, libpam-modules, pkexec
+Amerika-Title: Amerika Phone Key
+Amerika-Category: Security
+Description: Amerika Phone Key: approve sudo with your iPhone
+ Pair an iPhone running the Amerika Key app, then approve sudo and administrator prompts with Face ID.
+ Opt-in: nothing changes until "amerika-phone enable sudo". Your password always still works.
+Filename: pool/main/a/amerika-phone/amerika-phone_3.3.2_all.deb
+Size: 13228
+SHA256: c2ac93c3bb68f0f8ca784e83af9cedb5eacc8c8161e644d177effc785a86d16e
+
 Package: amerika-render
 Version: 3.2.0
 Architecture: all
@@ -2372,6 +2653,23 @@ Description: Amerika Render: Blender with an AI modelling assistant
 Filename: pool/main/a/amerika-render/amerika-render_3.3.1_all.deb
 Size: 331612
 SHA256: 9dd5f95341d3e41741426e15102a7c3c7f7b1c65cba3e461f7b07be7f488a28c
+
+Package: amerika-render
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 1083
+Section: graphics
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: amerika-studio (>= 3.3.2), blender (>= 5.0), python3, python3-numpy
+Amerika-Title: Amerika Render
+Amerika-Category: Graphics
+Description: Amerika Render: Blender with an AI modelling assistant
+ Talk to Blender: describe a model and the assistant builds, looks at and refines it with real Blender tools, then exports game-ready .glb files to your Amerika Studio project. Powered by Blender (GPL-3.0-or-later); Blender is a trademark of the Blender Foundation and Amerika Render is not affiliated with or endorsed by it.
+Filename: pool/main/a/amerika-render/amerika-render_3.3.2_all.deb
+Size: 331668
+SHA256: adde07abd0d2d90ec0191a52d46aa502876c4bd825dbc8c0ba1f9a82c5d40874
 
 Package: amerika-repo-keyring
 Version: 3.0.3
@@ -2580,6 +2878,22 @@ Description: Amerika OS package repository signing key and APT source
 Filename: pool/main/a/amerika-repo-keyring/amerika-repo-keyring_3.3.1_all.deb
 Size: 1808
 SHA256: dadb0579deedc7e6f4f96b77e5d29b6d21e4f7685eca9f726f6a119376331ae6
+
+Package: amerika-repo-keyring
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 0
+Section: misc
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Amerika-Title: Amerika Repository
+Amerika-Category: System
+Description: Amerika OS package repository signing key and APT source
+ Installs the signing key and the APT source for https://www.amerika.social/apt.
+Filename: pool/main/a/amerika-repo-keyring/amerika-repo-keyring_3.3.2_all.deb
+Size: 1812
+SHA256: d4822eb00a3605204cb1db968d2526570b2910c747741bc191258712f427d072
 
 Package: amerika-session
 Version: 3.0.3
@@ -2814,6 +3128,24 @@ Description: Amerika OS login session
 Filename: pool/main/a/amerika-session/amerika-session_3.3.1_all.deb
 Size: 4560
 SHA256: f1761385caad9664ea25fec1b4b979588d96edfac94cf726812c380ede9f5610
+
+Package: amerika-session
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 6
+Section: x11
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: amerika-desktop-shell (>= 3.3.2), kwin-wayland
+Amerika-Title: Amerika Session
+Amerika-Category: System
+Description: Amerika OS login session
+ Adds "Amerika OS" to the login screen. KWin runs as the compositor; everything else is Amerika's own shell.
+ Other sessions are not changed.
+Filename: pool/main/a/amerika-session/amerika-session_3.3.2_all.deb
+Size: 4556
+SHA256: 028803cc89c1762d0661e56f66cd978830a94d0719d8adcc7e3ba052d7e1860b
 
 Package: amerika-social
 Version: 1.0.0-1
@@ -3053,6 +3385,23 @@ Filename: pool/main/a/amerika-software/amerika-software_3.3.1_all.deb
 Size: 6792
 SHA256: 24d6778bc621e11eb8d9859a92a6d971de194ec8d830b06a479c57f56ed47ab3
 
+Package: amerika-software
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 16
+Section: x11
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: python3-pyqt6, python3-apt, pkexec, apt, amerika-repo-keyring, amerika-icon-theme
+Amerika-Title: Amerika Software
+Amerika-Category: System
+Description: Amerika Software
+ Graphical manager for the Amerika package repository: install, update and remove Amerika apps.
+Filename: pool/main/a/amerika-software/amerika-software_3.3.2_all.deb
+Size: 6792
+SHA256: 6f5b473dd04241e030512e6ae5b84c9067584a310d60a6b1582e5635c8ef9780
+
 Package: amerika-sprite
 Version: 3.2.0
 Architecture: all
@@ -3137,6 +3486,23 @@ Description: Amerika Sprite
 Filename: pool/main/a/amerika-sprite/amerika-sprite_3.3.1_all.deb
 Size: 82096
 SHA256: 9b827109fbfe7ffd0775bee10521d5191b69e6aee37a78a0ba810af12e967c7c
+
+Package: amerika-sprite
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 322
+Section: graphics
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: amerika-studio (>= 3.3.2), gir1.2-webkit-6.0
+Amerika-Title: Amerika Sprite
+Amerika-Category: Graphics
+Description: Amerika Sprite
+ A pixel-art editor and animator with an AI sprite builder (original code; not Aseprite). Layers, frames, tags, palettes, sprite sheets with Godot SpriteFrames export, GIF, and read-only .aseprite import.
+Filename: pool/main/a/amerika-sprite/amerika-sprite_3.3.2_all.deb
+Size: 82084
+SHA256: aa36ac71d8b81fd4625aa4de397fa348719e17f6780f9a6e633a105081819927
 
 Package: amerika-studio
 Version: 3.2.0
@@ -3227,6 +3593,24 @@ Description: Amerika Studio
 Filename: pool/main/a/amerika-studio/amerika-studio_3.3.1_all.deb
 Size: 69564
 SHA256: 72036770e8efa22586050ccc6746a254f0cbc07050af89bd81cadde84dbbded6
+
+Package: amerika-studio
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 276
+Section: devel
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: python3, python3-gi, gir1.2-gtk-4.0, gir1.2-webkit-6.0, libsecret-tools, amerika-desktop-shell (>= 3.3.2), amerika-icon-theme
+Recommends: gnome-keyring, amerika-agent
+Amerika-Title: Amerika Studio
+Amerika-Category: Development
+Description: Amerika Studio
+ The shared layer of the Amerika OS Developer Edition: one Anthropic key manager (login keyring), a loopback bridge so Studio apps never see the key, the Studio hub, a WebKitGTK shell for Amerika Sprite and AmerikaBox, and an MCP server that lets Amerika Agent drive Amerika Render, Engine, Sprite and Box.
+Filename: pool/main/a/amerika-studio/amerika-studio_3.3.2_all.deb
+Size: 69556
+SHA256: 44c2559aca04effd7016864351fae0191a07caee9f86dc7b8dc241ec9121233b
 
 Package: amerika-theme
 Version: 3.0.3
@@ -3436,6 +3820,22 @@ Filename: pool/main/a/amerika-theme/amerika-theme_3.3.1_all.deb
 Size: 1682124
 SHA256: c08178eccc2b1d0f65a102d600987248ad4b573b2053fd82eedf5d56bb70a681
 
+Package: amerika-theme
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 1693
+Section: x11
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Amerika-Title: Amerika Theme
+Amerika-Category: Appearance
+Description: Amerika OS theme
+ Retro-futurist wallpapers and the Amerika Retro colour scheme.
+Filename: pool/main/a/amerika-theme/amerika-theme_3.3.2_all.deb
+Size: 1682148
+SHA256: 4fe39363733399b637c5b057e325bbc44fa558227b5b12b25348daa3e0dbf2ad
+
 Package: amerika-updates
 Version: 3.1.0
 Architecture: all
@@ -3547,6 +3947,22 @@ Description: Amerika signed update channels
 Filename: pool/main/a/amerika-updates/amerika-updates_3.3.1_all.deb
 Size: 2976
 SHA256: f63136c153b6fecacf70ceca09a1a8472c3b2622c63cc202bb01d1ff766d0cbb
+
+Package: amerika-updates
+Version: 3.3.2
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 3
+Section: x11
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: apt, unattended-upgrades
+Amerika-Category: System
+Description: Amerika signed update channels
+ Stable by default; testing requires an explicit opt-in. Ubuntu security origins stay enabled.
+Filename: pool/main/a/amerika-updates/amerika-updates_3.3.2_all.deb
+Size: 2976
+SHA256: 5367747bc2549f9545ee73be391644c8aa5f09fb42073d0acc4b34313359b29f
 
 Package: amerika-venture
 Version: 158.0.1-amerika1

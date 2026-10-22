@@ -27,7 +27,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 SRC = ROOT / 'src'
-DE_VERSION = '3.3.1'
+DE_VERSION = '3.3.2'
 DIST = Path(os.environ.get('AMERIKA_DIST', ROOT / ('dist/development' if '~' in DE_VERSION else 'dist')))
 STAGE = DIST / 'stage'
 PKG_DIR = DIST / 'packages'

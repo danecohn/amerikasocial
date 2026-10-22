@@ -40,6 +40,8 @@ def check(path):
 def ingest(folder, theme):
     ok, bad = [], []
     for path in sorted(Path(folder).glob('*.png')):
+        if path.name == '_contact-sheet.png':
+            continue  # Review preview, not an app icon.
         good, msg = check(path)
         if not good:
             bad.append((path.name, msg))
@@ -51,6 +53,16 @@ def ingest(folder, theme):
             im.resize((n, n), Image.LANCZOS).save(d / f'{path.stem}.png', optimize=True)
         ok.append(path.stem)
     if ok:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from make_icons import ALIASES as _A  # desktop entries that use other names get the same picture
+        ALIASES = dict(_A, **{'amerika-hub': 'amerika-home'})
+        for alias, target in ALIASES.items():
+            if target in ok:
+                for n in SIZES:
+                    src = Path(theme) / f'{n}x{n}/apps/{target}.png'
+                    (Path(theme) / f'{n}x{n}/apps/{alias}.png').write_bytes(src.read_bytes())
+        for name in ok:  # the PNG replaces the SVG fallback so it wins at every size
+            (Path(theme) / 'scalable/apps' / f'{name}.svg').unlink(missing_ok=True)
         index = Path(theme) / 'index.theme'
         text = index.read_text()
         lines = text.splitlines()

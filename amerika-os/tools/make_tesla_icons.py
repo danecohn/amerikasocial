@@ -67,7 +67,6 @@ Context=Applications
 def all_glyphs():
     g = dict(mi.GLYPHS)
     g.update(ms.GLYPHS)
-    g['amerika-hub'] = g['amerika-home']
     g['amerika-agent'] = ('violet', mi.sparkle(122, 110, 56) + mi.sparkle(178, 64, 16, .3) + mi.sparkle(76, 160, 12, .3))
     g['amerika-phone'] = ('cyan', '<rect x="94" y="52" width="68" height="116" rx="14"/><path d="M118,70 H138"/><path d="M110,112 L123,126 L148,98"/>')
     g['amerika-gamedev'] = ('phosphor', '<rect x="84" y="64" width="88" height="88" rx="12"/><path d="M104,64 V50 M128,64 V50 M152,64 V50 M104,152 V166 M128,152 V166 M152,152 V166 M84,92 H70 M84,128 H70 M172,92 H186 M172,128 H186"/><path d="M118,92 L146,108 L118,124 Z"/>')
@@ -79,10 +78,20 @@ def main():
     apps = OUT / 'scalable/apps'
     apps.mkdir(parents=True, exist_ok=True)
     glyphs = all_glyphs()
+    ai = ROOT / 'assets/ai-icons'  # an AI-generated PNG replaces the SVG of the same name (see tools/ingest_ai_icons.py)
+    have = lambda n: (ai / f'{n}.png').exists()
     for name, (way, body) in glyphs.items():
-        (apps / f'{name}.svg').write_text(svg(name, way, body))
-    for alias, target in mi.ALIASES.items():
-        (apps / f'{alias}.svg').write_text((apps / f'{target}.svg').read_text())
+        target = apps / f'{name}.svg'
+        if have(name):
+            target.unlink(missing_ok=True)
+        else:
+            target.write_text(svg(name, way, body))
+    for alias, tname in dict(mi.ALIASES, **{'amerika-hub': 'amerika-home'}).items():
+        target = apps / f'{alias}.svg'
+        if have(tname):
+            target.unlink(missing_ok=True)
+        else:
+            target.write_text(svg(tname, *glyphs[tname]))
     (OUT / 'index.theme').write_text(INDEX)
     print(f'wrote {len(glyphs)} icons + {len(mi.ALIASES)} aliases to {OUT}')
     if '--preview' in sys.argv:

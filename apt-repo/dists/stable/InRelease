@@ -5,18 +5,18 @@ Origin: Amerika
 Label: Amerika OS
 Suite: stable
 Codename: stable
-Date: Thu, 22 Oct 2026 02:17:18 UTC
+Date: Thu, 22 Oct 2026 02:43:06 UTC
 Architectures: arm64
 Components: main
 Description: Amerika OS packages
 SHA256:
- 6faf12ea2779aa01172c7386fa3dece9d2605dccb571d6219ceab5891d5e529a           101641 main/binary-arm64/Packages
- 6bb0c30dc670f2199bcc71d39512ae045fe8d7e4b1b9fb6ca84d4b528275c52e            13174 main/binary-arm64/Packages.gz
- c09d808b48e66a16ec5795d38f859d620fe5e806c6fd64b5e11103e834ac7a05            11352 main/binary-arm64/Packages.xz
+ 6e578419225de66f4879cb84d297169c7e8af825d0f5be3d5f454184fbf33c54           119636 main/binary-arm64/Packages
+ ec3c4cc6c5581e4b36df48d3a42b6637ae589bb6e3ed50278eb3ec47b5b30949            14605 main/binary-arm64/Packages.gz
+ 8e1ea4a4afd508ed9f433e657105aee668784e9cec02c4a16e4e4c9ded9b58fe            12440 main/binary-arm64/Packages.xz
 -----BEGIN PGP SIGNATURE-----
 
-iHUEARYKAB0WIQSfUr2YqO6QlrG+eqwQY7vJiaERMwUCatlyLgAKCRAQY7vJiaER
-MwPNAQDpEsMWWZlnDhe0nUBXnHX99CmHGG8ngmQpkjwOHtV2dgD/Y2ga24G9g0pa
-BV32I3w8Eynf0bRoDwgJtIQx7ExKuQc=
-=DmIV
+iHUEARYKAB0WIQSfUr2YqO6QlrG+eqwQY7vJiaERMwUCatl4OgAKCRAQY7vJiaER
+MxufAQDU+9LLPaMuKy7zeOmWeL6wI7pyxLcASmkM9REx3VW8GgEA4+RWnpfRGtrL
+JfRLVgrr7z5S7O63Aj7EOOD4MMTJ+Qw=
+=99c0
 -----END PGP SIGNATURE-----

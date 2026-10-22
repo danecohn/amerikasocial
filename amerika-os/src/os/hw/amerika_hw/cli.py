@@ -17,21 +17,33 @@ def root(argv):
         os.execvp('pkexec', ['pkexec', HELPER, *argv])
 
 
+GLMARK_SUBSET = ['build', 'texture', 'shading', 'bump', 'effect2d', 'desktop', 'buffer', 'jellyfish']
+
+
 def bench():
     if not os.environ.get('WAYLAND_DISPLAY'):
         print('Run this from the desktop (needs a display).', file=sys.stderr)
         return 1
-    tools = [t for t in ('vkmark', 'glmark2-wayland') if shutil.which(t)]
-    if not tools:
+    jobs = []
+    if shutil.which('vkmark'):
+        jobs.append(('vkmark', ['vkmark'], 600))
+    if shutil.which('glmark2-wayland'):  # a fixed subset: the full default run takes far longer than most people wait
+        args = ['glmark2-wayland']
+        for name in GLMARK_SUBSET:
+            args += ['--benchmark', name]
+        jobs.append(('glmark2-wayland', args, 600))
+    if not jobs:
         print('Install the benchmarks: sudo apt install amerika-gamedev', file=sys.stderr)
         return 1
-    for t in tools:
+    for label, cmd, limit in jobs:
         try:
-            out = subprocess.run([t], capture_output=True, text=True, timeout=300).stdout
+            out = subprocess.run(cmd, capture_output=True, text=True, timeout=limit)
+            text = out.stdout + out.stderr
         except subprocess.TimeoutExpired:
-            out = ''
-        m = re.search(r'(?:vkmark|glmark2) Score:\s*(\d+)', out)
-        print(f'{t}: ' + (m.group(1) if m else 'no score'))
+            print(f'{label}: timed out after {limit} s')
+            continue
+        m = re.search(r'(?:vkmark|glmark2) Score:\s*(\d+)', text)
+        print(f'{label}: ' + (m.group(1) if m else 'no score (' + (text.strip().splitlines() or ['no output'])[-1][:120] + ')'))
     return 0
 
 

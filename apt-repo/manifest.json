@@ -2,7 +2,7 @@
   "suite": "stable",
   "architecture": "arm64",
   "fingerprint": "9F52BD98A8EE9096B1BE7AAC1063BBC989A11133",
-  "generated": "Thu, 22 Oct 2026 02:17:18 UTC",
+  "generated": "Thu, 22 Oct 2026 02:43:06 UTC",
   "packages": {
     "amerika-agent_3.1.0_arm64.deb": {
       "path": "pool/main/a/amerika-agent/amerika-agent_3.1.0_arm64.deb",
@@ -23,6 +23,11 @@
       "path": "pool/main/a/amerika-agent/amerika-agent_3.2.1_arm64.deb",
       "size": 87767546,
       "sha256": "a81b4d10481ff60346d15cf129c0bf0a0204fe70974e54edb9ca744840979dc1"
+    },
+    "amerika-agent_3.2.2_arm64.deb": {
+      "path": "pool/main/a/amerika-agent/amerika-agent_3.2.2_arm64.deb",
+      "size": 87767554,
+      "sha256": "017f705b59759ebb75f1205a630c61be2e8871fe8658161a45753d9a85affe99"
     },
     "amerika-apps_3.0.3_all.deb": {
       "path": "pool/main/a/amerika-apps/amerika-apps_3.0.3_all.deb",
@@ -74,6 +79,11 @@
       "size": 1788,
       "sha256": "8130cacf3081bf4ecf735546616659acbb2d3ee9030f8aff66a823dfd2ea8306"
     },
+    "amerika-apps_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-apps/amerika-apps_3.2.2_all.deb",
+      "size": 1792,
+      "sha256": "7a564b94559e44320d090f3db5886e66977c1711627d4066f801dfee3ab62987"
+    },
     "amerika-boot_3.0.6_all.deb": {
       "path": "pool/main/a/amerika-boot/amerika-boot_3.0.6_all.deb",
       "size": 399248,
@@ -109,6 +119,11 @@
       "size": 399264,
       "sha256": "e948c1def0b1281460647bed704f7bf018c26e8aeaa732fd1ba08c3a2824535f"
     },
+    "amerika-boot_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-boot/amerika-boot_3.2.2_all.deb",
+      "size": 399244,
+      "sha256": "dea93747ec29323d0eb2e597c6f974a6a1280e5f32dd1ef16448fc1ffea2bdb4"
+    },
     "amerika-box_3.2.0_all.deb": {
       "path": "pool/main/a/amerika-box/amerika-box_3.2.0_all.deb",
       "size": 234060,
@@ -118,6 +133,11 @@
       "path": "pool/main/a/amerika-box/amerika-box_3.2.1_all.deb",
       "size": 234056,
       "sha256": "1397c3242709fd9a6dbde3296d42325f7f1b7be4b5ff82338a990b4d222882c7"
+    },
+    "amerika-box_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-box/amerika-box_3.2.2_all.deb",
+      "size": 234068,
+      "sha256": "5ea4fffa918688f990d81ce14b1c44c74ea38f220c4a5d5e5e9b4459bd877e35"
     },
     "amerika-branding_3.1.0_all.deb": {
       "path": "pool/main/a/amerika-branding/amerika-branding_3.1.0_all.deb",
@@ -139,6 +159,11 @@
       "size": 502916,
       "sha256": "ef923fb0614cc04d398bc672deba524fc49cb93da853ca78523fc417fd2aa2a0"
     },
+    "amerika-branding_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-branding/amerika-branding_3.2.2_all.deb",
+      "size": 502952,
+      "sha256": "49ca4c177eb014c42174f1837aa226b2649cfbb9e5a66664c26fbd17e6844460"
+    },
     "amerika-defaults_3.1.0_all.deb": {
       "path": "pool/main/a/amerika-defaults/amerika-defaults_3.1.0_all.deb",
       "size": 4416,
@@ -158,6 +183,11 @@
       "path": "pool/main/a/amerika-defaults/amerika-defaults_3.2.1_all.deb",
       "size": 4416,
       "sha256": "148f744ef1aab76662c72884ea847db6653025a5b3b566e09579165076b9130c"
+    },
+    "amerika-defaults_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-defaults/amerika-defaults_3.2.2_all.deb",
+      "size": 4420,
+      "sha256": "8fc41f58ce84ccc11105ca37d276dfc9befb91f527ffe567baf991da2ac344dd"
     },
     "amerika-desktop_3.0.3_arm64.deb": {
       "path": "pool/main/a/amerika-desktop/amerika-desktop_3.0.3_arm64.deb",
@@ -209,6 +239,11 @@
       "size": 1196,
       "sha256": "40bf8863926cde8c01f0d3de07a6170c420836846718663690521a882da4e6c2"
     },
+    "amerika-desktop_3.2.2_arm64.deb": {
+      "path": "pool/main/a/amerika-desktop/amerika-desktop_3.2.2_arm64.deb",
+      "size": 1196,
+      "sha256": "af3f1672705a44d425efeaf83a071cd42d964c9c0a0b6a0f7f7e4cc858d824eb"
+    },
     "amerika-desktop-shell_3.0.3_all.deb": {
       "path": "pool/main/a/amerika-desktop-shell/amerika-desktop-shell_3.0.3_all.deb",
       "size": 35004,
@@ -259,6 +294,11 @@
       "size": 141332,
       "sha256": "412d60564d95c00c4171be68fbe55adaa8dd24f649d4a0ac53f534f47f3849d1"
     },
+    "amerika-desktop-shell_3.2.2_arm64.deb": {
+      "path": "pool/main/a/amerika-desktop-shell/amerika-desktop-shell_3.2.2_arm64.deb",
+      "size": 141372,
+      "sha256": "af80f6805e3198af5f5fa69a257c719cebc1c505cf34c61e72faba6eee1c7c47"
+    },
     "amerika-developer_3.2.0_all.deb": {
       "path": "pool/main/a/amerika-developer/amerika-developer_3.2.0_all.deb",
       "size": 1376,
@@ -268,6 +308,11 @@
       "path": "pool/main/a/amerika-developer/amerika-developer_3.2.1_all.deb",
       "size": 1384,
       "sha256": "4f5ac92a4af5b7e79c6fc0cecc34ae865e1c7cb6832868150115fc17702ef1c1"
+    },
+    "amerika-developer_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-developer/amerika-developer_3.2.2_all.deb",
+      "size": 1376,
+      "sha256": "2a665a24901425b88b167e2ed66e52c387f32f20e58df21cb6a9943f18a1ceb8"
     },
     "amerika-doc_3.1.0_all.deb": {
       "path": "pool/main/a/amerika-doc/amerika-doc_3.1.0_all.deb",
@@ -289,6 +334,11 @@
       "size": 22320,
       "sha256": "5a571e19c9e02d9223deff79258c1fb1f62334f28011713f6cb0a65a220b8cfc"
     },
+    "amerika-doc_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-doc/amerika-doc_3.2.2_all.deb",
+      "size": 22316,
+      "sha256": "19bb264ac2cf0d455cef10c585c49e2cb27e6221956ee5f0948cc538b3ce7682"
+    },
     "amerika-engine_3.2.0_all.deb": {
       "path": "pool/main/a/amerika-engine/amerika-engine_3.2.0_all.deb",
       "size": 81800,
@@ -299,10 +349,20 @@
       "size": 81848,
       "sha256": "67ce77e22a69acd5b509c6395cc288743a1121cf88f38f3e08fafd3d54d2caab"
     },
+    "amerika-engine_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-engine/amerika-engine_3.2.2_all.deb",
+      "size": 81876,
+      "sha256": "6b850a860f18e04449ffbb9afe1a38a85a7ab988be646b7f83be94b18e7ad581"
+    },
     "amerika-gamedev_3.2.1_all.deb": {
       "path": "pool/main/a/amerika-gamedev/amerika-gamedev_3.2.1_all.deb",
       "size": 9128,
       "sha256": "31985d91ac67057f9a2de3058f77123b8b364116f79127974efd4cf8fb1651e4"
+    },
+    "amerika-gamedev_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-gamedev/amerika-gamedev_3.2.2_all.deb",
+      "size": 9352,
+      "sha256": "a37a1d42552db463a0691c897623dd2d731981c837e4982c4697405b05132a06"
     },
     "amerika-icon-theme_3.0.3_all.deb": {
       "path": "pool/main/a/amerika-icon-theme/amerika-icon-theme_3.0.3_all.deb",
@@ -354,6 +414,11 @@
       "size": 9116,
       "sha256": "5f0b1a5469c543a06b2cd99645721ced4ec0bd41090f173cbd0dc7a04482130e"
     },
+    "amerika-icon-theme_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-icon-theme/amerika-icon-theme_3.2.2_all.deb",
+      "size": 9112,
+      "sha256": "b2031ba59cbe59fa2a58bf451fb0ab11243dfdb8a151525cc9c995e27bcf2ab4"
+    },
     "amerika-login_3.0.4_all.deb": {
       "path": "pool/main/a/amerika-login/amerika-login_3.0.4_all.deb",
       "size": 995920,
@@ -399,6 +464,11 @@
       "size": 996064,
       "sha256": "8cdf9b51f8b015c9d55aa2e48910f3175d964e024e398705822bb54c0ce1d9e1"
     },
+    "amerika-login_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-login/amerika-login_3.2.2_all.deb",
+      "size": 996060,
+      "sha256": "1c7302784bc5bb1126f327ad151fef370f949571b99b35bb47ca3fd22549198c"
+    },
     "amerika-office_0.1.0-2_arm64.deb": {
       "path": "pool/main/a/amerika-office/amerika-office_0.1.0-2_arm64.deb",
       "size": 106715924,
@@ -419,6 +489,11 @@
       "size": 13220,
       "sha256": "66d8e8ee180d5be7a2125dbb99f5d0eecbc89bdf6640efff309fd59032af3790"
     },
+    "amerika-phone_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-phone/amerika-phone_3.2.2_all.deb",
+      "size": 13216,
+      "sha256": "c4ba6904525ef307f3ea9d68c000b1e400cfa48fbcab35c5f582e60d8cad18ed"
+    },
     "amerika-render_3.2.0_all.deb": {
       "path": "pool/main/a/amerika-render/amerika-render_3.2.0_all.deb",
       "size": 331660,
@@ -428,6 +503,11 @@
       "path": "pool/main/a/amerika-render/amerika-render_3.2.1_all.deb",
       "size": 331548,
       "sha256": "277450064a8a1153b173cccc3d57a86117f1b2daf4ca7796cc4a84213a1467ee"
+    },
+    "amerika-render_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-render/amerika-render_3.2.2_all.deb",
+      "size": 331580,
+      "sha256": "e2a282523310259e74868ac411232ee1972d37dcae2d7707b1cb745da01913ef"
     },
     "amerika-repo-keyring_3.0.3_all.deb": {
       "path": "pool/main/a/amerika-repo-keyring/amerika-repo-keyring_3.0.3_all.deb",
@@ -479,6 +559,11 @@
       "size": 1816,
       "sha256": "d6cf3b46d2395961325c57ff1f8f8c4c7f60d321a43a7c9faaa1077ce0e738e3"
     },
+    "amerika-repo-keyring_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-repo-keyring/amerika-repo-keyring_3.2.2_all.deb",
+      "size": 1808,
+      "sha256": "16a2cfa2e94bde24ec8ab4811115a4624affdeb1d5412ae8d1355ab04f0fec1f"
+    },
     "amerika-session_3.0.3_all.deb": {
       "path": "pool/main/a/amerika-session/amerika-session_3.0.3_all.deb",
       "size": 3856,
@@ -528,6 +613,11 @@
       "path": "pool/main/a/amerika-session/amerika-session_3.2.1_all.deb",
       "size": 4316,
       "sha256": "8cf702ea1df41b4af3bbc5c3ca34e172da68549070cb70f9a00a9b0c09be21bb"
+    },
+    "amerika-session_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-session/amerika-session_3.2.2_all.deb",
+      "size": 4312,
+      "sha256": "384d37a24ca12887bc88c91bc1b0b84b9dbba26ec43842c055dfc1d4b523c9f3"
     },
     "amerika-social_1.0.0-1_arm64.deb": {
       "path": "pool/main/a/amerika-social/amerika-social_1.0.0-1_arm64.deb",
@@ -584,6 +674,11 @@
       "size": 6788,
       "sha256": "839f92178c341912fbe7dfc3fa495d5c12b021c8fca54aa2be70d209cba05150"
     },
+    "amerika-software_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-software/amerika-software_3.2.2_all.deb",
+      "size": 6784,
+      "sha256": "6ffea72ac1223e009c64ce10ece4a807e298d18fe65a26a2a594ae7fb969b20d"
+    },
     "amerika-sprite_3.2.0_all.deb": {
       "path": "pool/main/a/amerika-sprite/amerika-sprite_3.2.0_all.deb",
       "size": 82088,
@@ -594,6 +689,11 @@
       "size": 82092,
       "sha256": "38a746f988d083b7c0ac60c469eff7a34bb17abd25d79f539f5e3d17e3da3d91"
     },
+    "amerika-sprite_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-sprite/amerika-sprite_3.2.2_all.deb",
+      "size": 82088,
+      "sha256": "3ffa35c958748fb5388cbd9c97736e236a6262fb3d7529c238a5c465981ca230"
+    },
     "amerika-studio_3.2.0_all.deb": {
       "path": "pool/main/a/amerika-studio/amerika-studio_3.2.0_all.deb",
       "size": 69548,
@@ -603,6 +703,11 @@
       "path": "pool/main/a/amerika-studio/amerika-studio_3.2.1_all.deb",
       "size": 69552,
       "sha256": "7f293245f2b394341d2b5f9c170d280000c35050da4eb3b0419f0ef2b17e3784"
+    },
+    "amerika-studio_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-studio/amerika-studio_3.2.2_all.deb",
+      "size": 69552,
+      "sha256": "87ce3b83ccf67c0c9ec94316a73483c614b539a9d178e4bf9a7cb0437bf0f519"
     },
     "amerika-theme_3.0.3_all.deb": {
       "path": "pool/main/a/amerika-theme/amerika-theme_3.0.3_all.deb",
@@ -654,6 +759,11 @@
       "size": 1682124,
       "sha256": "3d1715243376ca0e2cd0ce6c485c3a9bf4355fe96c83867878bf3bc061466cc3"
     },
+    "amerika-theme_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-theme/amerika-theme_3.2.2_all.deb",
+      "size": 1682128,
+      "sha256": "be32ffe7410d95d9184b2fb163d5ac79825b09c9642ad851da21ebf0231a9b70"
+    },
     "amerika-updates_3.1.0_all.deb": {
       "path": "pool/main/a/amerika-updates/amerika-updates_3.1.0_all.deb",
       "size": 2976,
@@ -673,6 +783,11 @@
       "path": "pool/main/a/amerika-updates/amerika-updates_3.2.1_all.deb",
       "size": 2976,
       "sha256": "0cbdedcd3697d690e4b4a12fee762c95cb8635ae82f89cce6e3889a9fb1a5914"
+    },
+    "amerika-updates_3.2.2_all.deb": {
+      "path": "pool/main/a/amerika-updates/amerika-updates_3.2.2_all.deb",
+      "size": 2972,
+      "sha256": "2b97f06110dd0ca2cacc86941086cab163fa9d6df58047db11cfd34daf7cff09"
     },
     "amerika-venture_158.0.1-amerika1_arm64.deb": {
       "path": "pool/main/a/amerika-venture/amerika-venture_158.0.1-amerika1_arm64.deb",

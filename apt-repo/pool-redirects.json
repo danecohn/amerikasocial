@@ -19,6 +19,11 @@
     "size": 87767546,
     "sha256": "a81b4d10481ff60346d15cf129c0bf0a0204fe70974e54edb9ca744840979dc1"
   },
+  "amerika-agent_3.2.2_arm64.deb": {
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-3.2.2/amerika-agent_3.2.2_arm64.deb",
+    "size": 87767554,
+    "sha256": "017f705b59759ebb75f1205a630c61be2e8871fe8658161a45753d9a85affe99"
+  },
   "amerika-office_0.1.0-2_arm64.deb": {
     "url": "https://github.com/danecohn/amerikasocial/releases/download/os-3.0.4/amerika-office_0.1.0-2_arm64.deb",
     "size": 106715924,

@@ -32,12 +32,27 @@ done
 # Stopping it at logout also stops the opt-in Agent gateway and its children.
 systemctl --user --no-block start amerika-session.target 2>/dev/null || true
 
+# Claude-first mode: once the shell reports ready, ask it to start (and supervise) the home app. The shell does nothing when
+# home_mode is "off" (the default), and stops supervising when the mode is switched or the session ends.
+start_home() {
+  pid="$1"; n=0
+  while [ "$n" -lt 80 ]; do
+    if [ "$(cat "${XDG_RUNTIME_DIR:-/tmp}/amerika/shell-ready" 2>/dev/null)" = "$pid" ]; then
+      gdbus call --session --dest org.amerika.Shell --object-path /Control --method org.amerika.Control.Action home-start >/dev/null 2>&1
+      return 0
+    fi
+    kill -0 "$pid" 2>/dev/null || return 0
+    n=$((n + 1)); sleep 0.5
+  done
+}
+
 # the shell: restart it if it crashes, end the session if it exits cleanly (log out)
 crashes=0
 while [ "$crashes" -lt 5 ]; do
   started=$(date +%s)
   "${AMERIKA_BIN:-/usr/bin}/amerika-shell" &
   shell_pid=$!
+  start_home "$shell_pid" &
   wait "$shell_pid"   # waiting (not running in the foreground) lets the signal traps fire at once
   code=$?
   shell_pid=

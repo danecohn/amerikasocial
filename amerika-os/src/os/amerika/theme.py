@@ -185,6 +185,43 @@ window.am-agent-window { background: @am_bg; color: @am_text; }
 .am-risk.sensitive { color: #0b0a14; background: #ffb02e; box-shadow: 0 0 10px alpha(#ffb02e, .6); }
 .am-risk.critical { color: white; background: #e0243a; box-shadow: 0 0 12px alpha(#ff4d4d, .8); }
 .am-client { font-size: 11px; font-weight: 800; letter-spacing: 2px; color: @am_second; }
+
+/* ---------- claude-os ---------- */
+window.am-caster { background: alpha(#05040a, .84); }
+.am-caster-title { font-size: 34px; font-weight: 800; letter-spacing: 14px; color: @am_text; text-shadow: 0 0 26px alpha(@am_accent, .8); }
+.am-caster-sub { font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace; font-size: 12px; letter-spacing: 5px; color: @am_second; }
+.am-caster-hint { font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace; font-size: 10px; letter-spacing: 2px; color: @am_dim; }
+.am-caster-card {
+  background-image: linear-gradient(to bottom, alpha(#2a2940, .95), alpha(#0d0c16, .97));
+  border: 1px solid alpha(white, .18); border-radius: 28px; padding: 22px 26px 26px 26px; color: @am_text;
+  box-shadow: 0 18px 60px alpha(black, .7), inset 0 1px 0 alpha(white, .16);
+  transition: box-shadow 180ms ease-out, border-color 180ms ease-out;
+}
+.am-caster-card.focused {
+  border: 2px solid @am_second;
+  box-shadow: 0 0 46px alpha(@am_second, .55), 0 0 90px alpha(@am_accent, .30), 0 18px 60px alpha(black, .7), inset 0 1px 0 alpha(white, .22);
+}
+.am-caster-card.chatgpt.focused { border-color: @am_accent; box-shadow: 0 0 46px alpha(@am_accent, .55), 0 0 90px alpha(@am_second, .30), 0 18px 60px alpha(black, .7), inset 0 1px 0 alpha(white, .22); }
+.am-caster-badge { font-family: "JetBrains Mono", "DejaVu Sans Mono", monospace; font-size: 12px; font-weight: 800; color: @am_dim; border: 1px solid alpha(white, .22); border-radius: 8px; padding: 1px 9px; }
+.am-caster-card.focused .am-caster-badge { color: @am_text; border-color: @am_second; }
+.am-caster-name { font-size: 26px; font-weight: 800; letter-spacing: 5px; }
+.am-caster-action { font-size: 11px; font-weight: 800; letter-spacing: 3px; color: @am_dim; }
+.am-caster-card.focused .am-caster-action { color: @am_second; text-shadow: 0 0 10px alpha(@am_second, .7); }
+
+.am-chip { background: alpha(white, .05); border: 1px solid alpha(white, .14); border-radius: 999px; padding: 3px 14px; color: @am_dim; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; min-height: 0; }
+.am-chip:hover { border-color: @am_second; color: @am_text; }
+.am-chip.active { color: @am_text; border-color: @am_second; background: alpha(@am_second, .16); box-shadow: 0 0 10px alpha(@am_second, .4); }
+.am-footer-btn { background: alpha(white, .05); border: 1px solid alpha(white, .14); border-radius: 12px; padding: 6px 14px; color: @am_text; font-weight: 700; font-size: 12px; }
+.am-footer-btn:hover, .am-footer-btn:focus { border-color: @am_second; box-shadow: 0 0 12px alpha(@am_second, .4); }
+.am-recent-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; color: @am_dim; }
+.am-bar-btn.flat-time { background-image: none; border-color: transparent; }
+.am-bar-btn.flat-time:hover { border-color: @am_accent; }
+.am-bar-btn.home { border-color: alpha(@am_accent, .55); }
+.am-preview-bar { background-image: linear-gradient(to bottom, #262535, #12111b); border: 1px solid alpha(@am_accent, .55); border-radius: 10px; padding: 4px 10px; min-height: 30px; }
+.am-preview-chip { background: alpha(white, .08); border: 1px solid alpha(white, .16); border-radius: 999px; padding: 1px 10px; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: @am_text; }
+.am-claude-first { border-color: alpha(@am_second, .6); box-shadow: 0 0 24px alpha(@am_second, .22); }
+.am-mode-card { background: alpha(white, .04); border: 1px solid alpha(white, .14); border-radius: 16px; padding: 14px; color: @am_text; }
+.am-mode-card.selected { border: 2px solid @am_second; background: alpha(@am_second, .12); box-shadow: 0 0 16px alpha(@am_second, .25); }
 '''
 
 

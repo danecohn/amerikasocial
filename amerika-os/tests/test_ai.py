@@ -152,7 +152,7 @@ class Mcp(unittest.TestCase):
             'not json'], broker)
         self.assertEqual(out[0]['result']['protocolVersion'], '2025-03-26')
         self.assertEqual(out[0]['result']['serverInfo']['name'], 'amerika-system')
-        self.assertEqual(out[1]['result']['tools'][0]['name'], 'system.info')
+        self.assertEqual(out[1]['result']['tools'][0]['name'], 'system_info')
         self.assertFalse(out[2]['result'].get('isError'))
         self.assertEqual(json.loads(out[2]['result']['content'][0]['text'])['machine'], 'aarch64')
         self.assertTrue(out[3]['result']['isError'])

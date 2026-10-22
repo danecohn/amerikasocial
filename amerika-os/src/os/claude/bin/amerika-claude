@@ -1,0 +1,74 @@
+#!/usr/bin/python3
+"""amerika-claude: install, remove, export and check the Amerika OS skills for Claude. Only runs when you run it."""
+import argparse
+import json
+import sys
+
+try:
+    from amerika_claude import core
+except ImportError:  # running from a source checkout
+    import os
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+    from amerika_claude import core
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(prog='amerika-claude', description='Skills and plugin that let Claude operate Amerika OS.')
+    sub = ap.add_subparsers(dest='cmd', required=True)
+    p = sub.add_parser('status', help='what is installed'); p.add_argument('--json', action='store_true')
+    p = sub.add_parser('install', help='install skills to ~/.claude/skills and the plugin marketplace (with backup)')
+    p.add_argument('--skills-only', action='store_true'); p.add_argument('--plugin-only', action='store_true')
+    sub.add_parser('remove', help='remove exactly what install added').add_argument('--force', action='store_true', help='also delete files you edited')
+    sub.add_parser('export', help='write one zip per skill plus custom-instructions.md').add_argument('dir')
+    p = sub.add_parser('doctor', help='check the setup'); p.add_argument('--json', action='store_true')
+    args = ap.parse_args(argv)
+    try:
+        if args.cmd == 'status':
+            st = core.status()
+            if args.json:
+                print(json.dumps(st, indent=2))
+            else:
+                print('installed:', 'yes' if st['installed'] else 'no')
+                print('skills available:', len(st['skills_available']), '| installed:', len(st['installed_skills']), '| plugin:', 'yes' if st['plugin_installed'] else 'no')
+                for key in ('modified', 'missing'):
+                    if st[key]:
+                        print(key + ':', ', '.join(st[key]))
+                if st['outdated']:
+                    print('a newer version is available: run amerika-claude install')
+        elif args.cmd == 'install':
+            if args.skills_only and args.plugin_only:
+                ap.error('choose at most one of --skills-only and --plugin-only')
+            r = core.install(skills=not args.plugin_only, plugin=not args.skills_only)
+            print('Installed:' if r['changed'] else 'Already up to date:', ', '.join(r['installed']))
+            if r['backup']:
+                print('Backup:', r['backup'])
+            for step in r['next_steps']:
+                print('-', step)
+        elif args.cmd == 'remove':
+            r = core.remove(force=args.force)
+            if not r['installed']:
+                print('Nothing to remove: no Amerika Claude install is recorded.')
+            else:
+                print(f'Removed {r["removed"]} files.')
+                if r['kept']:
+                    print('Kept (you edited them; use --force to delete):', ', '.join(r['kept']))
+        elif args.cmd == 'export':
+            for f in core.export(args.dir):
+                print(f)
+            print('Upload each .zip in Claude Desktop > Settings > Capabilities > Skills; paste custom-instructions.md into your profile instructions (commands.md is a cheat sheet of the slash commands).')
+        elif args.cmd == 'doctor':
+            checks = core.doctor()
+            if args.json:
+                print(json.dumps(checks, indent=2))
+            else:
+                for c in checks:
+                    print(f'[{c["state"]:4}] {c["name"]}: {c["detail"]}')
+            return 1 if any(c['state'] == 'fail' for c in checks) else 0
+    except core.InstallError as error:
+        print('amerika-claude:', error, file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

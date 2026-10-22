@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "amerika": {
+      "command": "/usr/bin/amerika-mcp",
+      "args": ["--client", "claude"]
+    },
+    "amerika-studio": {
+      "command": "/usr/bin/amerika-studio-mcp",
+      "args": []
+    }
+  }
+}

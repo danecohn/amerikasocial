@@ -49,9 +49,11 @@ def _lazy(module, attr='build'):
 
 PAGES = [
     ('ai', 'AI & Assistants', 'amerika-ai-symbolic', lambda app: app._page_ai()),
+    ('home', 'Home & Caster', 'amerika-ai-symbolic', _lazy('page_home')),
     ('agent', 'Amerika Agent', 'amerika-ai-symbolic', _lazy('page_agent')),  # agent-ui
     ('studio', 'Amerika Studio', 'amerika-studio-symbolic', _lazy('page_studio')),  # studio-core
     ('appearance', 'Appearance', 'amerika-eye-symbolic', lambda app: app._page_appearance()),
+    ('topbar', 'Top bar', 'amerika-grid-symbolic', _lazy('page_topbar')),
     ('display', 'Displays', 'amerika-brightness-symbolic', _lazy('page_display')),
     ('sound', 'Sound', 'amerika-volume-symbolic', _lazy('page_system', 'build_sound')),
     ('network', 'Network', 'amerika-wifi-symbolic', _lazy('page_system', 'build_network')),
@@ -357,6 +359,10 @@ class SettingsApp(Gtk.Application):
     def _page_ai(self):
         box = page_box()
         box.append(label('AI & ASSISTANTS', 'am-heading'))
+        from .page_home import opt_in_card
+        prompt = opt_in_card(self, lambda: self._built.pop('ai', None) and self.show_page('ai'))
+        if prompt is not None:
+            box.append(prompt)
         box.append(label('Claude and ChatGPT can operate this computer through the Amerika system tools. You decide how much they may do, '
                          'you see everything they do in the top bar, and you can stop them at any time with Ctrl+Alt+Esc.', 'am-sub', wrap=True))
 
@@ -395,7 +401,7 @@ class SettingsApp(Gtk.Application):
         key_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         key_card.append(label('COPILOT KEY', 'am-label'))
         key_card.append(label('The Copilot key on your keyboard (Win+Shift+F23) opens:', 'am-sub', wrap=True))
-        choices = [('claude', 'Claude'), ('chatgpt', 'ChatGPT'), ('agent', 'Amerika Agent'), ('ask', 'Ask me each time')]  # agent: agent-ui
+        choices = [('caster', 'The Caster (choose Claude or ChatGPT)'), ('claude', 'Claude'), ('chatgpt', 'ChatGPT'), ('agent', 'Amerika Agent'), ('ask', 'Ask me each time')]  # agent: agent-ui
         drop = Gtk.DropDown.new_from_strings([c[1] for c in choices])
         current = self.settings.get('copilot_app', 'claude')
         drop.set_selected(next((i for i, c in enumerate(choices) if c[0] == current), 0))

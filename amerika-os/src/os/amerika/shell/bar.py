@@ -5,10 +5,11 @@ import time
 import gi
 
 gi.require_version('Gtk', '4.0')
-from gi.repository import GLib, Gtk  # noqa: E402
+gi.require_version('Gdk', '4.0')
+from gi.repository import Gdk, GLib, Gtk  # noqa: E402
 
 from .. import system
-from . import apps, layer
+from . import apps, barlayout, layer
 from .agent_chip import AgentChip  # agent-ui
 from .tray import Tray
 
@@ -22,77 +23,79 @@ def _label(text, css=None, xalign=0.0):
 
 
 class Bar(Gtk.Window):
+    """The top bar. Every widget is created once; `rebuild()` only re-arranges them from settings['bar_layout'] (see barlayout.py),
+    and does nothing while the signature is unchanged or a popover is open."""
+
     def __init__(self, shell):
         super().__init__(application=shell, title='Amerika Bar')
         self.shell = shell
         self.add_css_class('am-bar')
         layer.setup(self, 'top', anchors=('top', 'left', 'right'), exclusive='auto', keyboard='on_demand', namespace='amerika-bar')
-        self.set_default_size(1280, 36)
+        self.set_default_size(1280, barlayout.height(shell.settings))
 
         box = Gtk.CenterBox()
         box.add_css_class('am-bar-box')
         self.set_child(box)
+        self.zone_boxes = {'left': Gtk.Box(spacing=8, valign=Gtk.Align.CENTER), 'center': Gtk.Box(spacing=8, valign=Gtk.Align.CENTER),
+                           'right': Gtk.Box(spacing=6, valign=Gtk.Align.CENTER)}
+        box.set_start_widget(self.zone_boxes['left'])
+        box.set_center_widget(self.zone_boxes['center'])
+        box.set_end_widget(self.zone_boxes['right'])
+        self._style = Gtk.CssProvider()
+        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(), self._style, Gtk.STYLE_PROVIDER_PRIORITY_USER + 1)
+        self._signature = None
+        self._wrappers = []
+        self._rebuilds = 0
 
-        # ---- start: launcher, AI apps, active app
-        start = Gtk.Box(spacing=8, valign=Gtk.Align.CENTER)
+        shell_ = shell
+        self.parts = {}
+        # ---- launcher and home buttons
         launcher = Gtk.Button()
         launcher.add_css_class('am-bar-btn')
         inner = Gtk.Box(spacing=7)
         inner.append(apps.icon_image('amerika-home', 18))
         inner.append(_label('AMERIKA', None))
         launcher.set_child(inner)
-        launcher.connect('clicked', lambda *_: shell.toggle_launcher())
-        start.append(launcher)
-        for desktop_id in shell.settings.get('bar_ai_apps', []):
-            info = apps.lookup(desktop_id)
-            if not info:
-                continue
-            button = Gtk.Button()
-            button.add_css_class('am-bar-btn')
-            button.add_css_class('ai')
-            row = Gtk.Box(spacing=7)
-            row.append(apps.icon_image(info, 18))
-            row.append(_label(info.get_display_name().upper()))
-            button.set_child(row)
-            button.set_tooltip_text(f'Open {info.get_display_name()}')
-            button.connect('clicked', lambda _b, i=desktop_id: shell.activate_app(i))
-            start.append(button)
+        launcher.connect('clicked', lambda *_: shell_.toggle_launcher())
+        self.parts['launcher'] = launcher
+        home_btn = Gtk.Button()
+        home_btn.add_css_class('am-bar-btn')
+        home_btn.add_css_class('home')
+        home_btn.set_child(_label('HOME', None))
+        home_btn.set_tooltip_text('Bring the home app to the front (Win+H)')
+        home_btn.connect('clicked', lambda *_: shell_.go_home())
+        self.parts['home'] = home_btn
+        self.parts['ai_apps'] = Gtk.Box(spacing=8, valign=Gtk.Align.CENTER)
+
         self.appname = _label('', 'am-appname')
         self.appname.set_margin_start(10)
         self.appname.set_ellipsize(3)
         self.appname.set_max_width_chars(48)
-        start.append(self.appname)
+        self.parts['title'] = self.appname
         from .workspaces import Pager
-        start.append(Pager(shell))
-        box.set_start_widget(start)
+        self.parts['pager'] = Pager(shell)
 
-        # ---- center: clock
+        # ---- clock and date (labels persist; the buttons around them are rebuilt)
         self.clock = _label('', 'am-clock', 0.5)
-        clock_button = Gtk.Button()
-        clock_button.add_css_class('am-bar-btn')
-        clock_button.set_child(self.clock)
-        clock_button.connect('clicked',lambda *_:shell.action('calendar'))
-        box.set_center_widget(clock_button)
+        self.date = _label('', 'am-clock', 0.5)
 
-        # ---- end: AI chip, stop, controls, notifications
-        end = Gtk.Box(spacing=6, valign=Gtk.Align.CENTER)
+        # ---- recording and Stop are safety controls: always in the right zone, whatever the layout
         self.record_chip = Gtk.Button(label='● RECORDING')
         self.record_chip.add_css_class('am-ai-stop')
         self.record_chip.set_visible(False)
-        self.record_chip.connect('clicked',lambda *_:shell.action('record:toggle'))
-        end.append(self.record_chip)
-        self.agent_chip = AgentChip(shell)  # agent-ui: live Amerika Agent state (hidden until the agent is installed)
-        end.append(self.agent_chip)
-        self.chip = _label('AI · IDLE', 'am-ai-chip idle')
+        self.record_chip.connect('clicked', lambda *_: shell_.action('record:toggle'))
         self.stop = Gtk.Button(label='STOP')
         self.stop.add_css_class('am-ai-stop')
         self.stop.set_visible(False)
-        self.stop.connect('clicked', lambda *_: shell.broker.stop_all())
-        end.append(self.chip)
-        end.append(self.stop)
+        self.stop.connect('clicked', lambda *_: shell_.broker.stop_all())
+
+        self.agent_chip = AgentChip(shell)  # agent-ui: live Amerika Agent state (hidden until the agent is installed)
+        self.parts['agent_chip'] = self.agent_chip
+        self.chip = _label('AI · IDLE', 'am-ai-chip idle')
+        self.parts['ai_chip'] = self.chip
 
         self.tray = Tray()
-        end.append(self.tray)
+        self.parts['tray'] = self.tray
         self.tray.start()
 
         self.status = Gtk.MenuButton()
@@ -107,21 +110,136 @@ class Bar(Gtk.Window):
             sbox.append(w)
         self.status.set_child(sbox)
         self.status.set_popover(self._controls_popover())
-        end.append(self.status)
+        self.parts['status'] = self.status
 
         self.bell = Gtk.MenuButton()
         self.bell.add_css_class('am-bar-icon')
         self.bell.set_icon_name('amerika-bell-symbolic')
         self.bell.set_popover(shell.notifications.center_popover())
-        end.append(self.bell)
-        box.set_end_widget(end)
+        self.parts['bell'] = self.bell
 
+        self.rebuild(force=True)
         shell.windows.connect('changed', lambda *_: self._windows_changed())
         shell.broker.connect('activity', self._on_activity)
         GLib.timeout_add_seconds(1, self._tick)
         GLib.timeout_add_seconds(6, self._poll)
         self._tick()
         self._poll()
+
+    # ------------------------------------------------------------------ layout
+    def _popover_open(self):
+        for pop in (self.status.get_popover(), self.bell.get_popover()):
+            if pop is not None and pop.get_visible():
+                return True
+        item = self.tray.get_first_child()
+        while item is not None:
+            pop = getattr(item, 'pop', None)
+            if pop is not None and pop.get_visible():
+                return True
+            item = item.get_next_sibling()
+        return False
+
+    @staticmethod
+    def _detach(widget):
+        parent = widget.get_parent()
+        if parent is None:
+            return
+        if isinstance(parent, Gtk.Button):
+            parent.set_child(None)
+        elif isinstance(parent, Gtk.Box):
+            parent.remove(widget)
+
+    def _apply_style(self):
+        h = barlayout.height(self.shell.settings)
+        o = barlayout.opacity(self.shell.settings)
+        self._style.load_from_string(
+            '.am-bar-box { min-height: %dpx; background-image: linear-gradient(to bottom, alpha(#262535, %.2f), alpha(#12111b, %.2f));'
+            ' box-shadow: 0 1px 14px alpha(@am_accent, %.2f), inset 0 1px 0 alpha(white, .10); }' % (h, o, o, 0.35 * o))
+        self.set_default_size(1280, h)
+
+    def _ai_buttons(self):
+        box = self.parts['ai_apps']
+        child = box.get_first_child()
+        while child:
+            nxt = child.get_next_sibling()
+            box.remove(child)
+            child = nxt
+        for desktop_id in self.shell.settings.get('bar_ai_apps', []):
+            info = apps.lookup(desktop_id)
+            if not info:
+                continue
+            button = Gtk.Button()
+            button.add_css_class('am-bar-btn')
+            button.add_css_class('ai')
+            row = Gtk.Box(spacing=7)
+            row.append(apps.icon_image(info, 18))
+            row.append(_label(info.get_display_name().upper()))
+            button.set_child(row)
+            button.set_tooltip_text(f'Open {info.get_display_name()}')
+            button.connect('clicked', lambda _b, i=desktop_id: self.shell.activate_app(i))
+            box.append(button)
+
+    def _time_button(self, ids):
+        button = Gtk.Button()
+        button.add_css_class('am-bar-btn')
+        button.connect('clicked', lambda *_: self.shell.action('calendar'))
+        labels = {'clock': self.clock, 'date': self.date}
+        for wid in ids:
+            self._detach(labels[wid])
+        if len(ids) == 1:
+            button.set_child(labels[ids[0]])
+        else:
+            row = Gtk.Box(spacing=14)
+            for wid in ids:
+                row.append(labels[wid])
+            button.set_child(row)
+        self._wrappers.append(button)
+        return button
+
+    def rebuild(self, force=False):
+        """Re-arrange the bar from settings. No-op when nothing it shows has changed; deferred while a popover is open."""
+        signature = barlayout.signature(self.shell.settings)
+        if not force and signature == self._signature:
+            return False
+        if not force and self._popover_open():
+            if not getattr(self, '_retry', False):
+                self._retry = True
+
+                def again():
+                    self._retry = False
+                    self.rebuild()
+                    return False
+                GLib.timeout_add_seconds(1, again)
+            return False
+        self._signature = signature
+        self._rebuilds += 1
+        self._apply_style()
+        self._ai_buttons()
+        for old in self._wrappers:
+            old.set_child(None)
+        self._wrappers = []
+        zones = barlayout.zones(self.shell.settings.get('bar_layout'))
+        for zone, box in self.zone_boxes.items():
+            child = box.get_first_child()
+            while child:
+                nxt = child.get_next_sibling()
+                box.remove(child)
+                child = nxt
+        right = self.zone_boxes['right']
+        right.append(self.record_chip)
+        right.append(self.stop)
+        for zone, ids in zones.items():
+            box = self.zone_boxes[zone]
+            for run in barlayout.runs(ids):
+                if run[0] in ('clock', 'date'):
+                    box.append(self._time_button(run))
+                else:
+                    part = self.parts[run[0]]
+                    self._detach(part)
+                    box.append(part)
+        self.date.set_visible(barlayout.clock_format(self.shell.settings)['date'] != 'none')
+        self._tick()
+        return True
 
     # ------------------------------------------------------------------ controls popover
     def _controls_popover(self):
@@ -187,8 +305,10 @@ class Bar(Gtk.Window):
 
     # ------------------------------------------------------------------ updates
     def _tick(self):
-        fmt = '%a %d %b   %H:%M' if self.shell.settings.get('clock_24h') else '%a %d %b   %I:%M %p'
-        self.clock.set_text(time.strftime(fmt).upper())
+        conf = barlayout.clock_format(self.shell.settings)
+        now = time.localtime()
+        self.clock.set_text(barlayout.format_time(conf, now))
+        self.date.set_text(barlayout.format_date(conf, now))
         return True
 
     def _poll(self):

@@ -13,7 +13,7 @@ from .. import __version__, common
 INSTRUCTIONS = (
     'You are connected to Amerika OS. These tools operate the user\'s computer: windows, apps, audio, display, '
     'network, notifications, files in the home folder and (with approval) shell commands. The user sees every action '
-    'in the top bar and can stop you at any time. Prefer read tools first (system.status, windows.list, apps.list), '
+    'in the top bar and can stop you at any time. Prefer read tools first (system_status, windows_list, apps_list), '
     'make the smallest change that does the job, and say what you did. Risky tools ask the user for approval; if '
     'an action is declined, do not retry it without being asked.')
 
@@ -32,10 +32,25 @@ def ask_broker(payload, timeout=130):
     return json.loads(data)
 
 
+def alias(name):
+    """The name advertised to MCP clients. Anthropic tool names must match ^[a-zA-Z0-9_-]{1,64}$, so dots become underscores.
+    The broker's registry keeps its dotted names; they are mapped back on every call."""
+    return name.replace('.', '_')
+
+
 def serve(client, stdin=sys.stdin, stdout=sys.stdout, broker=ask_broker):
     def send(obj):
         stdout.write(json.dumps(obj, ensure_ascii=False) + '\n')
         stdout.flush()
+
+    aliases = {}  # advertised name -> registry name
+
+    def load_aliases():
+        resp = broker({'id': 1, 'method': 'list', 'client': client})
+        tools = resp['result'] if resp.get('ok') else []
+        for t in tools:
+            aliases[alias(t['name'])] = t['name']
+        return tools
 
     for line in stdin:
         line = line.strip()
@@ -61,14 +76,16 @@ def serve(client, stdin=sys.stdin, stdout=sys.stdout, broker=ask_broker):
                 send({'jsonrpc': '2.0', 'id': mid, 'result': {}})
             elif method == 'tools/list':
                 try:
-                    resp = broker({'id': 1, 'method': 'list', 'client': client})
-                    tools = resp['result'] if resp.get('ok') else []
+                    tools = load_aliases()
                 except OSError:
                     tools = []
-                send({'jsonrpc': '2.0', 'id': mid, 'result': {'tools': tools}})
+                send({'jsonrpc': '2.0', 'id': mid, 'result': {'tools': [dict(t, name=alias(t['name'])) for t in tools]}})
             elif method == 'tools/call':
                 name, args = params.get('name', ''), params.get('arguments') or {}
                 try:
+                    if not aliases:
+                        load_aliases()
+                    name = aliases.get(name, name)  # advertised alias -> registry name; real dotted names still work
                     resp = broker({'id': 1, 'method': 'call', 'client': client, 'tool': name, 'args': args})
                 except OSError:
                     resp = {'ok': False, 'error': 'Amerika Shell is not running. Log in to the Amerika OS session to use these tools.'}

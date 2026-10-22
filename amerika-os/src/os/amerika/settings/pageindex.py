@@ -28,6 +28,8 @@ PAGE_INFO = [
      'printer print cups scanner queue job default'),
     ('power', 'Power', 'devices', 'amerika-battery-symbolic', 'Battery, power profile, lid and idle actions',
      'power battery profile performance saver lid suspend idle sleep charge threshold screen off'),
+    ('topbar', 'Top bar', 'personal', 'amerika-grid-symbolic', 'Widgets, order, clock format, height and opacity of the top bar',
+     'top bar topbar panel clock seconds 24 hour date widgets order layout height opacity translucent home button tray'),
     ('appearance', 'Appearance', 'personal', 'amerika-eye-symbolic', 'Accent, theme, wallpaper, fonts, dock and bar',
      'appearance accent colour color theme dark light wallpaper background font icon cursor animation transparency dock bar autohide'),
     ('notifications', 'Notifications', 'personal', 'amerika-bell-symbolic', 'Do not disturb and per-app notifications',
@@ -54,6 +56,8 @@ PAGE_INFO = [
      'about system info hardware cpu memory gpu firmware version kernel serial copy'),
     ('ai', 'AI & Assistants', 'ai', 'amerika-ai-symbolic', 'Claude, ChatGPT and permissions',
      'ai assistant claude chatgpt copilot permissions audit mcp'),
+    ('home', 'Home & Caster', 'ai', 'amerika-ai-symbolic', 'Claude-first mode, home app, dock, Copilot key and AI text size',
+     'home caster claude first chatgpt first classic desktop dock copilot key text size scale electron fullscreen home screen mode revert'),
     ('agent', 'Amerika Agent', 'ai', 'amerika-ai-symbolic', 'The built-in agent: API keys, model, permissions, channels',
      'agent amerika agent openclaw api key anthropic openai claude gpt model gateway autostart channels telegram discord diagnostics doctor'),
     ('studio', 'Amerika Studio', 'ai', 'amerika-studio-symbolic', 'Game-making apps: Anthropic key, model, budget, agent tools',
@@ -78,7 +82,7 @@ ITEMS = [
     ('shortcuts', 'Global shortcuts', 'meta space launcher'),
     ('appearance', 'Accent colour', 'highlight'), ('appearance', 'Dark mode', 'light theme'), ('appearance', 'Wallpaper', 'background image'),
     ('appearance', 'Fonts', 'typeface size'), ('appearance', 'Icon theme', 'icons'), ('appearance', 'Cursor size', 'pointer'),
-    ('appearance', 'Animations', 'effects speed'), ('appearance', 'Transparency', 'blur'), ('appearance', 'Dock', 'position size autohide'), ('appearance', 'Top bar', 'clock seconds'),
+    ('appearance', 'Animations', 'effects speed'), ('appearance', 'Transparency', 'blur'), ('appearance', 'Dock', 'position size autohide'), ('topbar', 'Clock format', '12 24 hour seconds date'), ('topbar', 'Bar widgets', 'order zone left right centre'), ('home', 'Claude-first mode', 'home screen caster'), ('home', 'AI text size', 'scale electron font bigger'), ('home', 'Dock on or off', 'hide dock'), ('home', 'Copilot key behaviour', 'caster'),
     ('notifications', 'Do not disturb', 'dnd quiet'), ('notifications', 'Do not disturb schedule', 'night'),
     ('accessibility', 'Large text', 'text size scaling'), ('accessibility', 'High contrast', 'contrast'), ('accessibility', 'Reduce motion', 'animations'),
     ('accessibility', 'Sticky keys', 'modifier'), ('accessibility', 'Slow keys', ''), ('accessibility', 'Bounce keys', ''),
@@ -133,7 +137,7 @@ def resolve(name):
                'security': 'privacy', 'time': 'datetime', 'date': 'datetime', 'locale': 'language', 'region': 'language',
                'apps': 'defaults', 'startup': 'defaults', 'autostart': 'defaults', 'remote': 'sharing', 'battery': 'power',
                'software': 'updates', 'accounts': 'users', 'user': 'users', 'printer': 'printers', 'a11y': 'accessibility',
-               'disk': 'storage', 'system': 'about', 'notification': 'notifications'}
+               'disk': 'storage', 'caster': 'home', 'claude-first': 'home', 'home-mode': 'home', 'bar': 'topbar', 'top-bar': 'topbar', 'topbar': 'topbar', 'clock': 'topbar', 'system': 'about', 'notification': 'notifications'}
     if name in aliases:
         return aliases[name]
     for p in PAGE_INFO:

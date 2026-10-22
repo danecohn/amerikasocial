@@ -111,8 +111,31 @@ def migrate_dock_agent():
     return True
 
 
+def migrate_claude_os():
+    """Claude-first mode introduces new settings. Their defaults keep today's behaviour (dock shown, no home app), so nothing is
+    changed for an existing user; this only records that the one-time opt-in card in Settings has not been answered yet."""
+    path = common.CONFIG / 'settings.json'
+    try:
+        stored = json.loads(path.read_text())
+    except (OSError, ValueError):
+        stored = {}
+    if not isinstance(stored, dict):
+        return False
+    done = stored.setdefault('migrations', {})
+    if not isinstance(done, dict) or done.get('claude_os'):
+        return False
+    stored.setdefault('claude_os_prompt', 'pending')
+    done['claude_os'] = True
+    common.CONFIG.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name('settings.json.tmp')
+    tmp.write_text(json.dumps(stored, indent=2))
+    tmp.replace(path)
+    return True
+
+
 def run(force=False):
     migrate_dock_agent()
+    migrate_claude_os()
     marker = common.STATE / 'first-run'
     if not force and marker.exists() and marker.read_text().strip() == VERSION:
         return False

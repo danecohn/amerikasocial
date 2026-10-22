@@ -94,3 +94,50 @@ def disconnect_chatgpt():
     new = re.sub(rf'\n?{re.escape(MARK_START)}.*?{re.escape(MARK_END)}\n?', '\n', text, flags=re.S)
     if new != text:
         path.write_text(new)
+
+
+# ---- claude-os skills block: Claude skills and plugin (explicit user action only; see src/os/claude/amerika_claude/core.py) ----
+def _skills_core():
+    try:
+        from amerika_claude import core
+    except ImportError:
+        return None
+    return core
+
+
+def skills_status():
+    """Settings UI: what is installed. `available` is False when the amerika-claude package is not installed."""
+    core = _skills_core()
+    if core is None:
+        return {'available': False, 'installed': False, 'installed_skills': [], 'plugin_installed': False,
+                'message': 'Install the amerika-claude package to get the Claude skills.'}
+    return core.status()
+
+
+def install_skills(skills=True, plugin=True):
+    """Install the skills (and plugin marketplace) with backup and manifest. Raises ValueError with a user-fit message."""
+    core = _skills_core()
+    if core is None:
+        raise ValueError('The amerika-claude package is not installed.')
+    try:
+        return core.install(skills=skills, plugin=plugin)
+    except core.InstallError as error:
+        raise ValueError(str(error)) from error
+
+
+def remove_skills(force=False):
+    core = _skills_core()
+    if core is None:
+        raise ValueError('The amerika-claude package is not installed.')
+    return core.remove(force=force)
+
+
+def export_skills(directory):
+    """Write one zip per skill plus custom-instructions.md into `directory` (for Claude Desktop's Skills upload)."""
+    core = _skills_core()
+    if core is None:
+        raise ValueError('The amerika-claude package is not installed.')
+    try:
+        return core.export(directory)
+    except core.InstallError as error:
+        raise ValueError(str(error)) from error

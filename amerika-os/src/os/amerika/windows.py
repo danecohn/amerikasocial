@@ -156,6 +156,16 @@ class WindowBridge(GObject.Object):
             raise ValueError('unknown window action')
         self._run_script(head + body + tail)
 
+    def release(self, classes):
+        """Give windows of these (lower-case) classes their title bar back: undoes the borderless home rule. Only `noBorder`
+        is touched; the window keeps its size."""
+        names = [str(c).lower() for c in classes if isinstance(c, str)]
+        if not names:
+            return
+        self._run_script('var N = %s; workspace.windowList().forEach(function (w) {'
+                         'var c = String(w.resourceClass).toLowerCase(), d = String(w.desktopFileName).toLowerCase().replace(/[.]desktop$/, "");'
+                         'if (w.normalWindow && (N.indexOf(c) >= 0 || N.indexOf(d) >= 0) && w.noBorder) w.noBorder = false; });' % json.dumps(names))
+
     def switch_desktop(self, number):
         n = int(number)
         self._run_script('var d = workspace.desktops.filter(function (x) { return x.x11DesktopNumber === %d; })[0]; if (d) workspace.currentDesktop = d;' % n)

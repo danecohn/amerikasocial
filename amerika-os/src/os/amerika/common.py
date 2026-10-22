@@ -27,8 +27,20 @@ DEFAULTS = {
                     'amerika-terminal', 'amerika-office', 'amerika-software', 'amerika-settings'],
     'bar_ai_apps': ['com.anthropic.Claude', 'chatgpt'],
     'clock_24h': False,
-    # what the Copilot key opens: claude, chatgpt, agent (Amerika Agent) or ask (a picker)
+    # what the Copilot key opens: caster (the Claude/ChatGPT chooser), claude, chatgpt, agent (Amerika Agent) or ask (a picker)
     'copilot_app': 'claude',
+    # Claude-first mode (opt-in, see docs/claude-os/shell.md). Existing behaviour is the default: no home app, dock shown.
+    'home_mode': 'off',            # claude | chatgpt | off
+    'dock_enabled': True,
+    'bar_layout': None,            # None = classic layout (shell/barlayout.py); a list of {id, enabled, zone, order}
+    'bar_preset': 'classic',
+    'bar_clock_format': {'hour24': None, 'seconds': False, 'date': 'short'},   # hour24 None follows clock_24h
+    'bar_height': 36,
+    'bar_opacity': 1.0,
+    'ai_text_scale': {'chatgpt': 1.25, 'claude': 1.0},   # Electron --force-device-scale-factor, range 0.8 to 2.0
+    'caster_last': 'claude',
+    'app_last_used': {},
+    'recent_apps': [],
     'ai': {
         # one of: ask (confirm every action), safe (read and reversible actions run, others ask), trusted (all but sensitive run)
         'mode': 'safe',

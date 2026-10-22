@@ -148,7 +148,7 @@ def set_repeat(delay=None, rate=None):
 
 
 # ---------------------------------------------------------------- Copilot key (Amerika's own setting)
-COPILOT_CHOICES = [('claude', 'Claude'), ('chatgpt', 'ChatGPT'), ('agent', 'Amerika Agent'), ('ask', 'Ask me each time')]
+COPILOT_CHOICES = [('caster', 'The Caster (Claude or ChatGPT)'), ('claude', 'Claude'), ('chatgpt', 'ChatGPT'), ('agent', 'Amerika Agent'), ('ask', 'Ask me each time')]
 
 
 def copilot_get():
@@ -157,7 +157,7 @@ def copilot_get():
 
 def copilot_set(value):
     if value not in dict(COPILOT_CHOICES):
-        raise ValueError('copilot_app must be claude, chatgpt, agent or ask')
+        raise ValueError('copilot_app must be caster, claude, chatgpt, agent or ask')
     s = common.load_settings()
     s['copilot_app'] = value
     common.save_settings(s)

@@ -98,8 +98,9 @@ class Tools:
             _schema({'profile': {'type': 'string', 'enum': ['power-saver', 'balanced', 'performance']}}, ['profile']), self.power_set_profile)
         reg('notifications.send', 'act', 'Show a desktop notification.', _schema({'title': S, 'body': S}, ['title']), self.notifications_send)
         reg('notifications.set_dnd', 'act', 'Turn Do Not Disturb on or off.', _schema({'on': B}, ['on']), self.notifications_dnd)
-        reg('settings.set', 'act', 'Change an Amerika OS preference: accent, secondary, wallpaper (horizon, grid, dusk), dock_size (32-96), clock_24h, copilot_app (claude, chatgpt, agent, ask).',
-            _schema({'key': {'type': 'string', 'enum': ['accent', 'secondary', 'wallpaper', 'dock_size', 'clock_24h', 'copilot_app']}, 'value': {}}, ['key', 'value']),
+        from ..settings.api import RULES as _SETTING_RULES  # claude-os: the writable keys follow the settings API (schema-validated by validate())
+        reg('settings.set', 'act', 'Change an Amerika OS preference (the keys the settings API allows): accent, secondary, wallpaper (horizon, grid, dusk), dock_size (32-96), clock_24h, copilot_app (claude, chatgpt, agent, ask), plus any key the settings API adds. Use settings.get to see current values.',
+            _schema({'key': {'type': 'string', 'enum': sorted(_SETTING_RULES)}, 'value': {}}, ['key', 'value']),
             self.settings_set)
         reg('shell.show_launcher', 'act', 'Open or close the launcher.', _schema(), self.show_launcher)
         reg('clipboard.set', 'act', 'Put text on the clipboard.', _schema({'text': S}, ['text']), self.clipboard_set)
@@ -120,6 +121,37 @@ class Tools:
         reg('shell.run', 'critical', 'Run a shell command as you (30 s limit, output truncated). The user sees the exact command and is asked every time.',
             _schema({'command': S}, ['command']), self.shell_run)
         reg('files.delete', 'critical', 'Move a file inside the home directory to the trash.', _schema({'path': S}, ['path']), self.files_delete)
+
+        # ---- claude-os skills block (tools the Claude skills rely on); handlers are at the end of this class ----
+        reg('hw.report', 'read', 'Hardware report from amerika-hw (CPU, memory, Vulkan GPU, thermals, NPU status, tools, advice) as JSON. Needs amerika-gamedev.',
+            _schema(), self.hw_report)
+        reg('journal.read', 'read', 'Read the user journal (journalctl --user): at most 500 lines, secrets redacted. Optional unit (a user unit name), priority and since.',
+            _schema({'lines': I, 'unit': S, 'priority': {'type': 'string', 'enum': ['err', 'warning', 'notice', 'info']}, 'since': S}), self.journal_read)
+        reg('units.status', 'read', 'State of user systemd units named amerika-* (omit unit to list them all).', _schema({'unit': S}), self.units_status)
+        reg('studio.status', 'read', 'Amerika Studio status (bridge, key present yes/no, budget, running apps) from amerika-studio status --json. Never any key.',
+            _schema(), self.studio_status)
+        reg('bar.get', 'read', 'The top bar and home settings: bar_layout (list or null for classic), bar_preset, bar_clock_format, bar_height, bar_opacity, home_mode, dock_enabled, copilot_app, ai_text_scale.',
+            _schema(), self.bar_get)
+        reg('ui.home', 'act', 'Bring the home AI app forward (Meta+H); launches it if it is not running. Needs home_mode claude or chatgpt.', _schema(), self.ui_action('home'))
+        reg('ui.caster', 'act', 'Control the Caster, the full-screen Claude/ChatGPT switcher: op toggle (default), next, prev or close.',
+            _schema({'op': {'type': 'string', 'enum': ['toggle', 'next', 'prev', 'close']}}), self.ui_caster)
+        reg('ui.relaunch', 'sensitive', 'Restart the Claude or ChatGPT desktop app (needed after a text size change). It closes that app, including the chat you are in.',
+            _schema({'app': {'type': 'string', 'enum': ['claude', 'chatgpt']}}, ['app']), self.ui_relaunch)
+        reg('ui.text_scale', 'act', 'Set the text size (0.8-2.0) the Claude or ChatGPT app is launched with. Applies the next time the app starts (see ui.relaunch).',
+            _schema({'app': {'type': 'string', 'enum': ['claude', 'chatgpt']}, 'scale': N}, ['app', 'scale']), self.ui_text_scale)
+        reg('ui.mode', 'sensitive', 'Switch the whole desktop style: claude (Claude first), chatgpt (ChatGPT first), off (Classic desktop) or revert (restore the settings from before Claude-first mode).',
+            _schema({'mode': {'type': 'string', 'enum': ['claude', 'chatgpt', 'off', 'revert']}}, ['mode']), self.ui_mode)
+        reg('ui.settings', 'act', 'Open the Amerika Settings app on a page (network, bluetooth, display, sound, power, appearance, home, topbar, updates, privacy, ai, ...).',
+            _schema({'page': S}, ['page']), self.ui_settings)
+        reg('bar.set', 'act', 'Change the top bar. Any of: preset (classic|home), layout (list of {id, enabled, zone left|center|right, order}), clock_format ({hour24 bool|null, seconds bool, date none|short|long|numeric}), height (28-64), opacity (0.3-1). Unknown widgets or keys are refused.',
+            _schema({'preset': {'type': 'string', 'enum': ['classic', 'home']}, 'layout': {}, 'clock_format': {}, 'height': I, 'opacity': N}), self.bar_set)
+        reg('units.restart', 'sensitive', 'Restart one user unit named amerika-*.service (never the shell, session or login units).',
+            _schema({'unit': S}, ['unit']), self.units_restart)
+        reg('apps.close', 'sensitive', 'Close all windows of an application by its id from apps.list (unsaved work may be lost).',
+            _schema({'id': S}, ['id']), self.apps_close)
+        reg('hw.perf', 'critical', 'Set the runtime performance mode with amerika-hw: game (CPU/GPU clocks high) or balanced. Shows an administrator prompt (pkexec); resets on reboot.',
+            _schema({'mode': {'type': 'string', 'enum': ['game', 'balanced']}}, ['mode']), self.hw_perf)
+        # ---- end claude-os skills block ----
 
     # ------------------------------------------------------------------ registry
     def _register(self, name, risk, description, schema, handler):
@@ -259,7 +291,9 @@ class Tools:
 
     def settings_get(self, a):
         s = self.shell.settings
-        return {k: s.get(k) for k in ('accent', 'secondary', 'wallpaper', 'dock_size', 'clock_24h', 'copilot_app', 'dock_pinned')} | {'ai_mode': s['ai']['mode']}
+        from ..settings.api import RULES
+        keys = ('accent', 'secondary', 'wallpaper', 'dock_size', 'clock_24h', 'copilot_app', 'dock_pinned') + tuple(k for k in RULES if k not in ('accent', 'secondary', 'wallpaper', 'dock_size', 'clock_24h', 'copilot_app'))
+        return {k: s.get(k) for k in keys} | {'ai_mode': s['ai']['mode']}
 
     def settings_set(self, a):
         key, value = a['key'], a['value']
@@ -398,3 +432,239 @@ class Tools:
                     self._commands.pop(proc, None)
         threading.Thread(target=work, daemon=True).start()
         return future
+
+
+    # ================================================================== claude-os skills block: handlers
+    @staticmethod
+    def _tool_env():
+        env = dict(os.environ)
+        for key in ('LD_PRELOAD', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'OPENCLAW_GATEWAY_TOKEN', 'OPENCLAW_GATEWAY_PASSWORD'):
+            env.pop(key, None)
+        return env
+
+    def _run_fixed(self, argv, timeout=30, parse_json=False, redact=False, cap=60000):
+        """Run a FIXED argv (never a shell, never user-controlled program names) off the GTK thread. Returns a Future."""
+        fut = Future()
+
+        def work():
+            try:
+                proc = subprocess.run(argv, capture_output=True, text=True, timeout=timeout, env=self._tool_env(), cwd=str(HOME))
+                out = (proc.stdout or '')[-cap:]
+                if redact:
+                    out = redact_secrets(out)
+                if parse_json:
+                    if proc.returncode:
+                        raise ValueError((proc.stderr or out or 'command failed').strip()[-300:])
+                    fut.set_result(json.loads(out))
+                else:
+                    fut.set_result({'exit_code': proc.returncode, 'stdout': out, 'stderr': redact_secrets((proc.stderr or '')[-4000:])})
+            except FileNotFoundError:
+                fut.set_exception(ValueError(f'{Path(argv[0]).name} is not installed'))
+            except subprocess.TimeoutExpired:
+                fut.set_exception(ValueError(f'{Path(argv[0]).name} took longer than {timeout} seconds'))
+            except Exception as error:  # noqa: BLE001 - relayed to the caller
+                fut.set_exception(error)
+        threading.Thread(target=work, daemon=True).start()
+        return fut
+
+    def hw_report(self, a):
+        return self._run_fixed([os.environ.get('AMERIKA_HW_COMMAND', '/usr/bin/amerika-hw'), 'report', '--json'], 40, parse_json=True)
+
+    def hw_perf(self, a):
+        return self._run_fixed([os.environ.get('AMERIKA_HW_COMMAND', '/usr/bin/amerika-hw'), 'perf', a['mode']], 120)
+
+    def studio_status(self, a):
+        return self._run_fixed([os.environ.get('AMERIKA_STUDIO_COMMAND', '/usr/bin/amerika-studio'), 'status', '--json'], 20, parse_json=True)
+
+    def journal_read(self, a):
+        lines = a.get('lines', 100)
+        if not 1 <= lines <= 500:
+            raise ValueError('lines must be between 1 and 500')
+        argv = ['journalctl', '--user', '--no-pager', '-o', 'short-iso', '-n', str(lines)]
+        if 'unit' in a:
+            argv += ['-u', _user_unit(a['unit'])]
+        if 'priority' in a:
+            argv += ['-p', a['priority']]
+        if 'since' in a:
+            if not SINCE_RE.fullmatch(a['since']):
+                raise ValueError('since must look like "1 hour ago", "today" or "2026-10-21 08:00"')
+            argv += ['--since', a['since']]
+        return self._run_fixed(argv, 20, redact=True, cap=120000)
+
+    def units_status(self, a):
+        if 'unit' not in a:
+            return self._run_fixed(['systemctl', '--user', 'list-units', '--all', '--no-legend', '--plain', '--no-pager', 'amerika-*'], 15)
+        unit = _amerika_unit(a['unit'])
+        return self._run_fixed(['systemctl', '--user', 'show', '--no-pager', '-p',
+                                'Id,Description,LoadState,ActiveState,SubState,UnitFileState,ExecMainStatus,NRestarts', unit], 15)
+
+    def units_restart(self, a):
+        unit = _amerika_unit(a['unit'])
+        if not unit.endswith('.service') or NO_RESTART_RE.match(unit):
+            raise ValueError('this unit cannot be restarted from here; only amerika-* services other than the shell, session and login units')
+        return self._run_fixed(['systemctl', '--user', 'restart', unit], 30)
+
+    def _control_action(self, name, needle=None):
+        """Drive a shell Control action. Refuses clearly when this shell version does not implement it."""
+        shell = self.shell
+        handler = getattr(type(shell), 'action', None)
+        if handler is None:
+            raise ValueError('this shell has no control actions')
+        import inspect
+        needle = needle or name
+        try:
+            source = inspect.getsource(handler)
+            supported = f"'{needle}'" in source or f'"{needle}"' in source
+        except (OSError, TypeError):
+            supported = True  # cannot tell; unknown action names are ignored by the shell
+        if not supported:
+            raise ValueError(f'this version of the Amerika shell does not support the "{needle}" action yet (update amerika-desktop-shell)')
+        shell.action(name)
+        return {'ok': True, 'action': name}
+
+    def ui_action(self, name):
+        return lambda a: self._control_action(name)
+
+    def ui_caster(self, a):
+        op = a.get('op', 'toggle')
+        return self._control_action('caster' if op == 'toggle' else f'caster:{op}', 'caster')
+
+    def ui_relaunch(self, a):
+        return self._control_action(f'relaunch:{a["app"]}', 'relaunch:')
+
+    def ui_text_scale(self, a):
+        scale = a['scale']
+        if isinstance(scale, bool) or not 0.8 <= scale <= 2.0:
+            raise ValueError('scale must be between 0.8 and 2.0')
+        current = self.shell.settings.get('ai_text_scale')
+        merged = dict(current) if isinstance(current, dict) else {}
+        merged[a['app']] = round(float(scale), 2)
+        self.shell.update_setting('ai_text_scale', merged)
+        return {'ok': True, 'ai_text_scale': merged, 'note': 'Applies the next time the app starts; ui.relaunch restarts it now.'}
+
+    def ui_mode(self, a):
+        from ..shell import home
+        old = self.shell.settings
+        new = home.revert(old) if a['mode'] == 'revert' else home.apply_style(old, a['mode'])
+        if new is None:
+            raise ValueError('there is nothing to revert: Claude-first mode was never switched on from this desktop')
+        changes = {k: v for k, v in new.items() if old.get(k) != v}
+        for k in [k for k in old if k not in new]:
+            old.pop(k, None)
+        if hasattr(self.shell, 'update_settings'):
+            self.shell.update_settings(changes)
+        else:
+            for k, v in changes.items():
+                self.shell.update_setting(k, v)
+        return {'ok': True, 'mode': a['mode'], 'home_mode': self.shell.settings.get('home_mode'), 'dock_enabled': self.shell.settings.get('dock_enabled')}
+
+    def ui_settings(self, a):
+        from ..settings import pageindex
+        page = a['page']
+        if page not in pageindex.page_ids():
+            raise ValueError('unknown settings page; one of: ' + ', '.join(pageindex.page_ids()))
+        subprocess.Popen([os.environ.get('AMERIKA_SETTINGS_COMMAND', 'amerika-settings'), page], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         env=self._tool_env(), cwd=str(HOME), start_new_session=True)
+        return {'opened': page}
+
+    BAR_KEYS = ('bar_layout', 'bar_preset', 'bar_clock_format', 'bar_height', 'bar_opacity', 'home_mode', 'dock_enabled', 'copilot_app', 'ai_text_scale')
+
+    def bar_get(self, a):
+        return {k: self.shell.settings.get(k) for k in self.BAR_KEYS}
+
+    def bar_set(self, a):
+        changes = validate_bar_args(a)
+        if 'bar_clock_format' in changes and isinstance(self.shell.settings.get('bar_clock_format'), dict):
+            changes['bar_clock_format'] = {**self.shell.settings['bar_clock_format'], **changes['bar_clock_format']}
+        self.shell.update_settings(changes) if hasattr(self.shell, 'update_settings') else [self.shell.update_setting(k, v) for k, v in changes.items()]
+        return {'ok': True, **{k: self.shell.settings.get(k) for k in changes}}
+
+    def apps_close(self, a):
+        windows = self.shell.windows.windows_for(a['id'])
+        if not windows:
+            raise ValueError('that application has no open windows (see windows.list)')
+        for w in windows:
+            self.shell.windows.command('close', w['id'])
+        return {'closed': len(windows)}
+
+
+# claude-os skills block: helpers
+SINCE_RE = re.compile(r'[A-Za-z0-9 :.+-]{1,40}')
+UNIT_RE = re.compile(r'[A-Za-z0-9@_.:-]{1,100}')
+AMERIKA_UNIT_RE = re.compile(r'amerika-[a-z0-9@_.-]{1,80}')
+NO_RESTART_RE = re.compile(r'amerika-(shell|session|login|mcp|broker|desktop)')
+SECRET_PATTERNS = (
+    re.compile(r'sk-[A-Za-z0-9_-]{8,}'),
+    re.compile(r'(?i)(bearer|token|authorization)[=: ]+[A-Za-z0-9._~+/=-]{12,}'),
+    re.compile(r'(?i)((?:api[_-]?key|secret|password|passwd|token)\s*[=:]\s*)\S+'),
+    re.compile(r'\b[A-Fa-f0-9]{40,}\b'),
+)
+
+
+def redact_secrets(text):
+    for pattern in SECRET_PATTERNS:
+        if pattern.groups:
+            text = pattern.sub(lambda m: m.group(1) + '[redacted]' if m.lastindex == 1 else '[redacted]', text)
+        else:
+            text = pattern.sub('[redacted]', text)
+    return text
+
+
+def _user_unit(name):
+    if not UNIT_RE.fullmatch(name) or name.startswith('-'):
+        raise ValueError('not a valid unit name')
+    return name
+
+
+def _amerika_unit(name):
+    if not AMERIKA_UNIT_RE.fullmatch(name) or name.endswith('.'):
+        raise ValueError('only user units named amerika-* are available')
+    return name if '.' in name else name + '.service'
+
+
+def validate_bar_args(a):
+    """Validate bar.set arguments against the shell's real bar model (shell/barlayout.py). Returns the settings to write."""
+    from ..shell import barlayout
+    if not a:
+        raise ValueError('give at least one of preset, layout, clock_format, height, opacity')
+    changes = {}
+    if 'preset' in a:
+        changes['bar_preset'] = a['preset']
+        changes['bar_layout'] = barlayout.preset(a['preset'])
+    if 'layout' in a:
+        layout = a['layout']
+        if not isinstance(layout, list) or not layout or len(layout) > 32:
+            raise ValueError('layout must be a list of 1 to 32 widgets')
+        for w in layout:
+            if not isinstance(w, dict) or set(w) - {'id', 'enabled', 'zone', 'order'}:
+                raise ValueError('each widget may only have id, enabled, zone and order')
+            if w.get('id') not in barlayout.WIDGETS:
+                raise ValueError('unknown widget id; one of: ' + ', '.join(barlayout.WIDGETS))
+            if 'enabled' in w and type(w['enabled']) is not bool:
+                raise ValueError('widget enabled must be boolean')
+            if 'zone' in w and w['zone'] not in barlayout.ZONES:
+                raise ValueError(f'widget zone must be one of {list(barlayout.ZONES)}')
+            if 'order' in w and (type(w['order']) is not int or not 0 <= w['order'] <= 99):
+                raise ValueError('widget order must be an integer 0-99')
+        changes['bar_layout'] = barlayout.normalize(layout)
+        changes['bar_preset'] = 'custom'
+    if 'clock_format' in a:
+        cf = a['clock_format']
+        if not isinstance(cf, dict) or not cf or set(cf) - {'hour24', 'seconds', 'date'}:
+            raise ValueError('clock_format may only have hour24, seconds and date')
+        if 'hour24' in cf and cf['hour24'] is not None and type(cf['hour24']) is not bool:
+            raise ValueError('hour24 must be true, false or null')
+        if 'seconds' in cf and type(cf['seconds']) is not bool:
+            raise ValueError('seconds must be boolean')
+        if 'date' in cf and cf['date'] not in [d for d, _ in barlayout.DATE_STYLES]:
+            raise ValueError('date must be one of none, short, long, numeric')
+        changes['bar_clock_format'] = dict(cf)
+    if 'height' in a:
+        if not barlayout.HEIGHT_MIN <= a['height'] <= barlayout.HEIGHT_MAX:
+            raise ValueError(f'height must be between {barlayout.HEIGHT_MIN} and {barlayout.HEIGHT_MAX}')
+        changes['bar_height'] = a['height']
+    if 'opacity' in a:
+        if not barlayout.OPACITY_MIN <= a['opacity'] <= barlayout.OPACITY_MAX:
+            raise ValueError(f'opacity must be between {barlayout.OPACITY_MIN} and {barlayout.OPACITY_MAX}')
+        changes['bar_opacity'] = float(a['opacity'])
+    return changes

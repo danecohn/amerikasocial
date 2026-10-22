@@ -3,7 +3,7 @@
 var SERVICE = "org.amerika.Shell", PATH = "/Windows", IFACE = "org.amerika.Windows";
 var pending = false;
 var mru = [];                 // window ids, most recently activated first (the Alt+Tab order)
-var CFG = { locked: false, corners: {}, touch_edges: {}, snap_gaps: 0 };   // pushed by the shell (org.amerika.Desktop.Config)
+var CFG = { locked: false, corners: {}, touch_edges: {}, snap_gaps: 0, home: { enabled: false, classes: [] } };   // pushed by the shell (org.amerika.Desktop.Config)
 
 function id(w) { return String(w.internalId); }
 
@@ -19,7 +19,7 @@ function describe(w) {
         normal: !!w.normalWindow, dock: !!w.dock, skip: !!(w.skipTaskbar || w.skipPager),
         desktops: (w.desktops || []).map(function (d) { return d.x11DesktopNumber; }),
         allDesktops: !!w.onAllDesktops, above: !!w.keepAbove, maximized: full && !w.fullScreen,
-        closeable: !!w.closeable, screen: w.output ? w.output.name : ""
+        closeable: !!w.closeable, screen: w.output ? w.output.name : "", noBorder: !!w.noBorder, home: isHome(w)
     };
 }
 
@@ -56,12 +56,42 @@ function watch(w) {
     });
 }
 
-workspace.windowAdded.connect(function (w) { watch(w); if (w.normalWindow) mru.push(id(w)); schedule(); });
+// ---- home window rules: the home AI app is kept maximized, borderless and visible inside the work area (under the top bar).
+// Only windows whose class is in CFG.home.classes are touched, and nothing happens at all while CFG.home.enabled is false.
+// The shell restores the title bar (noBorder = false) through windows.py release() when home mode is switched off.
+var homeBusy = false;
+function isHome(w) {
+    if (!CFG.home || !CFG.home.enabled || !w || !w.normalWindow) return false;
+    var c = String(w.resourceClass || "").toLowerCase(), d = String(w.desktopFileName || "").toLowerCase().replace(/\.desktop$/, "");
+    return CFG.home.classes.indexOf(c) >= 0 || (d !== "" && CFG.home.classes.indexOf(d) >= 0);
+}
+function homeApply(w) {
+    if (homeBusy || !isHome(w)) return;
+    homeBusy = true;
+    try {
+        if (w.minimized) w.minimized = false;                       // the home window never minimizes
+        if (w.fullScreen) return;                                   // a deliberate fullscreen (F11) is left alone
+        if (!w.noBorder) w.noBorder = true;
+        var a = maxArea(w), g = w.frameGeometry;
+        if (Math.abs(g.x - a.x) > 2 || Math.abs(g.y - a.y) > 2 || Math.abs(g.width - a.width) > 2 || Math.abs(g.height - a.height) > 2) {
+            if (w.resizeable !== false) w.setMaximize(true, true);
+        }
+    } finally { homeBusy = false; }
+}
+function watchHome(w) {
+    ["windowClassChanged", "desktopFileNameChanged", "minimizedChanged", "fullScreenChanged", "frameGeometryChanged", "noBorderChanged"].forEach(function (s) {
+        if (w[s] && w[s].connect) w[s].connect(function () { homeApply(w); });
+    });
+    homeApply(w);
+}
+
+workspace.windowAdded.connect(function (w) { watch(w); watchHome(w); if (w.normalWindow) mru.push(id(w)); schedule(); });
 workspace.windowRemoved.connect(function (w) { var at = mru.indexOf(id(w)); if (at >= 0) mru.splice(at, 1); schedule(); });
-workspace.windowActivated.connect(function (w) { if (w && w.normalWindow) touch(w); schedule(); });
+workspace.windowActivated.connect(function (w) { if (w && w.normalWindow) touch(w); homeApply(w); schedule(); });
 workspace.currentDesktopChanged.connect(schedule);
 if (workspace.desktopsChanged && workspace.desktopsChanged.connect) workspace.desktopsChanged.connect(schedule);
 workspace.windowList().forEach(watch);
+workspace.windowList().forEach(function (w) { watchHome(w); });
 workspace.stackingOrder.forEach(function (w) { if (w.normalWindow) mru.unshift(id(w)); });
 report();
 
@@ -78,6 +108,7 @@ act("Amerika: Launcher", "Open the launcher", "Meta+Space", "launcher");
 act("Amerika: First AI app", "Open or focus the first AI app", "Meta+1", "ai1");
 act("Amerika: Second AI app", "Open or focus the second AI app", "Meta+2", "ai2");
 act("Amerika: Copilot key", "Open the AI app chosen for the Copilot key", "Meta+Shift+F23", "copilot");
+act("Amerika: Home", "Bring the home AI app to the front", "Meta+H", "home");
 act("Amerika: Settings", "Open Amerika Settings", "Meta+,", "settings");
 act("Amerika: Agent", "Open Amerika Agent", "Meta+A", "agent");
 act("Amerika: Lock screen", "Lock the screen", "Meta+L", "lock");
@@ -128,7 +159,7 @@ key("Amerika: Restore", "Restore the window (a second press minimizes it)", "Met
     var g = maxArea(w), f = w.frameGeometry;
     if (Math.abs(f.width - g.width) < 3 && Math.abs(f.height - g.height) < 3 || w.fullScreen) { w.fullScreen = false; w.setMaximize(false, false); }
     else if (sameGeometry(w, "left") || sameGeometry(w, "right")) { w.setMaximize(false, false); snap("center"); }
-    else { w.minimized = true; }
+    else if (!isHome(w)) { w.minimized = true; }
 });
 [["Meta+Alt+U", "top-left"], ["Meta+Alt+I", "top-right"], ["Meta+Alt+J", "bottom-left"], ["Meta+Alt+K", "bottom-right"],
  ["Meta+Alt+D", "third-left"], ["Meta+Alt+F", "third-center"], ["Meta+Alt+G", "third-right"], ["Meta+Alt+C", "center"],
@@ -139,12 +170,12 @@ key("Amerika: Window to next screen", "Move the window to the next screen", "Met
 key("Amerika: Window to previous screen", "Move the window to the previous screen", "Meta+Shift+Left", function () { toScreen(-1); });
 key("Amerika: Always on top", "Keep the window above others", "Meta+Shift+T", function () { var w = active(); if (w) w.keepAbove = !w.keepAbove; });
 key("Amerika: Window on all desktops", "Show the window on every desktop", "Meta+Shift+A", function () { var w = active(); if (w) w.onAllDesktops = !w.onAllDesktops; });
-key("Amerika: Minimize window", "Minimize the active window", "Meta+M", function () { var w = active(); if (w) w.minimized = true; });
+key("Amerika: Minimize window", "Minimize the active window", "Meta+M", function () { var w = active(); if (w && !isHome(w)) w.minimized = true; });
 
 // ---- show desktop: minimize everything on this desktop, or bring it back
 var hidden = [];
 key("Amerika: Show desktop", "Minimize all windows, or restore them", "Meta+D", function () {
-    var here = workspace.windowList().filter(function (w) { return w.normalWindow && !w.minimized && !w.skipTaskbar; });
+    var here = workspace.windowList().filter(function (w) { return w.normalWindow && !w.minimized && !w.skipTaskbar && !isHome(w); });
     if (here.length) { hidden = here.map(id); here.forEach(function (w) { w.minimized = true; }); return; }
     workspace.windowList().forEach(function (w) { if (hidden.indexOf(id(w)) >= 0) w.minimized = false; });
     hidden = [];
@@ -213,6 +244,15 @@ var EDGES = { topleft: "ElectricTopLeft", topright: "ElectricTopRight", bottomle
               top: "ElectricTop", bottom: "ElectricBottom", left: "ElectricLeft", right: "ElectricRight" };
 function applyConfig(cfg) {
     CFG = cfg;
+    if (!CFG.home) CFG.home = { enabled: false, classes: [] };
+    CFG.home.classes = (CFG.home.classes || []).map(function (c) { return String(c).toLowerCase(); });
+    workspace.windowList().forEach(function (w) {
+        var c = String(w.resourceClass || "").toLowerCase(), d = String(w.desktopFileName || "").toLowerCase().replace(/\.desktop$/, "");
+        var rel = (CFG.home.release || []).map(function (x) { return String(x).toLowerCase(); });
+        if (w.normalWindow && w.noBorder && (rel.indexOf(c) >= 0 || (d !== "" && rel.indexOf(d) >= 0)) && !isHome(w)) w.noBorder = false;
+        homeApply(w);
+    });
+    schedule();
     Object.keys(cfg.corners || {}).forEach(function (name) {
         if (!EDGES[name] || KWin[EDGES[name]] === undefined) return;
         registerScreenEdge(KWin[EDGES[name]], function () { if (!CFG.locked) control("corner:" + name); });

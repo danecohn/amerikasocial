@@ -14,7 +14,10 @@ RULES = {
     'wallpaper': {'type':'string','enum':['horizon','grid','dusk']},
     'dock_size': {'type':'integer','minimum':32,'maximum':96},
     'clock_24h': {'type':'boolean'},
-    'copilot_app': {'type':'string','enum':['claude','chatgpt','agent','ask']},
+    'copilot_app': {'type':'string','enum':['caster','claude','chatgpt','agent','ask']},
+    'home_mode': {'type':'string','enum':['claude','chatgpt','off']},
+    'dock_enabled': {'type':'boolean'},
+    'bar_height': {'type':'integer','minimum':28,'maximum':64},
 }
 
 

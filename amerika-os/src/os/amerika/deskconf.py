@@ -87,10 +87,13 @@ def validate_touch_edge(edge, action):
         raise ValueError('action must be one of ' + ', '.join(HOT_ACTIONS))
 
 
-def bridge_config(settings=None, locked=False):
+def bridge_config(settings=None, locked=False, release=()):
     """What the KWin bridge script needs: enabled corners/edges, snap gap and the lock flag."""
+    from .shell import home  # lazy: the shell package imports this module
+    settings = common.load_settings() if settings is None else settings
     conf = merged(settings)
     return {
+        'home': dict(home.rules(settings), release=[str(c).lower() for c in release]),
         'locked': bool(locked),
         'corners': {k: v for k, v in conf['hot_corners'].items() if k in CORNERS and v != 'none'},
         'touch_edges': {k: v for k, v in conf['touch_edges'].items() if k in TOUCH_EDGES and v != 'none'},

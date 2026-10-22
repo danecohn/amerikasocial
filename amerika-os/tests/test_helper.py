@@ -40,6 +40,8 @@ class Helper(unittest.TestCase):
         self.h.run = lambda argv: seen.append(argv) or 0
         self.h.guard_display_manager = lambda: None
         self.h.restore_display_manager = lambda before: None
+        self.addCleanup(setattr, self.h.os, 'geteuid', self.h.os.geteuid)
+        self.addCleanup(setattr, self.h.sys, 'argv', list(self.h.sys.argv))
         self.h.os.geteuid = lambda: 0
         self.h.sys.argv = ['helper', 'install', 'amerika-hub']
         with self.assertRaises(SystemExit):
@@ -51,6 +53,7 @@ class Helper(unittest.TestCase):
         calls = []
         states = iter([('/usr/sbin/gdm3', '/lib/systemd/system/gdm.service'), ('/usr/sbin/greetd', '/lib/systemd/system/greetd.service')])
         self.h.dm_state = lambda: next(states)
+        self.addCleanup(setattr, self.h.subprocess, 'run', self.h.subprocess.run)  # don't leak the fake into other tests
         self.h.subprocess.run = lambda *a, **k: calls.append(a)
         before = self.h.guard_display_manager()
         self.assertEqual(before[0], '/usr/sbin/gdm3')
@@ -72,6 +75,8 @@ class Helper(unittest.TestCase):
         self.assertEqual(written['link'][0], '/lib/systemd/system/gdm.service')
 
     def test_protected_package_cannot_be_removed(self):
+        self.addCleanup(setattr, self.h.os, 'geteuid', self.h.os.geteuid)
+        self.addCleanup(setattr, self.h.sys, 'argv', list(self.h.sys.argv))
         self.h.os.geteuid = lambda: 0
         self.h.sys.argv = ['helper', 'remove', 'amerika-repo-keyring']
         with self.assertRaises(SystemExit):
@@ -82,6 +87,8 @@ class Helper(unittest.TestCase):
         self.h.sys.argv = ['helper', 'install', 'amerika-hub']
         with self.assertRaises(SystemExit):
             self.h.main()
+        self.addCleanup(setattr, self.h.os, 'geteuid', self.h.os.geteuid)
+        self.addCleanup(setattr, self.h.sys, 'argv', list(self.h.sys.argv))
         self.h.os.geteuid = lambda: 0
         self.h.sys.argv = ['helper', 'shell', 'amerika-hub']
         with self.assertRaises(SystemExit):

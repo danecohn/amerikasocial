@@ -20,4 +20,7 @@ export AMERIKA_RENDER_PROJECT="${AMERIKA_RENDER_PROJECT:-$HOME/Studio/Render}"
 [ -f "$CONF/datafiles/splash.png" ] || cp "$SHARE/splash.png" "$CONF/datafiles/splash.png" 2>/dev/null
 [ -f "$CONF/config/startup.blend" ] || cp "$SHARE/startup.blend" "$CONF/config/startup.blend" 2>/dev/null
 
+if [ -z "${AMERIKA_NO_GAMEMODE:-}" ] && command -v gamemoderun >/dev/null 2>&1; then
+  exec gamemoderun "$BLENDER" --python "$SHARE/startup/amerika_startup.py" "$@"
+fi
 exec "$BLENDER" --python "$SHARE/startup/amerika_startup.py" "$@"

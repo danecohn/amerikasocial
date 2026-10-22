@@ -9,7 +9,7 @@ def register(b):
                   'Amerika Render (Blender), Amerika Engine (Godot), Amerika Sprite and AmerikaBox. Install it to opt in.',
                   arch='all', title='Amerika Developer Edition', category='Development', section='metapackages',
                   depends=', '.join(f'{n} (>= {b.DE_VERSION})' for n in
-                                    ('amerika-studio', 'amerika-render', 'amerika-engine', 'amerika-sprite', 'amerika-box')),
+                                    ('amerika-studio', 'amerika-render', 'amerika-engine', 'amerika-sprite', 'amerika-box', 'amerika-gamedev')),
                   recommends='git, ffmpeg, vulkan-tools, mesa-utils-bin, audacity, gimp, inkscape')
         p.file('/usr/share/doc/amerika-developer/README',
                'Amerika OS Developer Edition (meta package).\nOpen "Amerika Studio" from the launcher to set up your Anthropic key.\n'

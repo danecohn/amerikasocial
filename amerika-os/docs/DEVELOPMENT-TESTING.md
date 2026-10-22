@@ -28,3 +28,9 @@ card. Fixture screenshots establish UI rendering and data mapping, not that ever
 A release needs physical keyboard/Alt-release, touchscreen/pen, clipboard password hints, audio routes/Bluetooth pairing,
 Wi-Fi/VPN, docking/scaling, lock/resume and recovery checks. A bootable, installable ARM64 ISO needs separate VM and Surface
 boot/installer/Secure Boot verification. The current ISO helper is a dry-run/preparation tool; it never executes a privileged build.
+
+Boot smoke test (run after ANY shell/bar/dock/theme change; it catches startup crashes that unit tests cannot, which would show as a blank screen):
+```
+sh tests/rig/claude_os_rig.sh "sh tests/rig/shell_boot_test.sh"
+```
+The installed session logs the shell's output to `~/.local/state/amerika-os/shell.log`.

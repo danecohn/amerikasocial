@@ -54,7 +54,7 @@ class Bar(Gtk.Window):
         launcher.add_css_class('am-bar-btn')
         inner = Gtk.Box(spacing=7)
         inner.append(apps.icon_image('amerika-home', 18))
-        inner.append(_label('Amerika' if shell.settings.get('ui_style') == 'tesla' else 'AMERIKA', None))
+        inner.append(_label('Amerika' if self.shell.settings.get('ui_style') == 'tesla' else 'AMERIKA', None))
         launcher.set_child(inner)
         launcher.connect('clicked', lambda *_: shell_.toggle_launcher())
         self.parts['launcher'] = launcher
@@ -173,7 +173,7 @@ class Bar(Gtk.Window):
             button.add_css_class('ai')
             row = Gtk.Box(spacing=7)
             row.append(apps.icon_image(info, 18))
-            row.append(_label(info.get_display_name() if shell.settings.get('ui_style') == 'tesla' else info.get_display_name().upper()))
+            row.append(_label(info.get_display_name() if self.shell.settings.get('ui_style') == 'tesla' else info.get_display_name().upper()))
             button.set_child(row)
             button.set_tooltip_text(f'Open {info.get_display_name()}')
             button.connect('clicked', lambda _b, i=desktop_id: self.shell.activate_app(i))

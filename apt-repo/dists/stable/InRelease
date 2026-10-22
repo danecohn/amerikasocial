@@ -5,18 +5,18 @@ Origin: Amerika
 Label: Amerika OS
 Suite: stable
 Codename: stable
-Date: Thu, 22 Oct 2026 07:52:19 UTC
+Date: Thu, 22 Oct 2026 08:11:17 UTC
 Architectures: arm64
 Components: main
 Description: Amerika OS packages
 SHA256:
- 8777333ccf45940202f41af1ee55c08390e81ef40be2bd07ba48811f96d9a12e           176479 main/binary-arm64/Packages
- ead6f2e9288469025f4d522ea6ecea731aca16958c7b53c1bdb43909c91a073a            19311 main/binary-arm64/Packages.gz
- 741f8db829473f49d4487130f408e054435546fc84e66cd2d641527eb9fc8704            16080 main/binary-arm64/Packages.xz
+ 62abd326484bcee2417dd53428ee4cc08389c99391c8cecb91be4de87a26641c           195443 main/binary-arm64/Packages
+ 9851d51ca1be426223cac3f48a93a09c9aaef99c82188a358a7dd6aad088aaf5            20765 main/binary-arm64/Packages.gz
+ 429f9a275ab340e52f15d1e935b9b7397f35645990c4167a512218c41c4969a0            17116 main/binary-arm64/Packages.xz
 -----BEGIN PGP SIGNATURE-----
 
-iHUEARYKAB0WIQSfUr2YqO6QlrG+eqwQY7vJiaERMwUCatnAswAKCRAQY7vJiaER
-M36ZAQCh0WTDDjqUM0aXD5HROQ3Z93Hpz/1cgXMabAXbcUhQcAD+P1bGuGZmmNfb
-tDXAmwNhors5teX1bpilRw1pA82z9gA=
-=Ztol
+iHUEARYKAB0WIQSfUr2YqO6QlrG+eqwQY7vJiaERMwUCatnFJQAKCRAQY7vJiaER
+M/TSAQCnOw90DsWmy35uSgB0COo4JkuHnrrUbQzzhPFPLG8lnwD+NqLKHA259xNG
+R1HcRBwRE7qZbhG0ubTjPFevpETYdQk=
+=yGLr
 -----END PGP SIGNATURE-----

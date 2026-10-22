@@ -39,10 +39,20 @@
     "size": 87767550,
     "sha256": "1ef552304c4b6ef0a8d504e79bdcd9462fbc8f1406a8e3e0ccf1bb58e9525633"
   },
+  "amerika-agent_3.3.3_arm64.deb": {
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-3.3.3/amerika-agent_3.3.3_arm64.deb",
+    "size": 87767552,
+    "sha256": "21d7eb9623e5ec856f793ea9f9eeb5db234b56ddcf7cc932f954ac40dfb52ff4"
+  },
   "amerika-icon-theme_3.3.2_all.deb": {
     "url": "https://github.com/danecohn/amerikasocial/releases/download/os-3.3.2/amerika-icon-theme_3.3.2_all.deb",
     "size": 7767188,
     "sha256": "86aa78295a299b6629159e4bda5ad6bc3814457ceff1927a716ea5d62a05ba8d"
+  },
+  "amerika-icon-theme_3.3.3_all.deb": {
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-3.3.3/amerika-icon-theme_3.3.3_all.deb",
+    "size": 7767104,
+    "sha256": "9489f8084d8b242b0247ba7f2d6f32854ba3a16498c2a9d450a4876b1bbf3587"
   },
   "amerika-office_0.1.0-2_arm64.deb": {
     "url": "https://github.com/danecohn/amerikasocial/releases/download/os-3.0.4/amerika-office_0.1.0-2_arm64.deb",

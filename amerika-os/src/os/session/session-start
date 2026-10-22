@@ -46,11 +46,17 @@ start_home() {
   done
 }
 
+# The shell's output goes to a log so a blank screen can always be diagnosed: ~/.local/state/amerika-os/shell.log
+LOGDIR="${XDG_STATE_HOME:-$HOME/.local/state}/amerika-os"
+mkdir -p "$LOGDIR" 2>/dev/null
+[ -f "$LOGDIR/shell.log" ] && [ "$(wc -c < "$LOGDIR/shell.log" 2>/dev/null || echo 0)" -gt 1048576 ] && mv -f "$LOGDIR/shell.log" "$LOGDIR/shell.log.1"
+echo "--- $(date '+%F %T') session start" >> "$LOGDIR/shell.log" 2>/dev/null
+
 # the shell: restart it if it crashes, end the session if it exits cleanly (log out)
 crashes=0
 while [ "$crashes" -lt 5 ]; do
   started=$(date +%s)
-  "${AMERIKA_BIN:-/usr/bin}/amerika-shell" &
+  "${AMERIKA_BIN:-/usr/bin}/amerika-shell" >> "$LOGDIR/shell.log" 2>&1 &
   shell_pid=$!
   start_home "$shell_pid" &
   wait "$shell_pid"   # waiting (not running in the foreground) lets the signal traps fire at once

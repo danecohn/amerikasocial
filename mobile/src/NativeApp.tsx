@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Alert,
   AppState,
   FlatList,
@@ -584,7 +585,7 @@ function AppContent() {
             ? "Plus · 833 characters"
             : "Standard · 300 characters, 3 original posts per hour"}
         </Text>
-        <Button title="Amerika Social Plus" onPress={() => setPlus(true)} />
+        <Button title="Makk Social Plus" onPress={() => setPlus(true)} />
         <Button
           secondary
           title="My profile"
@@ -627,7 +628,7 @@ function AppContent() {
     return (
       <SafeAreaView style={s.screen}>
         <View style={s.empty}>
-          <Text style={s.title}>Amerika Social</Text>
+          <Text style={s.title}>Makk Social</Text>
           {error ? (
             <>
               <Text style={s.error}>{error}</Text>
@@ -656,12 +657,12 @@ function AppContent() {
             }[tab];
   return (
     <SafeAreaView style={s.screen} edges={["top", "left", "right"]}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <View style={[s.header, s.row]}>
         {route ? (
           <Icon
-            name="arrow-back"
-            label="Back"
+            name={route.kind === "thread" ? "close-circle" : "arrow-back"}
+            label={route.kind === "thread" ? "Close conversation" : "Back"}
             onPress={() => {
               if (list) { setList(""); return; }
               clear();
@@ -669,9 +670,7 @@ function AppContent() {
             }}
           />
         ) : (
-          <View style={[s.logo, { width: 32, height: 32 }]}>
-            <Text style={[s.label, { fontSize: 25 }]}>A</Text>
-          </View>
+          <Image source={require("../assets/blossom.png")} style={{width:36,height:36}} accessibilityLabel="Cherry Blossom LLC" />
         )}
         <Text numberOfLines={1} style={[s.title, { fontSize: 22, flex: 1 }]}>
           {title}

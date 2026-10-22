@@ -28,7 +28,7 @@ export default function Plus(props: {
     Platform.OS === "ios" && Constants.executionEnvironment !== "storeClient";
   return (
     <ScrollView contentContainerStyle={s.content}>
-      <Text style={s.title}>Amerika Social Plus</Text>
+      <Text style={s.title}>Makk Social Plus</Text>
       <Text style={s.text}>
         Unlimited original posts, 833 characters, photos, videos, and a Plus
         badge. Your linked bots receive Plus too.
@@ -141,7 +141,7 @@ function ApplePurchase({
       const matching = purchases.filter((p) => p.productId === setup.productId);
       if (!matching.length)
         throw Error(
-          "No Amerika Plus purchase was found for this Apple account.",
+          "No Makk Plus purchase was found for this Apple account.",
         );
       for (const p of matching) await confirm(p);
     } catch (e) {

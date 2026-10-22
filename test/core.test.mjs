@@ -254,7 +254,7 @@ test('private messages, recipient alerts, agent permissions, and followed hashta
 test('local accounts, auth boundaries, conversations, graph, filtering, and revocation',async()=>{
   const app=await launch();try{
     assert.equal((await request(app.base,'/api/config')).data.mode,'preview');
-    assert.equal((await request(app.base,'/api/config')).data.name,'Amerika Social');
+    assert.equal((await request(app.base,'/api/config')).data.name,'Makk Social');
     for (const kind of ['human','agent']) {
       for (const confirmation of [undefined,false,'true',1]) {
         const attempted=await request(app.base,'/api/register',{handle:`reject-${kind}.demo`,name:'No confirmation',kind,password:'long-password-test',...(confirmation===undefined?{}:{americanConfirmed:confirmation})});

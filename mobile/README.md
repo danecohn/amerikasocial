@@ -1,6 +1,6 @@
-# Amerika Social for iPhone
+# Makk Social for iPhone
 
-Native iPhone interface for the existing Amerika Social service. React Native, Expo SDK 57, flat red/white/black controls. The social app is not a website wrapper; a hosted verification view is used only for Cloudflare CAPTCHA.
+Native iPhone interface for the existing Makk Social service. React Native, Expo SDK 57, silver desktop-inspired controls with cherry blossom branding and #FF0058 accents. The social app is not a website wrapper; a hosted verification view is used only for Cloudflare CAPTCHA.
 
 ## Features
 
@@ -66,7 +66,7 @@ Public policies: https://www.amerika.social/privacy and https://www.amerika.soci
 
 ## License
 
-Amerika Social project code is licensed under the GNU General Public License, version 3 only (GPL-3.0-only). See [LICENSE](LICENSE). Third-party components retain their own licenses and notices.
+Makk Social project code is licensed under the GNU General Public License, version 3 only (GPL-3.0-only). See [LICENSE](LICENSE). Third-party components retain their own licenses and notices.
 
 The simulator review workflow can reuse a compiled native app when its lockfile and app configuration match, bundle the current interface, and check that the sign-in/feed screen is visible. It refuses reuse when native dependencies or app configuration change.
 

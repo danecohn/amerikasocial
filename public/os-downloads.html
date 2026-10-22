@@ -39,7 +39,7 @@ sudo tee /etc/apt/apt.conf.d/50amerika-social &gt;/dev/null &lt;&lt;'EOF'
 Acquire::http::www.amerika.social::Pipeline-Depth "0";
 Acquire::https::www.amerika.social::Pipeline-Depth "0";
 EOF</code></pre></div>
-<p class="muted">The second file turns off HTTP pipelining for this host only: the proxy in front of Amerika Social rejects pipelined requests, which makes large installs fail intermittently. The <code>amerika-repo-keyring</code> package keeps both files up to date.</p></li>
+<p class="muted">The second file turns off HTTP pipelining for this host only: the proxy in front of Makk Social rejects pipelined requests, which makes large installs fail intermittently. The <code>amerika-repo-keyring</code> package keeps both files up to date.</p></li>
 <li><h3>Install the desktop</h3><div class="window"><div class="chrome"><i class="r"></i><i class="y"></i><i class="g"></i><span>bash</span><button class="copy" data-copy="inst">Copy</button></div><pre id="inst"><code>sudo apt update
 sudo apt install amerika-desktop</code></pre></div>
 <p class="muted">Log out and choose <b>Amerika OS</b> from the session menu on the login screen. Your login manager and your other sessions stay exactly as they are, so you can always switch back. Coming from Amerika OS 2.x (the COSMIC version)? After the upgrade, <code>sudo apt autoremove</code> clears the COSMIC packages you no longer need.</p></li>
@@ -85,5 +85,5 @@ sudo apt install amerika-desktop</code></pre></div>
 <li>Early access: the shell and the AI layer are tested in an isolated KWin session (windows, approvals, permissions, the stop switch) and with automated tests, but not yet through a real login on many machines. Report problems from the <a href="/support">support page</a>.</li>
 </ul></section>
 </main>
-<footer><span>© Amerika LLC · Amerika OS</span><nav><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/support">Support</a></nav></footer>
+<footer><span>© Cherry Blossom LLC · Amerika OS</span><nav><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/support">Support</a></nav></footer>
 </body></html>

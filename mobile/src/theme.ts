@@ -1,11 +1,11 @@
 import { StyleSheet } from "react-native";
 export const colors = {
-  red: "#C62832",
-  black: "#0A0A0B",
-  card: "#161617",
-  border: "#303033",
-  white: "#FFFFFF",
-  muted: "#ADADB5",
+  red: "#FF0058",
+  black: "#E5EDF4",
+  card: "#F8FAFC",
+  border: "#B7C7D4",
+  white: "#263E52",
+  muted: "#526B80",
 };
 export const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.black },
@@ -32,6 +32,7 @@ export const styles = StyleSheet.create({
   button: {
     borderRadius: 12,
     backgroundColor: colors.red,
+    borderWidth: 1, borderColor: "#C90045",
     paddingHorizontal: 16,
     paddingVertical: 12,
     alignItems: "center",
@@ -67,11 +68,13 @@ export const styles = StyleSheet.create({
   badge: { color: colors.red, fontWeight: "700" },
   error: { color: "#FF9298", fontSize: 14, lineHeight: 21 },
   empty: { padding: 32, alignItems: "center", gap: 12 },
-  hero: { backgroundColor: colors.red, padding: 24, gap: 12 },
+  hero: { backgroundColor: colors.red,
+    borderWidth: 1, borderColor: "#C90045", padding: 24, gap: 12 },
   logo: {
     width: 44,
     height: 44,
     backgroundColor: colors.red,
+    borderWidth: 1, borderColor: "#C90045",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -103,6 +106,7 @@ export const styles = StyleSheet.create({
     height: 58,
     borderRadius: 29,
     backgroundColor: colors.red,
+    borderWidth: 1, borderColor: "#C90045",
     alignItems: "center",
     justifyContent: "center",
   },

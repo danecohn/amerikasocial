@@ -14,7 +14,7 @@ export const gamingMcp={name:'Amerika Gaming Publisher',instructions:'Manage onl
 export function createGamingPublisher(db,{gaming,plus,activeGrant,origin,now=Date.now}){
  db.exec(`CREATE TABLE IF NOT EXISTS gaming_upload_tickets(id TEXT PRIMARY KEY,secret_hash TEXT NOT NULL,actor TEXT NOT NULL,game TEXT NOT NULL,grant_id TEXT NOT NULL,expires INTEGER NOT NULL,status TEXT NOT NULL,error TEXT,created INTEGER NOT NULL);`);
  function actor(id){const a=db.prepare('SELECT * FROM actors WHERE id=?').get(id);if(!a||a.kind!=='human'||a.deleted_at||a.suspended_at)fail(403,'An active human account is required.');return a;}
- function owner(auth,write=false){if(auth?.kind!=='gaming'||!auth.oauthGrant||!activeGrant(auth.oauthGrant))fail(401,'Reconnect the Gaming publisher with OAuth.');const a=actor(auth.actor);if(write&&!plus(a.id))fail(403,'Amerika Social Plus is required to upload and publish games.');return a;}
+ function owner(auth,write=false){if(auth?.kind!=='gaming'||!auth.oauthGrant||!activeGrant(auth.oauthGrant))fail(401,'Reconnect the Gaming publisher with OAuth.');const a=actor(auth.actor);if(write&&!plus(a.id))fail(403,'Makk Social Plus is required to upload and publish games.');return a;}
  function owned(who,id){const row=db.prepare('SELECT * FROM gaming_games WHERE id=? AND owner=? AND official=0 AND status!=?').get(id,who,'deleted');if(!row)fail(404,'Game not found in your library.');return row;}
  function status(who,id){const row=owned(who,id),ticket=db.prepare('SELECT status,error FROM gaming_upload_tickets WHERE actor=? AND game=? ORDER BY created DESC LIMIT 1').get(who,id);return {game:gaming.mine(who).games.find(g=>g.id===id),upload:ticket||null,readyToPublish:!!row.version&&row.status==='draft',libraryUrl:origin()+'/gaming'};}
  async function request(name,args,auth){const a=owner(auth,['prepare_game_upload','publish_game'].includes(name));
@@ -33,7 +33,7 @@ export function createGamingPublisher(db,{gaming,plus,activeGrant,origin,now=Dat
   fail(400,'Unsupported Gaming tool.');
  }
  async function upload(id,credential,req){const row=db.prepare('SELECT * FROM gaming_upload_tickets WHERE id=?').get(id),digest=hash(credential||'');if(!row||row.expires<=now()||row.status!=='pending'||!timingSafeEqual(Buffer.from(digest),Buffer.from(row.secret_hash)))fail(401,'Invalid, expired or already used game upload credential.');
-  const grant=activeGrant(row.grant_id);if(!grant||grant.owner!==row.actor||grant.connection.kind!=='gaming')fail(401,'The Gaming authorization was revoked. Reconnect.');actor(row.actor);if(!plus(row.actor))fail(403,'Amerika Social Plus is required to upload games.');owned(row.actor,row.game);
+  const grant=activeGrant(row.grant_id);if(!grant||grant.owner!==row.actor||grant.connection.kind!=='gaming')fail(401,'The Gaming authorization was revoked. Reconnect.');actor(row.actor);if(!plus(row.actor))fail(403,'Makk Social Plus is required to upload games.');owned(row.actor,row.game);
   if(!req.headers['content-type']?.startsWith('application/zip'))fail(415,'Send ZIP file bytes with Content-Type application/zip.');
   if(!db.prepare("UPDATE gaming_upload_tickets SET status='uploading' WHERE id=? AND status='pending'").run(id).changes)fail(409,'This upload credential is already in use.');
   try{const result=await gaming.upload(row.actor,row.game,req,{publish:false});db.prepare("UPDATE gaming_upload_tickets SET status='complete' WHERE id=?").run(id);return {...result,readyToPublish:true};}

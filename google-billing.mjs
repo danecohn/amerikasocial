@@ -23,7 +23,7 @@ export function createGoogleBilling(db,{env=process.env,fetcher=fetch,publisher,
   const owner=db.prepare('SELECT actor FROM google_accounts WHERE account_id=?').get(purchase.externalAccountIdentifiers?.obfuscatedExternalAccountId||'')?.actor;
   if(!owner||expectedActor&&expectedActor!==owner)fail(403,'This Google Play subscription belongs to a different Amerika account.');
   const old=db.prepare('SELECT actor FROM google_subscriptions WHERE token_hash=?').get(id);if(old&&old.actor!==owner)fail(403,'This purchase is already linked to another account.');
-  const line=purchase.lineItems?.find(l=>l.productId===product&&l.offerDetails?.basePlanId===basePlanId);if(!line)fail(400,'This is not the configured Amerika Social Plus plan.');
+  const line=purchase.lineItems?.find(l=>l.productId===product&&l.offerDetails?.basePlanId===basePlanId);if(!line)fail(400,'This is not the configured Makk Social Plus plan.');
   const expires=Date.parse(line.expiryTime);if(!Number.isSafeInteger(expires))fail(400,'Google returned incomplete subscription data.');
   const active=['SUBSCRIPTION_STATE_ACTIVE','SUBSCRIPTION_STATE_IN_GRACE_PERIOD','SUBSCRIPTION_STATE_CANCELED'].includes(purchase.subscriptionState)&&expires>now();
   // Never acknowledge pending payments or trust status sent from the device.

@@ -1,6 +1,6 @@
 # Third-party notices
 
-The original Expo project template includes the following notice. Third-party libraries retain their own licenses; GPL v3 covers Amerika Social code.
+The original Expo project template includes the following notice. Third-party libraries retain their own licenses; GPL v3 covers Makk Social code.
 
 The MIT License (MIT)
 

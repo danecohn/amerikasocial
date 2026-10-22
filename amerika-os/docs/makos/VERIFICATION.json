@@ -1,0 +1,1088 @@
+{
+  "version": "0.1.0~dev1",
+  "architecture": "arm64",
+  "status": "development preview; not complete",
+  "owner_real_login_confirmed": false,
+  "unit_tests": {
+    "standalone_passed": 9,
+    "earlier_combined_passed": 415,
+    "earlier_skipped": 1
+  },
+  "private_rig": {
+    "source_smoke": "passed",
+    "native_app_startup": "passed",
+    "calculator": "passed",
+    "unsaved_editor_close": "passed",
+    "dbusmenu_click": "passed",
+    "notifications": "passed",
+    "native_qt_decoration": "passed",
+    "packaged_independent_processes": "passed",
+    "compositor_pixels": "passed",
+    "startup_watchdog_fixtures": "passed: ready and never-ready cases"
+  },
+  "icon_assets": {
+    "generated": [
+      {
+        "name": "files",
+        "source_size": [
+          1024,
+          1024
+        ],
+        "bbox": [
+          104,
+          106,
+          940,
+          916
+        ],
+        "center": [
+          0.51,
+          0.499
+        ]
+      },
+      {
+        "name": "terminal",
+        "source_size": [
+          1024,
+          1024
+        ],
+        "bbox": [
+          122,
+          182,
+          929,
+          886
+        ],
+        "center": [
+          0.513,
+          0.521
+        ]
+      },
+      {
+        "name": "text-editor",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          120,
+          134,
+          980,
+          942
+        ],
+        "center": [
+          0.537,
+          0.525
+        ]
+      },
+      {
+        "name": "calculator",
+        "source_size": [
+          1024,
+          1024
+        ],
+        "bbox": [
+          149,
+          123,
+          879,
+          889
+        ],
+        "center": [
+          0.502,
+          0.494
+        ]
+      },
+      {
+        "name": "preview",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          85,
+          112,
+          948,
+          912
+        ],
+        "center": [
+          0.504,
+          0.5
+        ]
+      },
+      {
+        "name": "notes",
+        "source_size": [
+          1024,
+          1024
+        ],
+        "bbox": [
+          105,
+          69,
+          957,
+          974
+        ],
+        "center": [
+          0.519,
+          0.509
+        ]
+      },
+      {
+        "name": "calendar",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          105,
+          94,
+          955,
+          923
+        ],
+        "center": [
+          0.518,
+          0.497
+        ]
+      },
+      {
+        "name": "clock",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          135,
+          105,
+          890,
+          928
+        ],
+        "center": [
+          0.5,
+          0.504
+        ]
+      },
+      {
+        "name": "activity",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          111,
+          99,
+          948,
+          925
+        ],
+        "center": [
+          0.517,
+          0.5
+        ]
+      },
+      {
+        "name": "disk-utility",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          47,
+          98,
+          1001,
+          943
+        ],
+        "center": [
+          0.512,
+          0.508
+        ]
+      },
+      {
+        "name": "screenshot",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          83,
+          168,
+          963,
+          853
+        ],
+        "center": [
+          0.511,
+          0.499
+        ]
+      },
+      {
+        "name": "system-info",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          132,
+          130,
+          890,
+          908
+        ],
+        "center": [
+          0.499,
+          0.507
+        ]
+      },
+      {
+        "name": "software-center",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          67,
+          105,
+          971,
+          942
+        ],
+        "center": [
+          0.507,
+          0.511
+        ]
+      },
+      {
+        "name": "photos",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          72,
+          129,
+          957,
+          896
+        ],
+        "center": [
+          0.502,
+          0.5
+        ]
+      },
+      {
+        "name": "music",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          129,
+          105,
+          877,
+          945
+        ],
+        "center": [
+          0.491,
+          0.513
+        ]
+      },
+      {
+        "name": "video",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          132,
+          79,
+          932,
+          947
+        ],
+        "center": [
+          0.52,
+          0.501
+        ]
+      },
+      {
+        "name": "settings",
+        "source_size": [
+          1024,
+          1024
+        ],
+        "bbox": [
+          66,
+          104,
+          967,
+          914
+        ],
+        "center": [
+          0.504,
+          0.497
+        ]
+      },
+      {
+        "name": "seek",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          106,
+          92,
+          943,
+          939
+        ],
+        "center": [
+          0.512,
+          0.503
+        ]
+      },
+      {
+        "name": "widgets",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          101,
+          137,
+          918,
+          915
+        ],
+        "center": [
+          0.498,
+          0.514
+        ]
+      },
+      {
+        "name": "trash-empty",
+        "source_size": [
+          1024,
+          1024
+        ],
+        "bbox": [
+          157,
+          98,
+          868,
+          951
+        ],
+        "center": [
+          0.5,
+          0.512
+        ]
+      },
+      {
+        "name": "trash-full",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          206,
+          123,
+          816,
+          924
+        ],
+        "center": [
+          0.499,
+          0.511
+        ]
+      },
+      {
+        "name": "desktops",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          103,
+          110,
+          919,
+          933
+        ],
+        "center": [
+          0.499,
+          0.509
+        ]
+      },
+      {
+        "name": "spread",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          64,
+          220,
+          961,
+          876
+        ],
+        "center": [
+          0.5,
+          0.535
+        ]
+      },
+      {
+        "name": "browser",
+        "source_size": [
+          1024,
+          1024
+        ],
+        "bbox": [
+          69,
+          107,
+          974,
+          911
+        ],
+        "center": [
+          0.509,
+          0.497
+        ]
+      },
+      {
+        "name": "mail",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          68,
+          135,
+          985,
+          905
+        ],
+        "center": [
+          0.514,
+          0.508
+        ]
+      },
+      {
+        "name": "contacts",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          107,
+          104,
+          973,
+          937
+        ],
+        "center": [
+          0.527,
+          0.508
+        ]
+      },
+      {
+        "name": "maps",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          61,
+          185,
+          971,
+          876
+        ],
+        "center": [
+          0.504,
+          0.518
+        ]
+      },
+      {
+        "name": "rewind",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          143,
+          94,
+          914,
+          938
+        ],
+        "center": [
+          0.516,
+          0.504
+        ]
+      },
+      {
+        "name": "dictionary",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          68,
+          104,
+          970,
+          970
+        ],
+        "center": [
+          0.507,
+          0.524
+        ]
+      },
+      {
+        "name": "app-store",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          181,
+          85,
+          864,
+          884
+        ],
+        "center": [
+          0.51,
+          0.473
+        ]
+      },
+      {
+        "name": "folder",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          80,
+          121,
+          967,
+          946
+        ],
+        "center": [
+          0.511,
+          0.521
+        ]
+      },
+      {
+        "name": "folder-open",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          101,
+          108,
+          952,
+          905
+        ],
+        "center": [
+          0.514,
+          0.495
+        ]
+      },
+      {
+        "name": "folder-documents",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          112,
+          128,
+          915,
+          908
+        ],
+        "center": [
+          0.501,
+          0.506
+        ]
+      },
+      {
+        "name": "folder-downloads",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          129,
+          167,
+          920,
+          860
+        ],
+        "center": [
+          0.512,
+          0.501
+        ]
+      },
+      {
+        "name": "folder-pictures",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          89,
+          155,
+          948,
+          917
+        ],
+        "center": [
+          0.506,
+          0.523
+        ]
+      },
+      {
+        "name": "folder-music",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          122,
+          160,
+          930,
+          898
+        ],
+        "center": [
+          0.514,
+          0.517
+        ]
+      },
+      {
+        "name": "folder-movies",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          119,
+          141,
+          927,
+          863
+        ],
+        "center": [
+          0.511,
+          0.49
+        ]
+      },
+      {
+        "name": "folder-applications",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          107,
+          164,
+          937,
+          881
+        ],
+        "center": [
+          0.51,
+          0.51
+        ]
+      },
+      {
+        "name": "folder-desktop",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          118,
+          141,
+          921,
+          912
+        ],
+        "center": [
+          0.507,
+          0.514
+        ]
+      },
+      {
+        "name": "folder-network",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          130,
+          132,
+          934,
+          895
+        ],
+        "center": [
+          0.52,
+          0.501
+        ]
+      },
+      {
+        "name": "drive-internal",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          101,
+          210,
+          921,
+          821
+        ],
+        "center": [
+          0.499,
+          0.503
+        ]
+      },
+      {
+        "name": "drive-external",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          101,
+          98,
+          866,
+          900
+        ],
+        "center": [
+          0.472,
+          0.487
+        ]
+      },
+      {
+        "name": "drive-optical",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          62,
+          180,
+          960,
+          834
+        ],
+        "center": [
+          0.499,
+          0.495
+        ]
+      },
+      {
+        "name": "drive-network",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          81,
+          244,
+          959,
+          835
+        ],
+        "center": [
+          0.508,
+          0.527
+        ]
+      },
+      {
+        "name": "file-generic",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          203,
+          130,
+          842,
+          887
+        ],
+        "center": [
+          0.51,
+          0.497
+        ]
+      },
+      {
+        "name": "file-text",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          222,
+          120,
+          833,
+          892
+        ],
+        "center": [
+          0.515,
+          0.494
+        ]
+      },
+      {
+        "name": "file-pdf",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          192,
+          119,
+          860,
+          897
+        ],
+        "center": [
+          0.514,
+          0.496
+        ]
+      },
+      {
+        "name": "file-image",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          181,
+          118,
+          861,
+          920
+        ],
+        "center": [
+          0.509,
+          0.507
+        ]
+      },
+      {
+        "name": "file-audio",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          165,
+          80,
+          891,
+          937
+        ],
+        "center": [
+          0.516,
+          0.497
+        ]
+      },
+      {
+        "name": "file-video",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          187,
+          117,
+          852,
+          915
+        ],
+        "center": [
+          0.507,
+          0.504
+        ]
+      },
+      {
+        "name": "file-archive",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          162,
+          71,
+          901,
+          911
+        ],
+        "center": [
+          0.519,
+          0.479
+        ]
+      },
+      {
+        "name": "file-code",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          209,
+          124,
+          835,
+          906
+        ],
+        "center": [
+          0.51,
+          0.503
+        ]
+      },
+      {
+        "name": "file-spreadsheet",
+        "source_size": [
+          1024,
+          1024
+        ],
+        "bbox": [
+          85,
+          144,
+          950,
+          882
+        ],
+        "center": [
+          0.505,
+          0.501
+        ]
+      },
+      {
+        "name": "file-presentation",
+        "source_size": [
+          1254,
+          1254
+        ],
+        "bbox": [
+          200,
+          107,
+          830,
+          895
+        ],
+        "center": [
+          0.503,
+          0.489
+        ]
+      },
+      {
+        "name": "file-document",
+        "source_size": [
+          1024,
+          1024
+        ],
+        "bbox": [
+          123,
+          98,
+          941,
+          922
+        ],
+        "center": [
+          0.52,
+          0.498
+        ]
+      }
+    ],
+    "missing": [],
+    "errors": []
+  },
+  "frame_callbacks": {
+    "frames": 121,
+    "median_ms": 16.667,
+    "p95_ms": 16.954,
+    "scope": "virtual KWin frame callbacks; not a physical-display 60 fps certification"
+  },
+  "wallpapers": [
+    {
+      "file": "wallpaper-aurora-blue.png",
+      "native_size": [
+        1672,
+        941
+      ],
+      "output_size": [
+        3840,
+        2160
+      ],
+      "resampled": true
+    },
+    {
+      "file": "wallpaper-water-drop.png",
+      "native_size": [
+        1672,
+        941
+      ],
+      "output_size": [
+        3840,
+        2160
+      ],
+      "resampled": true
+    },
+    {
+      "file": "wallpaper-nebula.png",
+      "native_size": [
+        1672,
+        941
+      ],
+      "output_size": [
+        3840,
+        2160
+      ],
+      "resampled": true
+    },
+    {
+      "file": "wallpaper-hills.png",
+      "native_size": [
+        1672,
+        941
+      ],
+      "output_size": [
+        3840,
+        2160
+      ],
+      "resampled": true
+    },
+    {
+      "file": "wallpaper-graphite.png",
+      "native_size": [
+        1672,
+        941
+      ],
+      "output_size": [
+        3840,
+        2160
+      ],
+      "resampled": true
+    },
+    {
+      "file": "wallpaper-linen-grey.png",
+      "native_size": [
+        1672,
+        941
+      ],
+      "output_size": [
+        3840,
+        2160
+      ],
+      "resampled": true
+    }
+  ],
+  "packages": {
+    "makos-apps_0.1.0~dev1_arm64.deb": {
+      "sha256": "dec3c5d9fa80712bdd0f9abd1fb03d594358b1170e204b01504405efd379c32a",
+      "bytes": 541972
+    },
+    "makos-desktop_0.1.0~dev1_arm64.deb": {
+      "sha256": "be7b9757beb08e8b3a3889b42cac1a6b561e88814bd3ca286f1bb99aa5a2b583",
+      "bytes": 5620
+    },
+    "makos-icons_0.1.0~dev1_all.deb": {
+      "sha256": "8c397ef8073751379cd01f6019e0b18f9c70e419a176d94d2131b3253f853dab",
+      "bytes": 38821900
+    },
+    "makos-session_0.1.0~dev1_arm64.deb": {
+      "sha256": "476d86071f42d329b63d85f4125a7482a866369f84c0a8f70fadf91dbb6fe49b",
+      "bytes": 5584
+    },
+    "makos-shell_0.1.0~dev1_arm64.deb": {
+      "sha256": "7b400e9f3a35f1f5326ea8e5b1e7945549a48dee791116065f5a3b8cc2bfdb46",
+      "bytes": 52504
+    },
+    "makos-theme_0.1.0~dev1_all.deb": {
+      "sha256": "746a26c3993acfe918733a9d67bd614d926673b8694929f7ba4fa5ade3bff411",
+      "bytes": 9150352
+    }
+  },
+  "cleanup": {
+    "amerika_agent": "uninstalled",
+    "amerika_desktop_meta": "removed as dependent; fallback session packages preserved and marked manual",
+    "other_application_removal": "pending completion and owner acceptance; no autoremove"
+  },
+  "not_verified": [
+    "normal login",
+    "physical-display 60 fps",
+    "touch and pen",
+    "multi-monitor and fractional scaling",
+    "full GTK/Qt/Electron menu export",
+    "complete app rebranding inside retained third-party engines"
+  ],
+  "signed_apt_sandbox": {
+    "authenticated_index": true,
+    "packages_added": 6,
+    "packages_removed": 0
+  }
+}

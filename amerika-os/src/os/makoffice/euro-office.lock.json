@@ -1,0 +1,11 @@
+{
+  "name": "Euro-Office Desktop Editors",
+  "version": "9.3.5-2",
+  "tag": "v9.3.5-2",
+  "arch": "arm64",
+  "url": "https://github.com/Euro-Office/DesktopEditors/releases/download/v9.3.5-2/euro-office-euro-office_9.3.5-2_arm64.deb",
+  "sha256": "1c9fac8f76a40b4d99a487569780365140e32148cd42de9bdf08d0feed01693a",
+  "size": 320241144,
+  "license": "AGPL-3.0",
+  "source": ["https://github.com/Euro-Office/DesktopEditors", "https://github.com/Euro-Office/desktop-apps", "https://github.com/Euro-Office/desktop-sdk", "https://github.com/Euro-Office/core", "https://github.com/Euro-Office/sdkjs", "https://github.com/Euro-Office/web-apps", "https://github.com/Euro-Office/dictionaries"]
+}

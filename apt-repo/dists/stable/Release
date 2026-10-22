@@ -2,11 +2,11 @@ Origin: Amerika
 Label: Amerika OS
 Suite: stable
 Codename: stable
-Date: Thu, 22 Oct 2026 08:11:17 UTC
+Date: Thu, 22 Oct 2026 11:47:18 UTC
 Architectures: arm64
 Components: main
 Description: Amerika OS packages
 SHA256:
- 62abd326484bcee2417dd53428ee4cc08389c99391c8cecb91be4de87a26641c           195443 main/binary-arm64/Packages
- 9851d51ca1be426223cac3f48a93a09c9aaef99c82188a358a7dd6aad088aaf5            20765 main/binary-arm64/Packages.gz
- 429f9a275ab340e52f15d1e935b9b7397f35645990c4167a512218c41c4969a0            17116 main/binary-arm64/Packages.xz
+ 06182113e3a4981f790a2c3d73f3106f2b500f87dabbbcfb15e56b06252025c2           197189 main/binary-arm64/Packages
+ b971889b79715d7e6f66df168373c7b6663b8ae398ceda5f9a1378601542bc47            21385 main/binary-arm64/Packages.gz
+ ff7918a9794b6ad70b2dde55cbf3f3c8bbb7ad231b51eba80dfe07a46c33d32b            17660 main/binary-arm64/Packages.xz

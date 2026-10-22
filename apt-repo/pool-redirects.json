@@ -73,5 +73,10 @@
     "url": "https://github.com/danecohn/amerikasocial/releases/download/os-3.0.4/amerika-venture_158.0.1-amerika1_arm64.deb",
     "size": 109208104,
     "sha256": "c99fa58d79952f8e6ee30ac735414ff3e239125286d6c325c45ce4be54ed1b1a"
+  },
+  "mak-office_0.3.0-1_arm64.deb": {
+    "url": "https://github.com/danecohn/amerikasocial/releases/download/os-3.3.3/mak-office_0.3.0-1_arm64.deb",
+    "size": 433143440,
+    "sha256": "93c21fb8e38d4d306e334dca19262401e7730f1c791e26f6b51263d25921424f"
   }
 }

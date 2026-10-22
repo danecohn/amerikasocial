@@ -139,7 +139,7 @@ class Pkg:
         PKG_DIR.mkdir(parents=True, exist_ok=True)
         out = PKG_DIR / f'{self.name}_{self.version}_{self.arch}.deb'
         out.unlink(missing_ok=True)
-        zopt = ['-Zzstd', '-z10'] if size > 20000 else ['-Zxz', '-z6']
+        zopt = getattr(self, 'zopt', None) or (['-Zzstd', '-z10'] if size > 20000 else ['-Zxz', '-z6'])
         sh('dpkg-deb', '--root-owner-group', *zopt, '--build', self.root, out, stdout=subprocess.DEVNULL)
         return out
 
@@ -456,7 +456,7 @@ def build_meta():
             'amerika-repo-keyring')
     p = Pkg('amerika-desktop', DE_VERSION, 'Amerika OS desktop environment\nAmerika OS: its own shell on the KWin compositor, with the Claude and '
             'ChatGPT apps at the centre.\nInstalls the session, shell, settings, theme, apps and the Amerika Software manager.',
-            depends=', '.join(f'{n} (>= {DE_VERSION})' for n in ours + tuple(META_DEPENDS)) + ', amerika-social, amerika-venture, amerika-office',
+            depends=', '.join(f'{n} (>= {DE_VERSION})' for n in ours + tuple(META_DEPENDS)) + ', amerika-social, amerika-venture, mak-office',
             recommends=', '.join(META_RECOMMENDS),
             arch=ARCH, title='Amerika OS Desktop', section='metapackages')
     p.copyright('Copyright Amerika LLC, GPL-3.0-only.\n')

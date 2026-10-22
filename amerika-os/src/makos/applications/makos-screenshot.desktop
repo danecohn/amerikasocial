@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Screenshot
+Exec=makos-app screenshot
+Icon=makos-screenshot
+OnlyShowIn=MakOS;
+Categories=Utility;

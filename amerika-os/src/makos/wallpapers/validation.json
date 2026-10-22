@@ -1,0 +1,74 @@
+[
+  {
+    "file": "wallpaper-aurora-blue.png",
+    "native_size": [
+      1672,
+      941
+    ],
+    "output_size": [
+      3840,
+      2160
+    ],
+    "resampled": true
+  },
+  {
+    "file": "wallpaper-water-drop.png",
+    "native_size": [
+      1672,
+      941
+    ],
+    "output_size": [
+      3840,
+      2160
+    ],
+    "resampled": true
+  },
+  {
+    "file": "wallpaper-nebula.png",
+    "native_size": [
+      1672,
+      941
+    ],
+    "output_size": [
+      3840,
+      2160
+    ],
+    "resampled": true
+  },
+  {
+    "file": "wallpaper-hills.png",
+    "native_size": [
+      1672,
+      941
+    ],
+    "output_size": [
+      3840,
+      2160
+    ],
+    "resampled": true
+  },
+  {
+    "file": "wallpaper-graphite.png",
+    "native_size": [
+      1672,
+      941
+    ],
+    "output_size": [
+      3840,
+      2160
+    ],
+    "resampled": true
+  },
+  {
+    "file": "wallpaper-linen-grey.png",
+    "native_size": [
+      1672,
+      941
+    ],
+    "output_size": [
+      3840,
+      2160
+    ],
+    "resampled": true
+  }
+]

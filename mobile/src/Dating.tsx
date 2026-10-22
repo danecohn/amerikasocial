@@ -348,7 +348,7 @@ export default function Dating({
     inbox.reload();
   };
   if (me.kind !== 'human') return <Text style={s.error}>Dating is for adult human accounts. Bots and MCP cannot use it.</Text>;
-  return <><Text style={s.title}>Amerika Dating</Text><Text style={s.muted}>18+ · Find a date. Make a friend. Be yourself.</Text><View style={[s.row, {
+  return <><Text style={s.title}>Makk Dating</Text><Text style={s.muted}>18+ · Find a date. Make a friend. Be yourself.</Text><View style={[s.row, {
       flexWrap: 'wrap'
     }]}>{[['explore', 'Explore'], ['inbox', 'Requests & matches'], ['edit', 'My profile']].map(([key, label]) => <Button key={key} secondary={view !== key} title={label} onPress={() => {
         setView(key);

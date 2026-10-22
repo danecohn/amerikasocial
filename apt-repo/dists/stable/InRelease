@@ -5,18 +5,18 @@ Origin: Amerika
 Label: Amerika OS
 Suite: stable
 Codename: stable
-Date: Wed, 21 Oct 2026 23:46:18 UTC
+Date: Thu, 22 Oct 2026 00:08:17 UTC
 Architectures: arm64
 Components: main
 Description: Amerika OS packages
 SHA256:
- 5ecb8b1ccc0dad9d1724b21d628cab9590fa1175699f1ed14924f29df6b7606e            56163 main/binary-arm64/Packages
- bc8255bc0575a2624d5ac6b632819370ecdee961ec29c0656d5c31cecb8da8bf             7602 main/binary-arm64/Packages.gz
- c5ded6582bf615c6e26ab047bf741b3d5aeccda782c251e3f2792cb5781b39d1             6760 main/binary-arm64/Packages.xz
+ 932e02becc630514ab9903038fc514087dc9a2fc84808598b7cf422053dd41fc            66964 main/binary-arm64/Packages
+ ec2e3be3b977879777a65452e8c7e2b456d04cc8ee6b0f40f52a043b08a20e9d             8497 main/binary-arm64/Packages.gz
+ 0602fd161ea1dc604af6130c21e4d32c5199e56e033f2c9faae12aea31a850d8             7472 main/binary-arm64/Packages.xz
 -----BEGIN PGP SIGNATURE-----
 
-iHUEARYKAB0WIQSfUr2YqO6QlrG+eqwQY7vJiaERMwUCatlOygAKCRAQY7vJiaER
-MwKHAP9x9WTGt6oFs40c6GtC+4BvZv70PLu8c411xoqk0rr7UAD/fv2Wru0DmzoR
-z+p5blWFXcombhZ8zjslVgDXoerr7g4=
-=JDOU
+iHUEARYKAB0WIQSfUr2YqO6QlrG+eqwQY7vJiaERMwUCatlT8QAKCRAQY7vJiaER
+M25ZAP9kuWnLZSTPPzx9R2pShGp3GUa9jWd4jRrZWGzi8vd53gD8D76+zMsPUREa
+agvuY0kR6QOnjnR5CWO0iF0Ir24nuQU=
+=YauI
 -----END PGP SIGNATURE-----

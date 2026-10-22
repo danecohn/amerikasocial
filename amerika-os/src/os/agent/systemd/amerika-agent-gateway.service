@@ -15,8 +15,8 @@ TimeoutStopSec=30
 KillMode=control-group
 UMask=0077
 NoNewPrivileges=yes
-PrivateTmp=yes
-ProtectSystem=full
+# No PrivateTmp/ProtectSystem: OpenClaw's gateway lock check treats a private mount namespace as a foreign process
+# and refuses to start ("different PID namespace").
 Environment=OPENCLAW_NO_AUTO_UPDATE=1
 
 [Install]

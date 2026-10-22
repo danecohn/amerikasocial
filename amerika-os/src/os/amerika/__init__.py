@@ -1,2 +1,2 @@
 """Amerika OS: shell, settings and the AI system-control layer."""
-__version__ = '3.1.0'
+__version__ = '3.1.1'

@@ -47,7 +47,7 @@ def stage(social,repo,release):
 
 def main():
     ap=argparse.ArgumentParser();ap.add_argument('social');ap.add_argument('--repo',default=str(ROOT/'dist/apt'))
-    ap.add_argument('--release',default='os-3.0.8');args=ap.parse_args()
+    ap.add_argument('--release',default='os-3.1.0');args=ap.parse_args()
     if '/' in args.release or not args.release.startswith('os-'):ap.error('Use an os-... release tag without slashes.')
     print(json.dumps(stage(args.social,args.repo,args.release),indent=2))
 

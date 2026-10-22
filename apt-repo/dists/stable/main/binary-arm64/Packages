@@ -1182,6 +1182,24 @@ Filename: pool/main/a/amerika-office/amerika-office_0.2.0-1_arm64.deb
 Size: 106704564
 SHA256: c4c4edb6529e8c3d86b4ed8a9fb079a7428f66a221cb0d8a8a5ced436cb7bc3a
 
+Package: amerika-phone
+Version: 3.2.0
+Architecture: all
+Maintainer: Amerika LLC <noreply@amerika.social>
+Installed-Size: 32
+Section: x11
+Priority: optional
+Homepage: https://www.amerika.social/downloads/os
+Depends: python3, python3-cryptography, usbmuxd, libpam-modules, pkexec
+Amerika-Title: Amerika Phone Key
+Amerika-Category: Security
+Description: Amerika Phone Key: approve sudo with your iPhone
+ Pair an iPhone running the Amerika Key app, then approve sudo and administrator prompts with Face ID.
+ Opt-in: nothing changes until "amerika-phone enable sudo". Your password always still works.
+Filename: pool/main/a/amerika-phone/amerika-phone_3.2.0_all.deb
+Size: 13220
+SHA256: 849e37bec17f847a234bc2034cb83c3c5b8b39f3ae2e4cbd467256cbded1e7f2
+
 Package: amerika-render
 Version: 3.2.0
 Architecture: all

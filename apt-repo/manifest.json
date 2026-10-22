@@ -2,7 +2,7 @@
   "suite": "stable",
   "architecture": "arm64",
   "fingerprint": "9F52BD98A8EE9096B1BE7AAC1063BBC989A11133",
-  "generated": "Thu, 22 Oct 2026 01:26:03 UTC",
+  "generated": "Thu, 22 Oct 2026 01:50:57 UTC",
   "packages": {
     "amerika-agent_3.1.0_arm64.deb": {
       "path": "pool/main/a/amerika-agent/amerika-agent_3.1.0_arm64.deb",
@@ -338,6 +338,11 @@
       "path": "pool/main/a/amerika-office/amerika-office_0.2.0-1_arm64.deb",
       "size": 106704564,
       "sha256": "c4c4edb6529e8c3d86b4ed8a9fb079a7428f66a221cb0d8a8a5ced436cb7bc3a"
+    },
+    "amerika-phone_3.2.0_all.deb": {
+      "path": "pool/main/a/amerika-phone/amerika-phone_3.2.0_all.deb",
+      "size": 13220,
+      "sha256": "849e37bec17f847a234bc2034cb83c3c5b8b39f3ae2e4cbd467256cbded1e7f2"
     },
     "amerika-render_3.2.0_all.deb": {
       "path": "pool/main/a/amerika-render/amerika-render_3.2.0_all.deb",

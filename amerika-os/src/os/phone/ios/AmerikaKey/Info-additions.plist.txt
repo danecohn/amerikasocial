@@ -1,0 +1,4 @@
+Add these keys to the app target's Info (Xcode: target > Info):
+  NSFaceIDUsageDescription = "Amerika Key uses Face ID to approve requests from your computer."
+Capabilities: none needed (no push, no network entitlements). The app only listens on TCP 38400 while it is open,
+and the computer reaches it through the USB cable.

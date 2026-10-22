@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=AmerikaBox
+GenericName=Chiptune Maker
+Comment=Make chiptune music with BeepBox and an AI composer
+Exec=amerika-box %F
+Icon=amerika-box
+Terminal=false
+Categories=AudioVideo;Audio;Music;
+Keywords=music;chiptune;beepbox;sound;composer;ai;game;
+StartupWMClass=org.amerika.Box

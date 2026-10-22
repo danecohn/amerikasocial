@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Amerika Studio Anthropic key
+Comment=Save or remove the Anthropic key used by Amerika Studio
+Exec=amerika-studio-keys
+Icon=amerika-studio
+Terminal=false
+NoDisplay=true
+Categories=Settings;
+StartupWMClass=org.amerika.StudioKeys

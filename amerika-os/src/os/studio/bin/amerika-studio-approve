@@ -1,0 +1,6 @@
+#!/usr/bin/python3
+import sys
+
+from amerika_studio.approve import main
+
+sys.exit(main())

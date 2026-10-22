@@ -27,6 +27,7 @@ DEFAULT_SETTINGS = {
     'port': common.DEFAULT_PORT,
     'channels': {},             # name -> bool; everything is off unless listed here as true
     'linux_node': False,        # desktop notifications / camera / location through the OpenClaw node host
+    'studio_tools': False,      # studio-core: register the amerika-studio MCP server (Render/Engine/Sprite/Box tools)
 }
 
 # Amerika permission mode -> OpenClaw policy (see docs/agent/README.md, "Permission modes").
@@ -41,6 +42,7 @@ MODE_POLICY = {
     'trusted': {'exec': {'mode': 'auto'}, 'workspace_only': False},
 }
 
+STUDIO_MCP_COMMAND = os.environ.get('AMERIKA_AGENT_STUDIO_MCP', '/usr/bin/amerika-studio-mcp')   # studio-core
 CHANNEL_DM_POLICY = 'pairing'   # unknown senders must be approved by the user first
 
 
@@ -50,14 +52,14 @@ def validate_settings(raw):
     if not isinstance(raw, dict):
         raise AgentError('settings must be a JSON object')
     s = copy.deepcopy(DEFAULT_SETTINGS)
-    for key in ('model', 'mode', 'autostart', 'port', 'channels', 'linux_node'):
+    for key in ('model', 'mode', 'autostart', 'port', 'channels', 'linux_node', 'studio_tools'):
         if key in raw:
             s[key] = raw[key]
     if s['model'] is not None and (not isinstance(s['model'], str) or not common.MODEL_RE.match(s['model'])):
         raise AgentError(f'invalid model {s["model"]!r}: expected anthropic/<id> or openai/<id>')
     if s['mode'] not in common.MODES:
         raise AgentError(f'invalid mode {s["mode"]!r}: expected one of {", ".join(common.MODES)}')
-    for key in ('autostart', 'linux_node'):
+    for key in ('autostart', 'linux_node', 'studio_tools'):
         if not isinstance(s[key], bool):
             raise AgentError(f'{key} must be true or false')
     if isinstance(s['port'], bool) or not isinstance(s['port'], int) or not 1024 <= s['port'] <= 65535:
@@ -187,6 +189,16 @@ def build_config(settings, providers=None, channel_secrets=None, paths=None, res
             },
         },
     }
+
+    if settings['studio_tools']:   # studio-core: Amerika Studio apps as agent tools; code-running tools ask in their own dialog
+        cfg['mcp']['servers']['amerika-studio'] = {
+            'command': STUDIO_MCP_COMMAND,
+            'args': [],
+            'env': {'XDG_RUNTIME_DIR': str(paths.runtime_dir.parent)},
+            'connectionTimeoutMs': 15000,
+            'requestTimeoutMs': 960000,                 # app.prompt and model tools may run for several minutes
+        }
+        cfg['tools']['allow'].append('amerika-studio__*')
 
     if providers.get('anthropic'):
         cfg['models']['providers']['anthropic'] = {'apiKey': secret_ref('anthropic')}

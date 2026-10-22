@@ -1,0 +1,59 @@
+From e70b2f683377c89adb92a38ffff10c2bd6d583cc Mon Sep 17 00:00:00 2001
+From: Amerika Box <box@amerika.invalid>
+Date: Wed, 21 Oct 2026 17:32:00 -0700
+Subject: [PATCH 2/2] Shell hooks: amerika-editor-ready event, amerikaSaveBlob
+ save hook, export ChangeSong and SongRenderer
+
+---
+ editor/ExportPrompt.ts | 6 ++++++
+ editor/SongEditor.ts   | 2 ++
+ editor/index.ts        | 3 ++-
+ 3 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/editor/ExportPrompt.ts b/editor/ExportPrompt.ts
+index 1262813..fb0f055 100644
+--- a/editor/ExportPrompt.ts
++++ b/editor/ExportPrompt.ts
+@@ -18,6 +18,12 @@ function lerp(low: number, high: number, t: number): number {
+ }
+ 
+ function save(blob: Blob, name: string): void {
++	// AmerikaBox: the desktop shell saves files through its own file dialog.
++	const amerikaSave: any = (<any>window)["amerikaSaveBlob"];
++	if (typeof amerikaSave == "function") {
++		amerikaSave(blob, name);
++		return;
++	}
+ 	if ((<any>navigator).msSaveOrOpenBlob) {
+ 		(<any>navigator).msSaveOrOpenBlob(blob, name);
+ 		return;
+diff --git a/editor/SongEditor.ts b/editor/SongEditor.ts
+index a2268fb..9ac54fb 100644
+--- a/editor/SongEditor.ts
++++ b/editor/SongEditor.ts
+@@ -681,6 +681,8 @@ export class SongEditor {
+ 		if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+ 		
+ 		// AmerikaBox: no service worker (the app is local and never touches the network).
++		// and tell the Amerika layer that the editor is up.
++		window.dispatchEvent(new CustomEvent("amerika-editor-ready", {detail: {editor: this, doc: this.doc}}));
+ 	}
+ 	
+ 	private _whenResized = (): void => {
+diff --git a/editor/index.ts b/editor/index.ts
+index 0ce42ee..b7b7083 100644
+--- a/editor/index.ts
++++ b/editor/index.ts
+@@ -8,7 +8,8 @@ export {SongEditor} from "./SongEditor.js";
+ export {NotePin, Note, Pattern, Instrument, Channel, Song, Synth} from "../synth/synth.js";
+ export {SongDocument} from "./SongDocument.js";
+ export {ExportPrompt} from "./ExportPrompt.js";
+-export {ChangePreset} from "./changes.js";
++export {ChangePreset, ChangeSong} from "./changes.js";
++export {SongRenderer} from "./SongRenderer.js";
+ export {fastFourierTransform, forwardRealFourierTransform, inverseRealFourierTransform} from "../synth/FFT.js";
+ export {FilterCoefficients, FrequencyResponse, DynamicBiquadFilter} from "../synth/filtering.js";
+ 
+-- 
+2.55.0
+

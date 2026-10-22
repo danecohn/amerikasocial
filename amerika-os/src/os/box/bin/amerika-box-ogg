@@ -1,0 +1,103 @@
+#!/usr/bin/python3
+"""amerika-box-ogg: WAV -> Ogg Vorbis with loop tags through ffmpeg, for AmerikaBox "Export for game".
+
+  amerika-box-ogg FILE.wav [--loop-start SAMPLES --loop-length SAMPLES] [--quality 5]   one-off conversion
+  amerika-box-ogg --watch                                                              serve jobs from ~/Studio/Box/exports/.jobs
+
+Watch mode is started by the amerika-box launcher. A job is exports/.jobs/<id>.job.json
+{"wav": "exports/x/x.wav", "ogg": "exports/x/x.ogg", "loop_start": N, "loop_length": N, "quality": 5, "title": "x"}
+with project-relative paths; it answers with <id>.working.json then <id>.result.json {"ok": bool, "error"?}. Paths are
+confined to the project folder; only one helper runs (flock)."""
+import fcntl
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+PROJECT = Path(os.environ.get('AMERIKA_BOX_PROJECT') or Path.home() / 'Studio' / 'Box').resolve()
+
+
+def confined(rel):
+    if not isinstance(rel, str) or not rel or rel.startswith(('/', '~', '\\')) or '\x00' in rel or '..' in Path(rel).parts:
+        raise ValueError('path must be relative to the project folder')
+    p = (PROJECT / rel).resolve()
+    if p != PROJECT and PROJECT not in p.parents:
+        raise ValueError('path leaves the project folder')
+    return p
+
+
+def convert(wav, ogg, loop_start=None, loop_length=None, quality=5, title=None):
+    ff = shutil.which('ffmpeg')
+    if not ff:
+        raise RuntimeError('ffmpeg is not installed')
+    q = max(-1, min(10, float(quality)))
+    cmd = [ff, '-v', 'error', '-y', '-i', str(wav), '-vn', '-c:a', 'libvorbis', '-q:a', str(q)]
+    if loop_start is not None:
+        cmd += ['-metadata', f'LOOPSTART={int(loop_start)}', '-metadata', f'LOOPLENGTH={int(loop_length)}']
+    if title:
+        cmd += ['-metadata', f'TITLE={title}']
+    cmd += ['-metadata', 'ENCODER=AmerikaBox', str(ogg)]
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    if r.returncode != 0 or not Path(ogg).exists():
+        raise RuntimeError((r.stderr or 'ffmpeg failed').strip()[-300:])
+
+
+def handle(job_file):
+    base = job_file.name[:-len('.job.json')]
+    d = job_file.parent
+    result = {'ok': False}
+    try:
+        (d / f'{base}.working.json').write_text('{}')
+        job = json.loads(job_file.read_text())
+        convert(confined(job['wav']), confined(job['ogg']), job.get('loop_start'), job.get('loop_length'), job.get('quality', 5), job.get('title'))
+        result = {'ok': True}
+    except Exception as e:  # noqa: BLE001 - reported to the page
+        result = {'ok': False, 'error': str(e)[:300]}
+    (d / f'{base}.result.json').write_text(json.dumps(result))
+    job_file.unlink(missing_ok=True)
+
+
+def watch():
+    run = Path(os.environ.get('XDG_RUNTIME_DIR') or '/tmp') / 'amerika'
+    run.mkdir(parents=True, exist_ok=True)
+    lock = open(run / 'box-ogg.lock', 'w')
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        return 0   # another helper is already serving
+    jobs = PROJECT / 'exports' / '.jobs'
+    while True:
+        if jobs.is_dir():
+            for f in sorted(jobs.glob('*.job.json')):
+                handle(f)
+            for f in jobs.glob('*.json'):          # forget answers older than a day
+                if time.time() - f.stat().st_mtime > 86400:
+                    f.unlink(missing_ok=True)
+        time.sleep(0.5)
+
+
+def main(argv):
+    if argv[:1] == ['--watch']:
+        return watch()
+    import argparse
+    ap = argparse.ArgumentParser(prog='amerika-box-ogg')
+    ap.add_argument('wav')
+    ap.add_argument('--loop-start', type=int)
+    ap.add_argument('--loop-length', type=int)
+    ap.add_argument('--quality', type=float, default=5)
+    a = ap.parse_args(argv)
+    out = Path(a.wav).with_suffix('.ogg')
+    try:
+        convert(a.wav, out, a.loop_start, a.loop_length, a.quality, Path(a.wav).stem)
+    except Exception as e:  # noqa: BLE001
+        print('error:', e, file=sys.stderr)
+        return 1
+    print(out)
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

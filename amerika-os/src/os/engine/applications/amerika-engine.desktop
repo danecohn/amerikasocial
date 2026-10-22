@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Amerika Engine
+GenericName=Game Engine
+Comment=Godot you can talk to: describe a game and watch it get assembled
+Exec=amerika-engine
+Icon=amerika-engine
+Terminal=false
+Categories=Development;Game;
+Keywords=game;godot;engine;ai;claude;
+StartupWMClass=Godot

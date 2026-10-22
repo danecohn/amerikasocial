@@ -1,0 +1,90 @@
+From 21a33e34bebefffe1fd3e13dd517952e87d5b5b4 Mon Sep 17 00:00:00 2001
+From: Amerika Box <box@amerika.invalid>
+Date: Wed, 21 Oct 2026 17:32:00 -0700
+Subject: [PATCH 1/2] Offline build: bundle the MP3 encoder, drop the service
+ worker and URL-sharing services
+
+---
+ editor/ExportPrompt.ts |  2 +-
+ editor/SongEditor.ts   | 31 +------------------------------
+ 2 files changed, 2 insertions(+), 31 deletions(-)
+
+diff --git a/editor/ExportPrompt.ts b/editor/ExportPrompt.ts
+index 288a786..1262813 100644
+--- a/editor/ExportPrompt.ts
++++ b/editor/ExportPrompt.ts
+@@ -334,7 +334,7 @@ export class ExportPrompt implements Prompt {
+ 			whenEncoderIsAvailable();
+ 		} else {
+ 			var script = document.createElement("script");
+-			script.src = "https://cdn.jsdelivr.net/npm/lamejs@1.2.0/lame.min.js";
++			script.src = "amerika/vendor/lame.min.js"; // AmerikaBox: bundled locally instead of loaded from a CDN.
+ 			script.onload = whenEncoderIsAvailable;
+ 			document.head.appendChild(script);
+ 		}
+diff --git a/editor/SongEditor.ts b/editor/SongEditor.ts
+index e7ec79c..a2268fb 100644
+--- a/editor/SongEditor.ts
++++ b/editor/SongEditor.ts
+@@ -201,10 +201,6 @@ export class SongEditor {
+ 		option({value: "import"}, "↑ Import Song... (" + ctrlSymbol + "O)"),
+ 		option({value: "export"}, "↓ Export Song... (" + ctrlSymbol + "S)"),
+ 		option({value: "copyUrl"}, "⎘ Copy Song URL"),
+-		option({value: "shareUrl"}, "⤳ Share Song URL"),
+-		option({value: "shortenUrl"}, "… Shorten Song URL"),
+-		option({value: "viewPlayer"}, "▶ View in Song Player"),
+-		option({value: "copyEmbed"}, "⎘ Copy HTML Embed Code"),
+ 		option({value: "songRecovery"}, "⚠ Recover Recent Song..."),
+ 	);
+ 	private readonly _editMenu: HTMLSelectElement = select({style: "width: 100%;"},
+@@ -518,10 +514,6 @@ export class SongEditor {
+ 		window.addEventListener("resize", this._whenResized);
+ 		window.requestAnimationFrame(this.updatePlayButton);
+ 		
+-		if (!("share" in navigator)) {
+-			this._fileMenu.removeChild(this._fileMenu.querySelector("[value='shareUrl']")!);
+-		}
+-		
+ 		this._scaleSelect.appendChild(optgroup({label: "Edit"},
+ 			option({value: "forceScale"}, "Snap Notes To Scale"),
+ 		));
+@@ -688,9 +680,7 @@ export class SongEditor {
+ 		// auto scrolling when undoing. Sadly this tweak doesn't work on Edge or IE.
+ 		if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+ 		
+-		if ("serviceWorker" in navigator) {
+-			navigator.serviceWorker.register("/service_worker.js", {updateViaCache: "all", scope: "/"}).catch(() => {});
+-		}
++		// AmerikaBox: no service worker (the app is local and never touches the network).
+ 	}
+ 	
+ 	private _whenResized = (): void => {
+@@ -1958,25 +1948,6 @@ export class SongEditor {
+ 			case "copyUrl":
+ 				this._copyTextToClipboard(new URL("#" + this.doc.song.toBase64String(), location.href).href);
+ 				break;
+-			case "shareUrl":
+-				(<any>navigator).share({ url: new URL("#" + this.doc.song.toBase64String(), location.href).href });
+-				break;
+-			case "shortenUrl":
+-				const songUrl: string = new URL("#" + this.doc.song.toBase64String(), location.href).href;
+-				if (songUrl.length <= 15000) {
+-					// tinyurl supports URLs up to 15000 characters. However, this API is deprecated,
+-					// and their other API's free tier only allows 100 shortened links per month. :(
+-					window.open("https://tinyurl.com/api-create.php?url=" + encodeURIComponent(songUrl));
+-				} else {
+-					window.alert("Sorry, it looks like this song's URL is too long. The URL shortener service only supports URLs up to 15000 characters, and your song's URL is " + songUrl.length + " characters long. Try https://pastelink.net/ instead?");
+-				}
+-				break;
+-			case "viewPlayer":
+-				location.href = "player/#song=" + this.doc.song.toBase64String();
+-				break;
+-			case "copyEmbed":
+-				this._copyTextToClipboard(`<iframe width="384" height="60" style="border: none;" src="${new URL("player/#song=" + this.doc.song.toBase64String(), location.href).href}"></iframe>`);
+-				break;
+ 			case "songRecovery":
+ 				this._openPrompt("songRecovery");
+ 				break;
+-- 
+2.55.0
+

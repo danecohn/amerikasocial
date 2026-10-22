@@ -1,0 +1,23 @@
+#!/bin/sh
+# Amerika Render: Blender (GPL-3.0-or-later) + the amerika_render add-on, with its own config under ~/.config/amerika-render.
+# Blender is a trademark of the Blender Foundation; Amerika Render is not affiliated with or endorsed by it.
+SHARE=${AMERIKA_RENDER_SHARE:-/usr/share/amerika-render}
+CONF=${AMERIKA_RENDER_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/amerika-render}
+BLENDER=${AMERIKA_RENDER_BLENDER:-blender}
+
+case "$1" in
+  --version|-V) echo "Amerika Render 3.1.1 (powered by $($BLENDER --version 2>/dev/null | head -1))"; exit 0 ;;
+  --about) cat "$SHARE/NOTICE"; exit 0 ;;
+esac
+
+mkdir -p "$CONF/config" "$CONF/datafiles" "$HOME/Studio/Render"
+export BLENDER_USER_RESOURCES="$CONF"
+export BLENDER_SYSTEM_SCRIPTS="$SHARE/scripts"
+export AMERIKA_RENDER_SHARE="$SHARE"
+export AMERIKA_RENDER_PROJECT="${AMERIKA_RENDER_PROJECT:-$HOME/Studio/Render}"
+
+# Branding: custom splash (Blender picks splash.png up from the user datafiles dir) and own startup.blend on first run.
+[ -f "$CONF/datafiles/splash.png" ] || cp "$SHARE/splash.png" "$CONF/datafiles/splash.png" 2>/dev/null
+[ -f "$CONF/config/startup.blend" ] || cp "$SHARE/startup.blend" "$CONF/config/startup.blend" 2>/dev/null
+
+exec "$BLENDER" --python "$SHARE/startup/amerika_startup.py" "$@"

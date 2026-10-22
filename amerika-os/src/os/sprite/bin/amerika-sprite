@@ -1,0 +1,4 @@
+#!/bin/sh
+# Amerika Sprite launcher: the page lives in /usr/share/amerika-sprite/app, hosted by the shared Studio web shell.
+APPDIR=${AMERIKA_SPRITE_APP_DIR:-/usr/share/amerika-sprite/app}
+exec amerika-studio-webview --app sprite --dir "$APPDIR" --title "Amerika Sprite" --icon amerika-sprite --app-id org.amerika.Sprite "$@"

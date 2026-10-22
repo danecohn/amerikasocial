@@ -1,0 +1,17 @@
+[Unit]
+Description=Amerika Studio bridge (loopback proxy to the Anthropic API)
+Documentation=file:///usr/share/doc/amerika-studio/README.md
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/amerika-studio-bridge
+Restart=on-failure
+RestartSec=3
+# Hardening that cannot get in the way of the keyring (D-Bus) or the state directory.
+NoNewPrivileges=yes
+PrivateTmp=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=yes
+
+[Install]
+WantedBy=default.target

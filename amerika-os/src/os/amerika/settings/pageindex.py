@@ -56,6 +56,8 @@ PAGE_INFO = [
      'ai assistant claude chatgpt copilot permissions audit mcp'),
     ('agent', 'Amerika Agent', 'ai', 'amerika-ai-symbolic', 'The built-in agent: API keys, model, permissions, channels',
      'agent amerika agent openclaw api key anthropic openai claude gpt model gateway autostart channels telegram discord diagnostics doctor'),
+    ('studio', 'Amerika Studio', 'ai', 'amerika-studio-symbolic', 'Game-making apps: Anthropic key, model, budget, agent tools',
+     'studio amerika developer render engine sprite box blender godot beepbox game anthropic key model budget tokens mcp'),  # studio-core
 ]
 
 # Individual settings, for search: (page id, title, extra keywords)
@@ -97,6 +99,8 @@ ITEMS = [
     ('ai', 'Permissions', 'ask safe trusted'), ('ai', 'Activity log', 'audit'),
     ('agent', 'API key', 'anthropic openai keyring secret token'), ('agent', 'Agent model', 'claude gpt provider'),
     ('agent', 'Agent channels', 'telegram discord slack messaging'), ('agent', 'Agent diagnostics', 'doctor check'),
+    ('studio', 'Studio Anthropic key', 'anthropic keyring secret claude'), ('studio', 'Studio daily budget', 'tokens limit spend'),
+    ('studio', 'Studio agent tools', 'mcp render engine sprite box'),
 ]
 
 GROUP_NAME = dict(GROUPS)

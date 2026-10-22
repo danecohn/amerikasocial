@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Amerika Studio
+GenericName=Game-making apps
+Comment=Describe it, Claude builds it: 3D, games, pixel art and music
+Exec=amerika-studio-hub
+Icon=amerika-studio
+Terminal=false
+Categories=Development;Graphics;AudioVideo;
+Keywords=studio;game;render;engine;sprite;music;claude;ai;blender;godot;
+StartupWMClass=org.amerika.Studio

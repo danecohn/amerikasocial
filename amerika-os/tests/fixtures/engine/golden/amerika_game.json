@@ -1,0 +1,35 @@
+{
+	"audio": {},
+	"genre": "platformer_2d",
+	"levels": [
+		{
+			"name": "level_1",
+			"scene": "res://levels/level_1.tscn"
+		}
+	],
+	"name": "Coin Dash",
+	"rules": {
+		"lose": {
+			"type": "health_zero"
+		},
+		"win": {
+			"type": "reach_goal"
+		}
+	},
+	"theme": {
+		"accent": "#ff3d6e",
+		"panel": "#0e0810",
+		"text": "#fff0cf"
+	},
+	"ui": {
+		"hud": [
+			"score",
+			"health",
+			"level",
+			"message"
+		],
+		"lose_text": "Game over",
+		"title": "COIN DASH",
+		"win_text": "Level clear!"
+	}
+}

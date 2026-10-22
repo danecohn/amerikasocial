@@ -50,6 +50,7 @@ def _lazy(module, attr='build'):
 PAGES = [
     ('ai', 'AI & Assistants', 'amerika-ai-symbolic', lambda app: app._page_ai()),
     ('agent', 'Amerika Agent', 'amerika-ai-symbolic', _lazy('page_agent')),  # agent-ui
+    ('studio', 'Amerika Studio', 'amerika-studio-symbolic', _lazy('page_studio')),  # studio-core
     ('appearance', 'Appearance', 'amerika-eye-symbolic', lambda app: app._page_appearance()),
     ('display', 'Displays', 'amerika-brightness-symbolic', _lazy('page_display')),
     ('sound', 'Sound', 'amerika-volume-symbolic', _lazy('page_system', 'build_sound')),

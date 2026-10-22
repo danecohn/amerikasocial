@@ -1,0 +1,1220 @@
+{
+  "version": 1,
+  "conventions": {
+    "mcp_name": "<app>_<tool with dots replaced by underscores>, e.g. render_scene_run_python",
+    "rpc_method": "<app>.<tool name>, e.g. render.scene.run_python",
+    "transport": "JSON-RPC 2.0 over HTTP POST to <descriptor.url>/rpc, header 'Authorization: Bearer <descriptor.token>'; params is the tool arguments object",
+    "descriptor": "$XDG_RUNTIME_DIR/amerika/studio-<app>.json = {app,url,token,pid,version}, mode 0600, removed on exit",
+    "required_extra_methods": [
+      "app.ping -> {ok:true,app,version,ready:bool}"
+    ],
+    "result": "JSON object. Images are returned as {images:[{mime,base64}]} next to other fields; the MCP server turns them into image content blocks.",
+    "errors": "JSON-RPC error {code,message,data?}. -32601 unknown method, -32602 invalid params, -32001 user denied/cancelled, -32002 app busy, -32003 path outside project, -32004 not ready, -32000 other",
+    "risk": "read = no state change; act = changes project/app state; critical = executes model- or caller-supplied code, always requires approval in Amerika Agent"
+  },
+  "apps": {
+    "render": {
+      "title": "Amerika Render",
+      "launcher": "amerika-render",
+      "tools": [
+        {
+          "name": "scene.info",
+          "description": "Summarise the current Blender scene: objects (name, type, location, dimensions, materials), collections, selection, units, frame range, file path.",
+          "risk": "read",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "scene.run_python",
+          "description": "Run Python (bpy) inside Blender on the main thread. Shows the code in the panel; if 'Review before run' is on, waits for the user to approve. Returns stdout, stderr and the new undo checkpoint id.",
+          "risk": "critical",
+          "timeout": 120,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Python source to execute",
+                "maxLength": 100000
+              },
+              "description": {
+                "type": "string",
+                "description": "One-line human description shown in the approval dialog"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "code"
+            ]
+          }
+        },
+        {
+          "name": "model.create_from_description",
+          "description": "Ask Claude (through Amerika Render's own assistant) to model an object or scene from a text description and build it in Blender. Returns the assistant's explanation and the created object names.",
+          "risk": "act",
+          "timeout": 600,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string",
+                "description": "What to model, in plain words"
+              },
+              "style": {
+                "type": "string",
+                "description": "Optional style hint, e.g. low-poly, realistic, voxel"
+              },
+              "name": {
+                "type": "string",
+                "description": "Optional base name for created objects"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "description"
+            ]
+          }
+        },
+        {
+          "name": "model.apply_change",
+          "description": "Ask the assistant to change existing geometry/materials/lights according to an instruction.",
+          "risk": "act",
+          "timeout": 600,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "instruction": {
+                "type": "string",
+                "description": "The change to make"
+              },
+              "target": {
+                "type": "string",
+                "description": "Optional object name or 'selection'"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "instruction"
+            ]
+          }
+        },
+        {
+          "name": "viewport.screenshot",
+          "description": "Render the 3D viewport to a PNG and return it as an image.",
+          "risk": "read",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "width": {
+                "type": "integer",
+                "description": "Pixels",
+                "minimum": 64,
+                "maximum": 2048
+              },
+              "height": {
+                "type": "integer",
+                "description": "Pixels",
+                "minimum": 64,
+                "maximum": 2048
+              },
+              "view": {
+                "type": "string",
+                "description": "Camera angle",
+                "enum": [
+                  "current",
+                  "front",
+                  "right",
+                  "top",
+                  "perspective",
+                  "camera"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "export",
+          "description": "Export the scene or selection into the project folder.",
+          "risk": "act",
+          "timeout": 300,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "format": {
+                "type": "string",
+                "description": "File format",
+                "enum": [
+                  "glb",
+                  "gltf",
+                  "fbx",
+                  "obj",
+                  "stl",
+                  "blend",
+                  "png"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "description": "Path relative to the project directory (never absolute, never containing ..)"
+              },
+              "selection_only": {
+                "type": "boolean",
+                "description": "Export only selected objects"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "format",
+              "path"
+            ]
+          }
+        },
+        {
+          "name": "app.prompt",
+          "description": "Send a natural-language instruction to this app's built-in Claude assistant (the same chat panel the user sees) and return its final reply plus a summary of the tool calls it made.",
+          "risk": "act",
+          "timeout": 600,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "description": "Instruction for the assistant"
+              },
+              "timeout_s": {
+                "type": "integer",
+                "description": "Max seconds to wait",
+                "minimum": 5,
+                "maximum": 900
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "message"
+            ]
+          }
+        }
+      ]
+    },
+    "engine": {
+      "title": "Amerika Engine",
+      "launcher": "amerika-engine",
+      "tools": [
+        {
+          "name": "project.info",
+          "description": "Project name, directory, Godot version, main scene, autoloads, open scenes, and whether a game is running.",
+          "risk": "read",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "files.list",
+          "description": "List files in the project (confined to the project directory; .godot/ and .git/ hidden).",
+          "risk": "read",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path relative to the project directory (never absolute, never containing ..)"
+              },
+              "recursive": {
+                "type": "boolean",
+                "description": "Recurse into folders"
+              },
+              "limit": {
+                "type": "integer",
+                "description": "Max entries",
+                "minimum": 1,
+                "maximum": 5000
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "files.read",
+          "description": "Read a text file from the project.",
+          "risk": "read",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path relative to the project directory (never absolute, never containing ..)"
+              },
+              "max_bytes": {
+                "type": "integer",
+                "description": "Truncate after this many bytes",
+                "minimum": 1,
+                "maximum": 1000000
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "path"
+            ]
+          }
+        },
+        {
+          "name": "files.write",
+          "description": "Write a text file inside the project. Overwriting needs overwrite=true; paths outside the project are rejected.",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path relative to the project directory (never absolute, never containing ..)"
+              },
+              "content": {
+                "type": "string",
+                "description": "File content",
+                "maxLength": 1000000
+              },
+              "overwrite": {
+                "type": "boolean",
+                "description": "Allow replacing an existing file"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "content"
+            ]
+          }
+        },
+        {
+          "name": "scene.create",
+          "description": "Create a .tscn scene, optionally with a root node type and a description the assistant turns into nodes.",
+          "risk": "act",
+          "timeout": 300,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path relative to the project directory (never absolute, never containing ..)"
+              },
+              "root_type": {
+                "type": "string",
+                "description": "Godot node class, e.g. Node2D, Node3D, Control"
+              },
+              "description": {
+                "type": "string",
+                "description": "What the scene should contain"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "path"
+            ]
+          }
+        },
+        {
+          "name": "scene.describe",
+          "description": "Describe a scene's node tree, scripts, and resources as structured JSON.",
+          "risk": "read",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path relative to the project directory (never absolute, never containing ..)"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "path"
+            ]
+          }
+        },
+        {
+          "name": "script.create",
+          "description": "Create a GDScript file from a description or from explicit code.",
+          "risk": "act",
+          "timeout": 300,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path relative to the project directory (never absolute, never containing ..)"
+              },
+              "description": {
+                "type": "string",
+                "description": "What the script should do"
+              },
+              "code": {
+                "type": "string",
+                "description": "Explicit GDScript source (skips the assistant)",
+                "maxLength": 200000
+              },
+              "extends": {
+                "type": "string",
+                "description": "Base class"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "path"
+            ]
+          }
+        },
+        {
+          "name": "script.edit",
+          "description": "Edit an existing script according to an instruction (the assistant produces the change; an undo copy is kept).",
+          "risk": "act",
+          "timeout": 300,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path relative to the project directory (never absolute, never containing ..)"
+              },
+              "instruction": {
+                "type": "string",
+                "description": "The change to make"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "instruction"
+            ]
+          }
+        },
+        {
+          "name": "recipe.get",
+          "description": "Get a game recipe (genre template: platformer, top-down, shooter, puzzle...) or list the available ones when name is omitted.",
+          "risk": "read",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Recipe name"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "recipe.set",
+          "description": "Create or replace a custom recipe stored in the project (recipes/<name>.json).",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Recipe name"
+              },
+              "recipe": {
+                "type": "object",
+                "description": "Recipe definition"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "recipe"
+            ]
+          }
+        },
+        {
+          "name": "recipe.assemble",
+          "description": "Assemble a playable game skeleton in the project from a recipe name or a free-text description.",
+          "risk": "act",
+          "timeout": 900,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "recipe": {
+                "type": "string",
+                "description": "Recipe name"
+              },
+              "description": {
+                "type": "string",
+                "description": "Free-text description of the game"
+              },
+              "overwrite": {
+                "type": "boolean",
+                "description": "Allow replacing existing files"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "project.run",
+          "description": "Run the project (or one scene) in a separate game window.",
+          "risk": "act",
+          "timeout": 120,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "scene": {
+                "type": "string",
+                "description": "Optional scene path"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "project.stop",
+          "description": "Stop the running game.",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "project.logs",
+          "description": "Return the last lines of the running/last game's output and editor errors.",
+          "risk": "read",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "lines": {
+                "type": "integer",
+                "description": "Number of lines",
+                "minimum": 1,
+                "maximum": 2000
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "import.model",
+          "description": "Import a 3D model (glb/gltf, e.g. exported from Amerika Render) into the project. The source may be inside ~/Studio; it is copied into the project.",
+          "risk": "act",
+          "timeout": 120,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "source_path": {
+                "type": "string",
+                "description": "Source file under ~/Studio or the project"
+              },
+              "dest": {
+                "type": "string",
+                "description": "Destination folder inside the project"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "source_path"
+            ]
+          }
+        },
+        {
+          "name": "game.screenshot",
+          "description": "Screenshot of the running game (or run it briefly first); returns the image so the result can be judged visually.",
+          "risk": "act",
+          "timeout": 120,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "scene": {
+                "type": "string"
+              },
+              "frames": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 3000
+              },
+              "input": {
+                "type": "string"
+              },
+              "width": {
+                "type": "integer",
+                "minimum": 160,
+                "maximum": 1920
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "node.add",
+          "description": "Add a node to a scene (scene path, parent path, type, name).",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "scene": {
+                "type": "string"
+              },
+              "parent": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "properties": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "scene",
+              "type",
+              "name"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "node.set_property",
+          "description": "Set a property on a node in a scene.",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "scene": {
+                "type": "string"
+              },
+              "node": {
+                "type": "string"
+              },
+              "property": {
+                "type": "string"
+              },
+              "value": {}
+            },
+            "required": [
+              "scene",
+              "node",
+              "property",
+              "value"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "script.attach",
+          "description": "Attach an existing script to a node in a scene.",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "scene": {
+                "type": "string"
+              },
+              "node": {
+                "type": "string"
+              },
+              "script": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "scene",
+              "node",
+              "script"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "input.set",
+          "description": "Set the project's input map actions and their keys/buttons.",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "actions": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "actions"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "export.set_preset",
+          "description": "Create or update an export preset.",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "platform": {
+                "type": "string",
+                "enum": [
+                  "linux",
+                  "windows",
+                  "macos",
+                  "web"
+                ]
+              },
+              "path": {
+                "type": "string"
+              },
+              "arch": {
+                "type": "string",
+                "enum": [
+                  "x86_64",
+                  "arm64"
+                ]
+              },
+              "remove": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "platform"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "recipe.validate",
+          "description": "Validate the game recipe against the schema and report problems.",
+          "risk": "read",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "history.list",
+          "description": "List the undo sessions recorded for AI changes.",
+          "risk": "read",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "history.undo",
+          "description": "Undo the most recent AI change session (restores files).",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "history.redo",
+          "description": "Redo an undone AI change session.",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "app.prompt",
+          "description": "Send a natural-language instruction to this app's built-in Claude assistant (the same chat panel the user sees) and return its final reply plus a summary of the tool calls it made.",
+          "risk": "act",
+          "timeout": 600,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "description": "Instruction for the assistant"
+              },
+              "timeout_s": {
+                "type": "integer",
+                "description": "Max seconds to wait",
+                "minimum": 5,
+                "maximum": 900
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "message"
+            ]
+          }
+        }
+      ]
+    },
+    "sprite": {
+      "title": "Amerika Sprite",
+      "launcher": "amerika-sprite",
+      "tools": [
+        {
+          "name": "canvas.info",
+          "description": "Size, palette, frame count, layers, current frame and file path of the open sprite.",
+          "risk": "read",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "canvas.describe_to_sprite",
+          "description": "Draw a sprite from a text description on the current frame (the assistant produces pixel data).",
+          "risk": "act",
+          "timeout": 600,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string",
+                "description": "What to draw"
+              },
+              "width": {
+                "type": "integer",
+                "description": "Canvas width px",
+                "minimum": 1,
+                "maximum": 512
+              },
+              "height": {
+                "type": "integer",
+                "description": "Canvas height px",
+                "minimum": 1,
+                "maximum": 512
+              },
+              "palette": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "Hex colour like #1a2b3c"
+                },
+                "description": "Optional palette to use"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "description"
+            ]
+          }
+        },
+        {
+          "name": "canvas.apply_change",
+          "description": "Change the current frame according to an instruction (recolour, shift, outline, mirror...).",
+          "risk": "act",
+          "timeout": 600,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "instruction": {
+                "type": "string",
+                "description": "The change to make"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "instruction"
+            ]
+          }
+        },
+        {
+          "name": "frames.list",
+          "description": "List frames with index, duration and thumbnail flag.",
+          "risk": "read",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "frames.add",
+          "description": "Add a blank frame (or a copy of one) at the given index.",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "index": {
+                "type": "integer",
+                "description": "Insert position",
+                "minimum": 0
+              },
+              "copy_from": {
+                "type": "integer",
+                "description": "Frame index to copy",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "frames.delete",
+          "description": "Delete a frame.",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "index": {
+                "type": "integer",
+                "description": "Frame index",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "index"
+            ]
+          }
+        },
+        {
+          "name": "frames.duplicate",
+          "description": "Duplicate a frame.",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "index": {
+                "type": "integer",
+                "description": "Frame index",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "index"
+            ]
+          }
+        },
+        {
+          "name": "frames.select",
+          "description": "Make a frame current.",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "index": {
+                "type": "integer",
+                "description": "Frame index",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "index"
+            ]
+          }
+        },
+        {
+          "name": "frames.set_duration",
+          "description": "Set a frame's duration in milliseconds.",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "index": {
+                "type": "integer",
+                "description": "Frame index",
+                "minimum": 0
+              },
+              "ms": {
+                "type": "integer",
+                "description": "Duration ms",
+                "minimum": 10,
+                "maximum": 60000
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "index",
+              "ms"
+            ]
+          }
+        },
+        {
+          "name": "palette.get",
+          "description": "Return the palette as hex colours.",
+          "risk": "read",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "palette.set",
+          "description": "Replace the palette.",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "colors": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "Hex colour like #1a2b3c"
+                },
+                "maxItems": 256,
+                "description": "New palette"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "colors"
+            ]
+          }
+        },
+        {
+          "name": "export",
+          "description": "Export PNG, animated GIF or a sprite sheet into the project folder.",
+          "risk": "act",
+          "timeout": 120,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "format": {
+                "type": "string",
+                "description": "Output format",
+                "enum": [
+                  "png",
+                  "gif",
+                  "sheet"
+                ]
+              },
+              "path": {
+                "type": "string",
+                "description": "Path relative to the project directory (never absolute, never containing ..)"
+              },
+              "scale": {
+                "type": "integer",
+                "description": "Integer upscale factor",
+                "minimum": 1,
+                "maximum": 32
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "format",
+              "path"
+            ]
+          }
+        },
+        {
+          "name": "app.prompt",
+          "description": "Send a natural-language instruction to this app's built-in Claude assistant (the same chat panel the user sees) and return its final reply plus a summary of the tool calls it made.",
+          "risk": "act",
+          "timeout": 600,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "description": "Instruction for the assistant"
+              },
+              "timeout_s": {
+                "type": "integer",
+                "description": "Max seconds to wait",
+                "minimum": 5,
+                "maximum": 900
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "message"
+            ]
+          }
+        }
+      ]
+    },
+    "box": {
+      "title": "AmerikaBox",
+      "launcher": "amerika-box",
+      "tools": [
+        {
+          "name": "song.get",
+          "description": "Return the current song as BeepBox song JSON.",
+          "risk": "read",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "song.set",
+          "description": "Replace the current song with BeepBox song JSON.",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "song": {
+                "type": "object",
+                "description": "BeepBox song JSON object"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "song"
+            ]
+          }
+        },
+        {
+          "name": "song.compose_from_description",
+          "description": "Ask Claude (through AmerikaBox's assistant) to compose a chiptune song from a description and load it.",
+          "risk": "act",
+          "timeout": 600,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string",
+                "description": "Mood, genre, tempo, length, instruments"
+              },
+              "bars": {
+                "type": "integer",
+                "description": "Approximate length in bars",
+                "minimum": 1,
+                "maximum": 256
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "description"
+            ]
+          }
+        },
+        {
+          "name": "song.apply_change",
+          "description": "Change the current song according to an instruction (add a bass line, speed up, change key...).",
+          "risk": "act",
+          "timeout": 600,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "instruction": {
+                "type": "string",
+                "description": "The change to make"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "instruction"
+            ]
+          }
+        },
+        {
+          "name": "play",
+          "description": "Start playback.",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "stop",
+          "description": "Stop playback.",
+          "risk": "act",
+          "timeout": 60,
+          "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          }
+        },
+        {
+          "name": "export.wav",
+          "description": "Render the song to a WAV file in the project folder.",
+          "risk": "act",
+          "timeout": 300,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path relative to the project directory (never absolute, never containing ..)"
+              },
+              "loops": {
+                "type": "integer",
+                "description": "Number of loops",
+                "minimum": 1,
+                "maximum": 8
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "path"
+            ]
+          }
+        },
+        {
+          "name": "app.prompt",
+          "description": "Send a natural-language instruction to this app's built-in Claude assistant (the same chat panel the user sees) and return its final reply plus a summary of the tool calls it made.",
+          "risk": "act",
+          "timeout": 600,
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "description": "Instruction for the assistant"
+              },
+              "timeout_s": {
+                "type": "integer",
+                "description": "Max seconds to wait",
+                "minimum": 5,
+                "maximum": 900
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "message"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

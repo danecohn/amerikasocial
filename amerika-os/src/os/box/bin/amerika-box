@@ -1,0 +1,13 @@
+#!/bin/sh
+# AmerikaBox launcher: the shared Studio WebKit shell plus (when ffmpeg exists) the Ogg export helper.
+APP=${AMERIKA_BOX_APP:-/usr/share/amerika-box/app}
+HELPER=$(command -v amerika-box-ogg 2>/dev/null)
+HP=
+if [ -n "$HELPER" ] && command -v ffmpeg >/dev/null 2>&1; then
+	"$HELPER" --watch >/dev/null 2>&1 &
+	HP=$!
+fi
+amerika-studio-webview --app box --dir "$APP" --title AmerikaBox --icon amerika-box --app-id org.amerika.Box "$@"
+RC=$?
+[ -n "$HP" ] && kill "$HP" 2>/dev/null
+exit $RC

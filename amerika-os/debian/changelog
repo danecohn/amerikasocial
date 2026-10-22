@@ -1,4 +1,4 @@
-amerika-os (3.1.1) unstable; urgency=medium
+amerika-os (3.2.0) unstable; urgency=medium
 
   * Development continuation of Agent, Settings and desktop integration.
   * Keep the stable local repository and hosted deployment unchanged.

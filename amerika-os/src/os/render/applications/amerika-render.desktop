@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Amerika Render
+GenericName=3D Modelling Assistant
+Comment=Talk to Blender: describe a model and watch it appear (powered by Blender)
+Exec=amerika-render %f
+Icon=amerika-render
+Terminal=false
+Categories=Graphics;3DGraphics;
+MimeType=application/x-blender;
+Keywords=3d;blender;model;mesh;render;ai;assistant;game;godot;glb;
+StartupWMClass=Blender
+StartupNotify=true

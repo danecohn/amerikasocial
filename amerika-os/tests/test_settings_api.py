@@ -29,7 +29,7 @@ class Settings(unittest.TestCase):
             self.assertNotIn('ai',api.get())
 
     def test_search_deep_links_are_indexed(self):
-        self.assertEqual(len(pageindex.page_ids()),23)
+        self.assertEqual(len(pageindex.page_ids()),24)   # studio-core added Amerika Studio
         for query,page in [('microphone','sound'),('compose','input'),('gateway','agent')]:
             self.assertIn(page,{r['page'] for r in search.search(query)})
 

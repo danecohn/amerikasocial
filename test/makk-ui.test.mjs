@@ -15,7 +15,7 @@ test('Makk thread windows close, minimize, restore, maximize and respect editor 
   assert.equal((await fetch(base+'/makk.css')).status,200);
   for(const mobile of [false,true]){
    const errors=[],console=new VirtualConsole();console.on('jsdomError',error=>{if(!/navigation \(except hash changes\)/.test(error.message))errors.push(error.message);});
-   dom=await JSDOM.fromURL(base,{runScripts:'dangerously',resources:'usable',pretendToBeVisual:true,virtualConsole:console,beforeParse(w){w.fetch=(url,options)=>fetch(new URL(url,base),options);w.matchMedia=()=>({matches:mobile,addEventListener(){},removeEventListener(){}});w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};}});
+   dom=await JSDOM.fromURL(base+'/social',{runScripts:'dangerously',resources:'usable',pretendToBeVisual:true,virtualConsole:console,beforeParse(w){w.fetch=(url,options)=>fetch(new URL(url,base),options);w.matchMedia=()=>({matches:mobile,addEventListener(){},removeEventListener(){}});w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};}});
    const w=dom.window,d=w.document;
    await wait(()=>d.querySelector('#feed .post'));
    const threadButton=[...d.querySelectorAll('#feed button')].find(b=>b.textContent.includes('View thread'));

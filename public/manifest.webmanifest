@@ -3,7 +3,7 @@
   "name": "AltStack Social",
   "short_name": "AltStack",
   "description": "An AltStack LLC workspace.",
-  "start_url": "/",
+  "start_url": "/social",
   "scope": "/",
   "display": "standalone",
   "background_color": "#e7edf3",

@@ -1,4 +1,4 @@
-"""mak-office: Mak Office, an Amerika LLC product, packaged from the Euro-Office Desktop Editors (AGPL-3.0, arm64).
+"""mak-office: Mak Office, an AltStack LLC product, packaged from the Euro-Office Desktop Editors (AGPL-3.0, arm64).
 
 The upstream binaries are used UNMODIFIED and keep their licence and notices; we add our own launcher entries, icon and a
 source offer. amerika-office becomes a transitional package that pulls mak-office in."""
@@ -40,7 +40,7 @@ def register(b):
         lock = json.loads((src / LOCK).read_text())
         deb = fetch(lock)
         p = b.Pkg('mak-office', '0.3.0-1',
-                  'Mak Office, an Amerika LLC product\nDocument, spreadsheet, presentation and PDF editors that work offline. Built on the '
+                  'Mak Office, an AltStack LLC product\nDocument, spreadsheet, presentation and PDF editors that work offline. Built on the '
                   'Euro-Office Desktop Editors (AGPL-3.0); the upstream program is included unmodified with its licence and notices.',
                   arch='arm64', title='Mak Office', category='Office',
                   depends='x11-common, libasound2t64 | libasound2, curl | wget, desktop-file-utils, gstreamer1.0-libav, gstreamer1.0-plugins-ugly, '
@@ -60,7 +60,7 @@ def register(b):
                     shutil.copytree(top / rel, p.path('/' + rel), symlinks=True, dirs_exist_ok=True)
             upstream = (top / 'usr/share/applications/euro-office-euro-office.desktop').read_text()
         entry = re.sub(r'^Name=.*$', 'Name=Mak Office', upstream, count=1, flags=re.M)
-        entry = re.sub(r'^Comment=.*$', 'Comment=Documents, spreadsheets, presentations and PDFs (an Amerika LLC product)', entry, count=1, flags=re.M)
+        entry = re.sub(r'^Comment=.*$', 'Comment=Documents, spreadsheets, presentations and PDFs (an AltStack LLC product)', entry, count=1, flags=re.M)
         entry = entry.replace('Icon=euro-office-euro-office', 'Icon=amerika-office')  # the Amerika/MakOS icon themes ship this name
         entry = entry.replace('Exec=/usr/bin/euro-office-euro-office', 'Exec=/usr/bin/euro-office-euro-office')
         p.file('/usr/share/applications/mak-office.desktop', entry)
@@ -68,15 +68,15 @@ def register(b):
         if icon:
             p.copy(icon, '/usr/share/icons/hicolor/scalable/apps/amerika-office.svg')  # fallback outside the Amerika icon themes
         p.file('/usr/share/doc/mak-office/SOURCE.md',
-               'Mak Office is an Amerika LLC product built on the Euro-Office Desktop Editors (AGPL-3.0).\n\n'
+               'Mak Office is an AltStack LLC product built on the Euro-Office Desktop Editors (AGPL-3.0).\n\n'
                f"Upstream release: {lock['name']} {lock['version']} ({lock['tag']}), arm64.\n"
                f"Package pinned by SHA-256 {lock['sha256']}\n\n"
                'The program in /opt/euro-office is the upstream build, unmodified. Corresponding source (AGPL-3.0 section 6):\n'
                + ''.join(f'  {u} (tag {lock["tag"]})\n' for u in lock['source'])
-               + '\nAmerika LLC packaging sources: https://github.com/danecohn/amerikasocial (amerika-os/tools/builders/makoffice.py).\n'
+               + '\nAltStack LLC packaging sources: https://github.com/danecohn/amerikasocial (amerika-os/tools/builders/makoffice.py).\n'
                'Upstream licence texts: /opt/euro-office/euro-office/LICENSE.txt and /usr/share/licenses.\n'
                'Mak Office is not affiliated with or endorsed by the Euro-Office project, Ascensio System SIA or ONLYOFFICE.\n')
-        p.copyright('Mak Office packaging, launcher entries and icon: Copyright Amerika LLC, GPL-3.0-only.\n'
+        p.copyright('Mak Office packaging, launcher entries and icon: Copyright AltStack LLC, GPL-3.0-only.\n'
                     'The editors (Euro-Office Desktop Editors) are AGPL-3.0-only; their copyright and licence notices are kept unchanged in\n'
                     '/opt/euro-office/euro-office/LICENSE.txt and /usr/share/licenses. See SOURCE.md for the corresponding source.\n')
         return p
@@ -85,7 +85,7 @@ def register(b):
         p = b.Pkg('amerika-office', '0.3.0-1',
                   'Transitional package: Amerika Office is now Mak Office\nInstalls mak-office. This package can be removed afterwards.',
                   arch='all', depends='mak-office (>= 0.3.0-1)', section='oldlibs')
-        p.copyright('Copyright Amerika LLC, GPL-3.0-only.\n')
+        p.copyright('Copyright AltStack LLC, GPL-3.0-only.\n')
         return p
 
     return {'mak-office': mak_office, 'amerika-office': amerika_office}  # overrides the old hosted-portal wrapper of the same name

@@ -9,7 +9,7 @@ def register(b):
     def build():
         src = b.OS / 'claude'
         p = b.Pkg('amerika-claude', b.DE_VERSION,
-                  'Skills and plugin that let Claude operate Amerika OS\nEleven skills, slash commands and the amerika MCP registration for '
+                  'Skills and plugin that let Claude operate AltStack Desktop\nEleven skills, slash commands and the amerika MCP registration for '
                   'Claude Desktop and Claude Code, plus the amerika-claude command to install them (with backup and undo), export them as '
                   'zips for the Skills upload, and check the setup.\nNothing is installed into your home folder until you run '
                   '"amerika-claude install" or press the button in Settings > AI.',
@@ -20,6 +20,6 @@ def register(b):
         p.copy(src / 'AMERIKA.md', '/usr/share/amerika-claude/AMERIKA.md')
         p.copy(src / 'bin/amerika-claude', '/usr/bin/amerika-claude', 0o755)
         p.copy(b.ROOT / 'docs/claude-os/skills.md', '/usr/share/doc/amerika-claude/skills.md')
-        p.copyright('Amerika Claude skills, Copyright Amerika LLC, GPL-3.0-only.\n')
+        p.copyright('Amerika Claude skills, Copyright AltStack LLC, GPL-3.0-only.\n')
         return p
     return {'amerika-claude': build}

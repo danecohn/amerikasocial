@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=Amerika Sprite
+Name=AltStack Sprite
 GenericName=Pixel Art Editor
 Comment=Pixel-art editor and animator with an AI sprite builder
 Exec=amerika-sprite %F

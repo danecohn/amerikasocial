@@ -20,9 +20,9 @@ to CC0-1.0 for redistribution.
 | `src/makos/theme/glass.css` | Original CSS gradients, shadows and glass controls | GPL-3.0-only | MakOS contributors |
 | `src/makos/theme/decoration/contents/ui/*.qml` | Original QML using public decoration API conventions | GPL-3.0-only | MakOS contributors |
 | DejaVu Sans | Ubuntu `fonts-dejavu-core`; not bundled | Bitstream Vera / DejaVu font licences; `/usr/share/doc/fonts-dejavu-core/copyright` | DejaVu contributors / Bitstream |
-| `src/makos/makos/{windows.py,shell/layer.py,shell/tray.py,backends/*.py}` | Existing Amerika OS plumbing, copied/adapted | GPL-3.0-only | Amerika LLC; MakOS adaptations |
-| `src/makos/shell-host.c`, packaging utilities | Existing dedicated shell host and package builder, adapted | GPL-3.0-only | Amerika LLC; MakOS adaptations |
-| `src/makos/compat/` Studio adapters | Existing Studio, Render, Engine, Sprite, Box sources, cosmetic copies | Existing GPL-3.0 / MIT notices under `compat/notices` | Amerika LLC and upstream contributors |
+| `src/makos/makos/{windows.py,shell/layer.py,shell/tray.py,backends/*.py}` | Existing AltStack Desktop plumbing, copied/adapted | GPL-3.0-only | AltStack LLC; MakOS adaptations |
+| `src/makos/shell-host.c`, packaging utilities | Existing dedicated shell host and package builder, adapted | GPL-3.0-only | AltStack LLC; MakOS adaptations |
+| `src/makos/compat/` Studio adapters | Existing Studio, Render, Engine, Sprite, Box sources, cosmetic copies | Existing GPL-3.0 / MIT notices under `compat/notices` | AltStack LLC and upstream contributors |
 | `compat/box/beepbox*` | Existing bundled BeepBox engine, not newly downloaded | MIT; retained notices | John Nesky / BeepBox contributors |
 | `compat/render/splash.png` | Original text composition with DejaVu Sans | GPL-3.0-only; font licence above | MakOS contributors |
 

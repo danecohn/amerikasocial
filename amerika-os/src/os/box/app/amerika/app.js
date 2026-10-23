@@ -1,4 +1,4 @@
-/* AmerikaBox: start-up, toolbar, file handling, autosave, export dialogs. Glues BeepBox's editor to the Amerika layer. */
+/* AltStack Box: start-up, toolbar, file handling, autosave, export dialogs. Glues BeepBox's editor to the Amerika layer. */
 (function (root) {
 	"use strict";
 	const NS = (root.Amerika = root.Amerika || {});
@@ -108,7 +108,7 @@
 	}
 	async function openFile(file) {
 		if (!file) return;
-		if (file.binary) { toast("That is an audio/MIDI file; AmerikaBox opens .json and .beepbox songs.", true); return; }
+		if (file.binary) { toast("That is an audio/MIDI file; AltStack Box opens .json and .beepbox songs.", true); return; }
 		if (!confirmDiscard()) return;
 		try {
 			const song = parseSongText(file.data);
@@ -210,7 +210,7 @@
 					try { return JSON.parse(await shell.readProject("exports/.jobs/" + id + ".result.json", false)); } catch (e) { return { ok: false, error: "unreadable helper result" }; }
 				}
 				const picked = names.indexOf(id + ".working.json") >= 0;
-				if (!picked && Date.now() - t0 > 6000) return { ok: false, error: "no Ogg helper is running (it needs ffmpeg; start AmerikaBox from its launcher). The WAV and metadata were written; run amerika-box-ogg on the WAV later." };
+				if (!picked && Date.now() - t0 > 6000) return { ok: false, error: "no Ogg helper is running (it needs ffmpeg; start AltStack Box from its launcher). The WAV and metadata were written; run amerika-box-ogg on the WAV later." };
 				if (Date.now() - t0 > 180000) return { ok: false, error: "the Ogg helper timed out" };
 			}
 		};
@@ -229,11 +229,11 @@
 	function aboutDialog() {
 		const A = NS.about;
 		modal(function (card, close) {
-			card.appendChild(h("h2", { text: "AmerikaBox" }));
-			card.appendChild(h("p", { text: "AmerikaBox " + A.appVersion + " is a desktop copy of BeepBox " + A.beepboxVersion + " with the Amerika Composer, an AI music assistant that writes and edits songs through BeepBox's own song format." }));
-			card.appendChild(h("p", { text: "BeepBox is created by John Nesky and contributors, and is distributed under the MIT licence (reproduced below). AmerikaBox is not affiliated with, or endorsed by, BeepBox or John Nesky. The hosted website beepbox.co is a separate service." }));
-			card.appendChild(h("p", { text: "Source: github.com/johnnesky/beepbox at commit " + A.beepboxCommit.slice(0, 10) + ". Amerika additions: Copyright Amerika LLC. The MP3 encoder (lamejs, based on LAME) is used under the LGPL." }));
-			card.appendChild(h("p", { text: "Your songs stay on this computer. The composer talks only to the local Amerika Studio bridge; no API key is stored in this app, and BeepBox's online features (URL shortener, embeds, service worker) are removed." }));
+			card.appendChild(h("h2", { text: "AltStack Box" }));
+			card.appendChild(h("p", { text: "AltStack Box " + A.appVersion + " is a desktop copy of BeepBox " + A.beepboxVersion + " with the Composer, an AI music assistant that writes and edits songs through BeepBox's own song format." }));
+			card.appendChild(h("p", { text: "BeepBox is created by John Nesky and contributors, and is distributed under the MIT licence (reproduced below). AltStack Box is not affiliated with, or endorsed by, BeepBox or John Nesky. The hosted website beepbox.co is a separate service." }));
+			card.appendChild(h("p", { text: "Source: github.com/johnnesky/beepbox at commit " + A.beepboxCommit.slice(0, 10) + ". Amerika additions: Copyright AltStack LLC. The MP3 encoder (lamejs, based on LAME) is used under the LGPL." }));
+			card.appendChild(h("p", { text: "Your songs stay on this computer. The composer talks only to the local Studio bridge; no API key is stored in this app, and BeepBox's online features (URL shortener, embeds, service worker) are removed." }));
 			card.appendChild(h("pre", { text: A.beepboxLicense }));
 			const ok = h("button", { class: "am-btn am-accent", text: "Close" }); ok.addEventListener("click", close);
 			card.appendChild(h("div", { class: "am-actions" }, [ok]));
@@ -337,7 +337,7 @@
 			else if (k === "n" && !ev.shiftKey) { ev.preventDefault(); ev.stopImmediatePropagation(); newSong(); }
 		}, true);
 		// links must never navigate the window (the shell blocks them anyway)
-		document.addEventListener("click", function (ev) { const a = ev.target && ev.target.closest && ev.target.closest("a[href]"); if (a && /^https?:/i.test(a.getAttribute("href"))) { ev.preventDefault(); toast("External links are disabled in AmerikaBox."); } }, true);
+		document.addEventListener("click", function (ev) { const a = ev.target && ev.target.closest && ev.target.closest("a[href]"); if (a && /^https?:/i.test(a.getAttribute("href"))) { ev.preventDefault(); toast("External links are disabled in AltStack Box."); } }, true);
 	}
 
 	root.addEventListener("amerika-editor-ready", init);

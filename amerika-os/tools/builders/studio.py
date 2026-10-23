@@ -13,7 +13,7 @@ def register(b):
     def build():
         src = b.OS / 'studio'
         p = b.Pkg('amerika-studio', b.DE_VERSION,
-                  'Amerika Studio\nThe shared layer of the Amerika OS Developer Edition: one Anthropic key manager (login keyring), '
+                  'Amerika Studio\nThe shared layer of the AltStack Desktop Developer Edition: one Anthropic key manager (login keyring), '
                   'a loopback bridge so Studio apps never see the key, the Studio hub, a WebKitGTK shell for Amerika Sprite and AmerikaBox, '
                   'and an MCP server that lets Amerika Agent drive Amerika Render, Engine, Sprite and Box.',
                   arch='all', title='Amerika Studio', category='Development', section='devel',
@@ -49,7 +49,7 @@ def register(b):
                               '  if command -v deb-systemd-invoke >/dev/null 2>&1; then\n'
                               '    deb-systemd-invoke --user stop amerika-studio-bridge.service || true\n'
                               '  fi\nfi\nexit 0\n')
-        p.copyright('Copyright Amerika LLC, GPL-3.0-only.\nSee /usr/share/common-licenses/GPL-3.\n'
+        p.copyright('Copyright AltStack LLC, GPL-3.0-only.\nSee /usr/share/common-licenses/GPL-3.\n'
                     'Blender, Godot and BeepBox keep their own licences; see /usr/share/doc/amerika-studio/NOTICE.\n')
         return p
     return {'amerika-studio': build}

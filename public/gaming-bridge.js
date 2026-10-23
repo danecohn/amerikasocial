@@ -1,4 +1,4 @@
-/* Makk Gaming SDK v1. Authentication remains in the parent website. */
+/* AltStack Gaming SDK v1. Authentication remains in the parent website. */
 (()=>{'use strict';if(window.AmerikaCloud)return;
  // Sandboxed games cannot install service workers. Hide the unavailable API from engine feature detection.
  try{delete Navigator.prototype.serviceWorker;}catch{}

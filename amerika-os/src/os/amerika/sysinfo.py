@@ -86,8 +86,8 @@ def collect():
 
 def report(info):
     """Plain-text report for the clipboard. Deliberately leaves out the host name and any identifier."""
-    lines = ['Amerika OS system information', '',
-             f"Amerika OS: {info['amerika_version']}", f"Base system: {info['os']}", f"Kernel: {info['kernel']} ({info['arch']})",
+    lines = ['AltStack Desktop system information', '',
+             f"AltStack Desktop: {info['amerika_version']}", f"Base system: {info['os']}", f"Kernel: {info['kernel']} ({info['arch']})",
              f"Device: {info['model']}", f"Firmware: {info['firmware']}",
              f"Processor: {info['cpu']['name']} ({info['cpu']['threads']} threads)", f"Memory: {info['memory']['text']}",
              'Graphics: ' + '; '.join(info['gpus'])]

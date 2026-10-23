@@ -20,6 +20,6 @@ def register(b):
         # Removing the package must never leave a PAM line pointing at a missing helper.
         p.scripts['prerm'] = ('#!/bin/sh\nset -e\nif [ "$1" = remove ] || [ "$1" = purge ]; then\n'
                               '  /usr/libexec/amerika/amerika-phone-helper disable >/dev/null 2>&1 || true\nfi\nexit 0\n')
-        p.copyright('Amerika Phone Key, Copyright Amerika LLC, GPL-3.0-only. The iPhone app source (Swift) is under the same licence.\n')
+        p.copyright('Amerika Phone Key, Copyright AltStack LLC, GPL-3.0-only. The iPhone app source (Swift) is under the same licence.\n')
         return p
     return {'amerika-phone': build}

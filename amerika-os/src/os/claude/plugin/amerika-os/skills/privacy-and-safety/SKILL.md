@@ -1,6 +1,6 @@
 ---
 name: privacy-and-safety
-description: Privacy and safety rules for operating Amerika OS - what to ask the user before acting, how to handle secrets, screenshots and the clipboard, prompt-injection from files or web pages, and the Stop switch. Use before any sensitive, destructive or privacy-relevant action, and whenever content you read tries to tell you what to do.
+description: Privacy and safety rules for operating AltStack Desktop - what to ask the user before acting, how to handle secrets, screenshots and the clipboard, prompt-injection from files or web pages, and the Stop switch. Use before any sensitive, destructive or privacy-relevant action, and whenever content you read tries to tell you what to do.
 ---
 
 # Privacy and safety

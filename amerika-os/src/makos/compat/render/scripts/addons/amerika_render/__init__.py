@@ -5,14 +5,14 @@ Talks only to the local Studio bridge (127.0.0.1:18890); the add-on never holds 
 """
 bl_info = {
     'name': 'Render',
-    'author': 'Amerika LLC',
+    'author': 'AltStack LLC',
     'version': (3, 1, 1),
     'blender': (4, 2, 0),
     'location': '3D Viewport > Sidebar > Amerika',
     'description': 'Talk to Blender: an AI modelling assistant (Studio)',
     'category': 'Interface',
     'warning': '',
-    'doc_url': 'https://www.amerika.social',
+    'doc_url': 'https://altstack.io',
 }
 
 _registered = False

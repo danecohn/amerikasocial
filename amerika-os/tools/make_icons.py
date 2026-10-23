@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generates the Amerika OS icon theme: retro-futurist "horizon cartridge" app icons and symbolic panel icons.
+"""Generates the AltStack Desktop icon theme: retro-futurist "horizon cartridge" app icons and symbolic panel icons.
 
 Every app icon is a chrome-rimmed glass tile with a neon-lit glyph, a perspective grid and a setting sun, in its
 own colourway. Output: src/os/icons/AmerikaOS/{index.theme,scalable/apps/*.svg,scalable/status/*.svg}
@@ -190,8 +190,8 @@ def symbolic(body):
 
 
 INDEX = '''[Icon Theme]
-Name=Amerika OS
-Comment=Amerika OS retro-futurist icon theme
+Name=AltStack Desktop
+Comment=AltStack Desktop retro-futurist icon theme
 Inherits=Adwaita,hicolor
 Directories=scalable/apps,scalable/status
 

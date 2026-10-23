@@ -653,7 +653,7 @@ def cmd_activity(args, paths):
 
 # ------------------------------------------------------------------------------------------------------ parser
 def build_parser():
-    p = argparse.ArgumentParser(prog='amerika-agent', description='Amerika Agent: the OpenClaw-based agent of Amerika OS.')
+    p = argparse.ArgumentParser(prog='amerika-agent', description='Amerika Agent: the OpenClaw-based agent of AltStack Desktop.')
     p.add_argument('--version', action='version', version=f'amerika-agent {__version__}')
     sub = p.add_subparsers(dest='cmd', required=True, metavar='command')
 

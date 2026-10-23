@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Renders the Amerika OS Plymouth boot theme images (logo + wordmark, neon throbber) into src/os/boot/amerika."""
+"""Renders the AltStack Desktop Plymouth boot theme images (logo + wordmark, neon throbber) into src/os/boot/amerika."""
 import math
 from pathlib import Path
 

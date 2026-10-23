@@ -1,6 +1,6 @@
 ---
 name: operate-desktop
-description: Operate the Amerika OS desktop - open and close apps, arrange windows, switch virtual desktops, use the launcher, the Caster, the home view and the top bar. Use when the user asks to open, find, move, tile, minimize, close or switch things, or to change how the bar looks.
+description: Operate the AltStack Desktop desktop - open and close apps, arrange windows, switch virtual desktops, use the launcher, the Caster, the home view and the top bar. Use when the user asks to open, find, move, tile, minimize, close or switch things, or to change how the bar looks.
 ---
 
 # Operate the desktop

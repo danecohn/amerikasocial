@@ -1,5 +1,5 @@
-/* AmerikaBox: the "Amerika Composer" side panel and its tool-use loop.
- * Talks only to the local Amerika Studio bridge through window.amerikaStudio (AIClient / request). No API key lives here. */
+/* AltStack Box: the "Composer" side panel and its tool-use loop.
+ * Talks only to the local Studio bridge through window.amerikaStudio (AIClient / request). No API key lives here. */
 (function (root) {
 	"use strict";
 	const NS = (root.Amerika = root.Amerika || {});
@@ -13,9 +13,9 @@
 
 	function friendly(e) {
 		const code = e && e.code;
-		if (code === "no_key") return { text: "No Anthropic key is set up yet. Open Amerika Studio, choose \"Set up Anthropic key\" (or use the Keys... button in this window's toolbar), then press Send again.", key: true };
-		if (code === "key_rejected") return { text: "Anthropic rejected the key. Check it in Amerika Studio.", key: true };
-		if (code === "bridge_down" || code === "bridge_auth") return { text: "The Amerika Studio bridge is not reachable. Open Amerika Studio (or run: amerika-studio ensure) and try again.", key: true };
+		if (code === "no_key") return { text: "No Anthropic key is set up yet. Open Studio, choose \"Set up Anthropic key\" (or use the Keys... button in this window's toolbar), then press Send again.", key: true };
+		if (code === "key_rejected") return { text: "Anthropic rejected the key. Check it in Studio.", key: true };
+		if (code === "bridge_down" || code === "bridge_auth") return { text: "The Studio bridge is not reachable. Open Studio (or run: amerika-studio ensure) and try again.", key: true };
 		if (code === "budget") return { text: (e.message || "The daily token budget is used up.") };
 		if (code === "rate_limit" || code === "overloaded") return { text: e.message };
 		return { text: (e && e.message) || String(e) };
@@ -63,7 +63,7 @@
 		this.root = root;
 		root.textContent = "";
 		const head = el("div", "ac-head");
-		head.appendChild(el("div", "ac-title", "Amerika Composer"));
+		head.appendChild(el("div", "ac-title", "Composer"));
 		this.statusDot = el("span", "ac-dot");
 		this.statusDot.title = "Bridge status";
 		head.appendChild(this.statusDot);
@@ -144,7 +144,7 @@
 		this.statusDot.className = "ac-dot";
 		this.modelSel.textContent = "";
 		const auto = el("option", null, "auto model"); auto.value = ""; this.modelSel.appendChild(auto);
-		if (!S || !S.request) { this.statusDot.classList.add("bad"); this.statusDot.title = "Not running inside the Amerika Studio shell"; return null; }
+		if (!S || !S.request) { this.statusDot.classList.add("bad"); this.statusDot.title = "Not running inside the Studio shell"; return null; }
 		try {
 			const r = await S.request("/v1/status");
 			if (r.status !== 200) throw new Error("status " + r.status);
@@ -155,12 +155,12 @@
 			(st.models || []).forEach((m) => { const id = typeof m === "string" ? m : m.id; const o = el("option", null, id); o.value = id; this.modelSel.appendChild(o); });
 			let saved = ""; try { saved = localStorage.getItem("amerika.model") || ""; } catch (e) { /* ignore */ }
 			if (saved && Array.prototype.some.call(this.modelSel.options, function (o) { return o.value === saved; })) this.modelSel.value = saved;
-			if (!hasKey && !this.warnedKey) { this.warnedKey = true; this.addNote("No Anthropic key is set up yet. Open Amerika Studio and choose \"Set up Anthropic key\". The key stays in the system keyring; this app never sees it.", "ac-warn"); }
+			if (!hasKey && !this.warnedKey) { this.warnedKey = true; this.addNote("No Anthropic key is set up yet. Open Studio and choose \"Set up Anthropic key\". The key stays in the system keyring; this app never sees it.", "ac-warn"); }
 			return st;
 		} catch (e) {
 			this.statusDot.classList.add("bad");
 			this.statusDot.title = "Studio bridge unreachable";
-			if (!this.warnedBridge) { this.warnedBridge = true; this.addNote("The Amerika Studio bridge is not reachable, so the composer is offline. Editing music by hand works as usual.", "ac-warn"); }
+			if (!this.warnedBridge) { this.warnedBridge = true; this.addNote("The Studio bridge is not reachable, so the composer is offline. Editing music by hand works as usual.", "ac-warn"); }
 			return null;
 		}
 	};

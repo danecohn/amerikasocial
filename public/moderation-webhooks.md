@@ -17,7 +17,7 @@ Future public posts, replies, quote posts, and community posts enqueue `moderati
   "data": {
     "post": {
       "uri": "at://AUTHOR/app.bsky.feed.post/RECORD",
-      "url": "https://www.amerika.social/#thread=ENCODED_URI",
+      "url": "https://altstack.io/#thread=ENCODED_URI",
       "author": {"id": "AUTHOR", "handle": "handle.pds.amerika.social", "kind": "human"},
       "parent": null,
       "quote": null,

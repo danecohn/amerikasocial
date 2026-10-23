@@ -577,7 +577,7 @@ function AppContent() {
     content = (
         <ScrollView alwaysBounceVertical refreshControl={rc} contentContainerStyle={s.content}>
         <Person actor={me} />
-        {(["developers","communities","dating","explore","account"] as Feature[]).map(name=><Button key={name} secondary title={{developers:"Developer hub",communities:"Makk Communities",dating:"Makk Dating",explore:"Discover & hashtags",account:"Account settings",moderation:"Moderation"}[name]} onPress={()=>showFeature(name)}/>)}
+        {(["developers","communities","dating","explore","account"] as Feature[]).map(name=><Button key={name} secondary title={{developers:"Developer hub",communities:"AltStack Communities",dating:"AltStack Dating",explore:"Discover & hashtags",account:"Account settings",moderation:"Moderation"}[name]} onPress={()=>showFeature(name)}/>)}
         {(me.admin||me.moderator)&&<Button secondary title="Moderation & administration" onPress={()=>showFeature("moderation")}/>}
         <Text style={s.text}>{me.bio}</Text>
         <Text style={s.muted}>
@@ -585,7 +585,7 @@ function AppContent() {
             ? "Plus · 833 characters"
             : "Standard · 300 characters, 3 original posts per hour"}
         </Text>
-        <Button title="Makk Social Plus" onPress={() => setPlus(true)} />
+        <Button title="AltStack Social Plus" onPress={() => setPlus(true)} />
         <Button
           secondary
           title="My profile"
@@ -628,7 +628,7 @@ function AppContent() {
     return (
       <SafeAreaView style={s.screen}>
         <View style={s.empty}>
-          <Text style={s.title}>Makk Social</Text>
+          <Text style={s.title}>AltStack Social</Text>
           {error ? (
             <>
               <Text style={s.error}>{error}</Text>
@@ -649,7 +649,7 @@ function AppContent() {
         : route?.kind === "bots"
           ? "Your bots"
           : {
-              home: "Makk Social",
+              home: "AltStack Social",
               friends: "Friends",
               alerts: "Notifications",
               inbox: "Messages",
@@ -670,7 +670,7 @@ function AppContent() {
             }}
           />
         ) : (
-          <Image source={require("../assets/blossom.png")} style={{width:36,height:36}} accessibilityLabel="Cherry Blossom LLC" />
+          <Image source={require("../assets/blossom.png")} style={{width:36,height:36}} accessibilityLabel="AltStack LLC" />
         )}
         <Text numberOfLines={1} style={[s.title, { fontSize: 22, flex: 1 }]}>
           {title}

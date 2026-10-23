@@ -1,4 +1,4 @@
-/* AmerikaBox: thin adapter over window.amerikaStudio (the amerika-studio-webview JS bridge, see docs/studio/webview.md).
+/* AltStack Box: thin adapter over window.amerikaStudio (the amerika-studio-webview JS bridge, see docs/studio/webview.md).
  * Outside the shell (plain browser, tests) it falls back to in-memory storage and blob downloads so the editor still works. */
 (function (root) {
 	"use strict";
@@ -72,7 +72,7 @@
 		async recent() { return S ? S.recent.list() : []; },
 		async recentAdd(p) { return S ? S.recent.add(p) : null; },
 		async readFile(path, binary) { return S ? S.fs.readFile(path, { binary: !!binary }) : null; },
-		setTitle(t) { if (S) S.window.setTitle(t).catch(function () {}); else document.title = t + " - AmerikaBox"; },
+		setTitle(t) { if (S) S.window.setTitle(t).catch(function () {}); else document.title = t + " - AltStack Box"; },
 		setDirty(d) { if (S) S.window.setDirty(!!d).catch(function () {}); },
 	};
 	NS.shell = shell;

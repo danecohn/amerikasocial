@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the Amerika OS GRUB theme assets in flavor/branding/grub-theme.
+"""Generate the AltStack Desktop GRUB theme assets in flavor/branding/grub-theme.
 
     python3 flavor/tools/make_grub_theme.py [--no-fonts]
 
@@ -54,7 +54,7 @@ def fonts():
     return True
 
 
-THEME = '''# Amerika OS GRUB theme (retro-futurist). Not enabled automatically.
+THEME = '''# AltStack Desktop GRUB theme (retro-futurist). Not enabled automatically.
 desktop-image: "background.png"
 desktop-color: "#05040a"
 title-text: ""

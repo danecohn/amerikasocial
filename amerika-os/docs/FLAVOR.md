@@ -1,6 +1,6 @@
 # Amerika Ubuntu flavour development
 
-Amerika OS is an independent desktop built on **Ubuntu 26.10 ARM64**, using KWin as compositor and its own GTK shell.
+AltStack Desktop is an independent desktop built on **Ubuntu 26.10 ARM64**, using KWin as compositor and its own GTK shell.
 It is not an officially recognised Ubuntu flavour. `/etc/os-release` remains Ubuntu's; desktop identity is in
 `/usr/share/amerika-os/flavour`. No x86-64, Surface ISO, Secure Boot or completed installer support is asserted.
 

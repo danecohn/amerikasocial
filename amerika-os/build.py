@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Build the Amerika OS Debian packages and the signed APT repository.
+"""Build the AltStack Desktop Debian packages and the signed APT repository.
 
     build.py [--only name,name] [--sign-only]
 
 Inputs: ./src and the verified application archives (see APP_ARCHIVES).
 Outputs: ./dist/packages/*.deb and ./dist/apt (the repository tree that Amerika
-Social serves at https://www.amerika.social/apt).
+Social serves at https://altstack.io/apt).
 
 The repository signing key lives in $AMERIKA_SIGNING_HOME (default
 ~/.local/share/amerika-os-signing), never inside this tree. Create it once with
@@ -34,16 +34,16 @@ PKG_DIR = DIST / 'packages'
 APT_DIR = DIST / 'apt'
 OUTPUTS = Path(os.environ.get('AMERIKA_OUTPUTS', ROOT.parent.parent / 'outputs'))
 SIGN_HOME = Path(os.environ.get('AMERIKA_SIGNING_HOME', Path.home() / '.local/share/amerika-os-signing'))
-KEY_NAME = 'Amerika OS Archive Signing Key'
+KEY_NAME = 'AltStack Desktop Archive Signing Key'
 ARCH = 'arm64'
 SUITE = 'stable'
-MAINTAINER = 'Amerika LLC <noreply@amerika.social>'
-HOMEPAGE = 'https://www.amerika.social/downloads/os'
+MAINTAINER = 'AltStack LLC <noreply@amerika.social>'
+HOMEPAGE = 'https://altstack.io/downloads/os'
 SYSTEM_SHELL = Path('/usr/share/plasma/shells/org.kde.plasma.desktop')
 OS = SRC / 'os'
 BG_DIR = '/usr/share/backgrounds/amerika'
 THEME_OUT = OUTPUTS / 'Amerika-OS-theme'
-BASE_URL = 'https://www.amerika.social/apt'
+BASE_URL = 'https://altstack.io/apt'
 
 APP_ARCHIVES = {
     'social': ('AmerikaSocial-Linux-ARM64.tar.gz', None),
@@ -206,8 +206,8 @@ def desktop_file(pkg, text, name):
 # --------------------------------------------------------------------------- packages
 
 def build_keyring():
-    p = Pkg('amerika-repo-keyring', DE_VERSION, 'Amerika OS package repository signing key and APT source\n'
-            'Installs the signing key and the APT source for https://www.amerika.social/apt.',
+    p = Pkg('amerika-repo-keyring', DE_VERSION, 'AltStack Desktop package repository signing key and APT source\n'
+            'Installs the signing key and the APT source for https://altstack.io/apt.',
             title='Amerika Repository', category='System', section='misc')
     key = ROOT / 'flavor/keys/amerika-archive-keyring.gpg'
     if not key.is_file():
@@ -222,31 +222,31 @@ def build_keyring():
            '// The edge proxy in front of www.amerika.social rejects pipelined HTTP requests, which APT uses by default.\n'
            'Acquire::http::www.amerika.social::Pipeline-Depth "0";\n'
            'Acquire::https::www.amerika.social::Pipeline-Depth "0";\n')
-    p.copyright('Amerika OS repository key and APT source.\nCopyright Amerika LLC. Licensed GPL-3.0-only.\n'
+    p.copyright('AltStack Desktop repository key and APT source.\nCopyright AltStack LLC. Licensed GPL-3.0-only.\n'
                 'See /usr/share/common-licenses/GPL-3.\n')
     return p
 
 
 def build_icons():
-    p = Pkg('amerika-icon-theme', DE_VERSION, 'Amerika OS icon theme\nRetro-futurist neon cartridge app icons and panel icons, plus the matte AmerikaTesla app icon set.',
+    p = Pkg('amerika-icon-theme', DE_VERSION, 'AltStack Desktop icon theme\nRetro-futurist neon cartridge app icons and panel icons, plus the matte AmerikaTesla app icon set.',
             depends='adwaita-icon-theme', title='Amerika Icons', category='Appearance', section='gnome')
     shutil.copytree(OS / 'icons/AmerikaOS', p.path('/usr/share/icons/AmerikaOS'))
     shutil.copytree(OS / 'icons/AmerikaTesla', p.path('/usr/share/icons/AmerikaTesla'))
     p.scripts['postinst'] = ('#!/bin/sh\nset -e\nif [ "$1" = configure ] && command -v gtk-update-icon-cache >/dev/null;'
                              ' then gtk-update-icon-cache -q -f /usr/share/icons/AmerikaOS || true; gtk-update-icon-cache -q -f /usr/share/icons/AmerikaTesla || true; fi\nexit 0\n')
-    p.copyright('Icon theme generated for Amerika OS by Amerika LLC (tools/make_icons.py); GPL-3.0-only.\n'
+    p.copyright('Icon theme generated for AltStack Desktop by AltStack LLC (tools/make_icons.py); GPL-3.0-only.\n'
                 'The icons named claude-desktop and chatgpt are generic stand-ins in the Amerika style; they are not\n'
                 'the logos of Anthropic or OpenAI, whose applications keep their own window icons.\n')
     return p
 
 
 def build_theme():
-    p = Pkg('amerika-theme', DE_VERSION, 'Amerika OS theme\nRetro-futurist wallpapers and the Amerika Retro colour scheme.',
+    p = Pkg('amerika-theme', DE_VERSION, 'AltStack Desktop theme\nRetro-futurist wallpapers and the Amerika Retro colour scheme.',
             title='Amerika Theme', category='Appearance')
     for name in ('horizon', 'grid', 'dusk'):
         p.copy(OS / f'wallpapers/{name}.png', f'{BG_DIR}/{name}.png')
     p.copy(OS / 'color-schemes/AmerikaRetro.colors', '/usr/share/color-schemes/AmerikaRetro.colors')
-    p.copyright('Amerika OS theme, Copyright Amerika LLC, GPL-3.0-only.\n')
+    p.copyright('AltStack Desktop theme, Copyright AltStack LLC, GPL-3.0-only.\n')
     return p
 
 
@@ -257,7 +257,7 @@ def build_shell():
             'upower', 'systemd', 'xdg-desktop-portal-gtk', 'fonts-inter', 'fonts-jetbrains-mono', 'librsvg2-common',
             f'amerika-icon-theme (>= {DE_VERSION})', f'amerika-theme (>= {DE_VERSION})']
     p = Pkg('amerika-desktop-shell', DE_VERSION,
-            'Amerika Shell and Settings\nAmerika OS\'s own desktop shell (top bar, dock, launcher, notifications), its settings app, and the '
+            'Amerika Shell and Settings\nAltStack Desktop\'s own desktop shell (top bar, dock, launcher, notifications), its settings app, and the '
             'system-control server\nthat lets the Claude and ChatGPT apps operate the computer under your supervision.',
             arch='arm64', depends=', '.join(deps), recommends='nautilus, ptyxis, gnome-text-editor, wl-clipboard, playerctl, network-manager-gnome, bluez, powerdevil, orca, gstreamer1.0-tools, gstreamer1.0-plugins-good', title='Amerika Shell')
     host = DIST / 'native/amerika-shell-host'
@@ -273,13 +273,13 @@ def build_shell():
     for name in ('amerika-shell', 'amerika-settings', 'amerika-mcp', 'amerika-first-run', 'amerika-splash'):
         p.copy(OS / 'bin' / name, f'/usr/bin/{name}', 0o755)
     p.copy(OS / 'applications/org.amerika.Shell.desktop', '/usr/share/applications/org.amerika.Shell.desktop')
-    p.copyright('Amerika Shell, Copyright Amerika LLC, GPL-3.0-only.\nUses GTK 4, gtk4-layer-shell and KWin (as the compositor) '
+    p.copyright('Amerika Shell, Copyright AltStack LLC, GPL-3.0-only.\nUses GTK 4, gtk4-layer-shell and KWin (as the compositor) '
                 'under their own licenses.\n')
     return p
 
 
 def build_session():
-    p = Pkg('amerika-session', DE_VERSION, 'Amerika OS login session\nAdds "Amerika OS" to the login screen. KWin runs as the compositor; '
+    p = Pkg('amerika-session', DE_VERSION, 'AltStack Desktop login session\nAdds "AltStack Desktop" to the login screen. KWin runs as the compositor; '
             'everything else is Amerika\'s own shell.\nOther sessions are not changed.',
             depends=f'amerika-desktop-shell (>= {DE_VERSION}), kwin-wayland', title='Amerika Session')
     p.copy(OS / 'session/amerika-session', '/usr/bin/amerika-session', 0o755)
@@ -289,12 +289,12 @@ def build_session():
     p.copy(OS / 'session/50-amerika-restore-meta.sh', '/etc/xdg/plasma-workspace/env/50-amerika-restore-meta.sh')
     p.copy(OS / 'session/amerika-session.target', '/usr/lib/systemd/user/amerika-session.target')
     p.copy(OS / 'session/amerika.desktop', '/usr/share/wayland-sessions/amerika.desktop')
-    p.copyright('Amerika OS session files, Copyright Amerika LLC, GPL-3.0-only.\n')
+    p.copyright('AltStack Desktop session files, Copyright AltStack LLC, GPL-3.0-only.\n')
     return p
 
 
 def build_login():
-    p = Pkg('amerika-login', DE_VERSION, 'Amerika OS login screen\nA retro-futurist SDDM login theme. Nothing changes until you switch it on in '
+    p = Pkg('amerika-login', DE_VERSION, 'AltStack Desktop login screen\nA retro-futurist SDDM login theme. Nothing changes until you switch it on in '
             'Amerika Settings (or with "amerika-login enable");\nit can be switched off the same way, and falls back to the previous login '
             'screen by itself if SDDM cannot start.',
             depends='python3, sddm, kwin-wayland, pkexec, qml6-module-qt5compat-graphicaleffects, qml6-module-qtquick-controls, fonts-inter, '
@@ -306,12 +306,12 @@ def build_login():
     p.copy(OS / 'login/amerika-login-fallback.service', '/usr/lib/systemd/system/amerika-login-fallback.service')
     p.scripts['prerm'] = ('#!/bin/sh\nset -e\nif [ "$1" = remove ] || [ "$1" = purge ]; then\n'
                           '  /usr/libexec/amerika/amerika-login-helper disable >/dev/null 2>&1 || true\nfi\nexit 0\n')
-    p.copyright('Amerika OS login theme, Copyright Amerika LLC, GPL-3.0-only. Uses SDDM (GPL-2.0-or-later) and Qt.\n')
+    p.copyright('AltStack Desktop login theme, Copyright AltStack LLC, GPL-3.0-only. Uses SDDM (GPL-2.0-or-later) and Qt.\n')
     return p
 
 
 def build_boot():
-    p = Pkg('amerika-boot', DE_VERSION, 'Amerika OS boot screen\nA retro-futurist Plymouth boot and shutdown screen that replaces the '
+    p = Pkg('amerika-boot', DE_VERSION, 'AltStack Desktop boot screen\nA retro-futurist Plymouth boot and shutdown screen that replaces the '
             'Ubuntu logo and hides the firmware logo once the kernel is up.\nNothing changes until you switch it on in Amerika Settings or with '
             '"amerika-boot enable"; "amerika-boot disable" restores the previous one.',
             depends='python3, plymouth, plymouth-theme-spinner, initramfs-tools, pkexec', title='Amerika Boot Screen', category='Appearance')
@@ -332,7 +332,7 @@ def build_boot():
     p.scripts['prerm'] = ('#!/bin/sh\nset -e\nif [ "$1" = remove ] || [ "$1" = purge ]; then\n'
                           '  /usr/libexec/amerika/amerika-boot-helper disable >/dev/null 2>&1 || true\n'
                           f'  update-alternatives --remove default.plymouth {alt} || true\nfi\nexit 0\n')
-    p.copyright('Amerika OS boot theme, Copyright Amerika LLC, GPL-3.0-only. Password-prompt and animation images are copied from '
+    p.copyright('AltStack Desktop boot theme, Copyright AltStack LLC, GPL-3.0-only. Password-prompt and animation images are copied from '
                 'plymouth-theme-spinner (GPL-2.0-or-later, see /usr/share/doc/plymouth-theme-spinner/copyright).\n')
     return p
 
@@ -344,7 +344,7 @@ def build_apps():
             title='Amerika Core Apps')
     for name in ('amerika-files', 'amerika-terminal', 'amerika-text', 'amerika-settings'):
         p.copy(OS / f'applications/{name}.desktop', f'/usr/share/applications/{name}.desktop')
-    p.copyright('Launchers, Copyright Amerika LLC, GPL-3.0-only.\nNautilus, Ptyxis and GNOME Text Editor are separate GNOME packages with '
+    p.copyright('Launchers, Copyright AltStack LLC, GPL-3.0-only.\nNautilus, Ptyxis and GNOME Text Editor are separate GNOME packages with '
                 'their own licenses (GPL-3.0-or-later).\n')
     return p
 
@@ -357,25 +357,25 @@ def build_software():
     p.copy(SRC / 'software/amerika-software-helper', '/usr/libexec/amerika-software-helper', 0o755)
     p.copy(SRC / 'software/org.amerika.software.policy', '/usr/share/polkit-1/actions/org.amerika.software.policy')
     p.copy(SRC / 'software/amerika-software.desktop', '/usr/share/applications/amerika-software.desktop')
-    p.copyright('Copyright Amerika LLC, GPL-3.0-only.\n')
+    p.copyright('Copyright AltStack LLC, GPL-3.0-only.\n')
     return p
 
 
 def build_social():
     root = extract(app_archive('social'), STAGE / '_payload-social')
-    p = Pkg('amerika-social', '1.0.0-1', 'Amerika Social native app\nThe native desktop client for Amerika Social.',
-            arch=ARCH, title='Amerika Social', category='Social')
+    p = Pkg('amerika-social', '1.0.0-1', 'AltStack Social native app\nThe native desktop client for AltStack Social.',
+            arch=ARCH, title='AltStack Social', category='Social')
     shutil.copytree(root, p.path('/opt/amerika/social'), symlinks=True, ignore=shutil.ignore_patterns(
         'install-linux.sh', 'amerika-social.desktop'))
     p.path('/opt/amerika/social/AmerikaSocial').chmod(0o755)
     p.file('/usr/bin/amerika-social', '#!/bin/sh\nexec /opt/amerika/social/AmerikaSocial "$@"\n', 0o755)
     p.depends = ', '.join(shlib_depends(p.root / 'opt/amerika/social') or ['libc6'])
-    desktop_file(p, '[Desktop Entry]\nName=Amerika Social\nComment=Why Can\'t We Be Friends?\nType=Application\n'
+    desktop_file(p, '[Desktop Entry]\nName=AltStack Social\nComment=Why Can\'t We Be Friends?\nType=Application\n'
                  'Exec=/usr/bin/amerika-social\nIcon=amerika-social\nTerminal=false\n'
                  'Categories=Network;InstantMessaging;\nStartupWMClass=AmerikaSocial\n', 'amerika-social')
     if icon_svg('amerika-social'):
         p.copy(icon_svg('amerika-social'), '/usr/share/icons/hicolor/scalable/apps/amerika-social.svg')
-    p.copyright('Amerika Social desktop, Copyright Amerika LLC, GPL-3.0-only.\n'
+    p.copyright('AltStack Social desktop, Copyright AltStack LLC, GPL-3.0-only.\n'
                 'Source: https://github.com/danecohn/AmerikaLinux\n'
                 'The bundle in /opt/amerika/social/_internal contains Python, Qt/PySide6 and other third-party\n'
                 'components under their own licenses; see THIRD-PARTY-NOTICES in that directory when present.\n')
@@ -384,10 +384,10 @@ def build_social():
 
 def build_venture():
     root = extract(app_archive('venture'), STAGE / '_payload-venture')
-    p = Pkg('amerika-venture', '158.0.1-amerika1', 'Amerika Venture browser\nAmerika LLC browser distribution based on '
+    p = Pkg('amerika-venture', '158.0.1-amerika1', 'Amerika Venture browser\nAltStack LLC browser distribution based on '
             'Mozilla Firefox 158.0.1 with Amerika branding. Updates arrive\nthrough this repository.',
             arch=ARCH, title='Amerika Venture', category='Internet',
-            provides='www-browser', homepage='https://www.amerika.social/downloads/venture')
+            provides='www-browser', homepage='https://altstack.io/downloads/venture')
     shutil.copytree(root, p.path('/opt/amerika/venture'), symlinks=True, ignore=shutil.ignore_patterns('install-linux.sh'))
     for exe in ('AmerikaVenture', 'firefox', 'firefox-bin', 'glxtest', 'vaapitest', 'pingsender', 'crashhelper'):
         f = p.path(f'/opt/amerika/venture/{exe}')
@@ -396,7 +396,7 @@ def build_venture():
     p.file('/usr/bin/amerika-venture', '#!/bin/sh\nexec /opt/amerika/venture/AmerikaVenture "$@"\n', 0o755)
     p.depends = ', '.join(shlib_depends(p.root / 'opt/amerika/venture') or ['libc6'])
     desktop_file(p, '[Desktop Entry]\nType=Application\nName=Amerika Venture\nGenericName=Web Browser\n'
-                 'Comment=Amerika LLC browser based on Firefox\nExec=/usr/bin/amerika-venture %u\nIcon=amerika-venture\n'
+                 'Comment=AltStack LLC browser based on Firefox\nExec=/usr/bin/amerika-venture %u\nIcon=amerika-venture\n'
                  'Terminal=false\nCategories=Network;WebBrowser;\nMimeType=text/html;x-scheme-handler/http;'
                  'x-scheme-handler/https;\nStartupNotify=true\nStartupWMClass=AmerikaVenture\n', 'amerika-venture')
     if icon_svg('amerika-venture'):
@@ -421,7 +421,7 @@ def build_office():
             '(documents, spreadsheets and presentations).\nIt connects to the hosted portal and is not an offline '
             'office suite. The editor is ONLYOFFICE Community Edition.',
             arch=ARCH, title='Amerika Office', category='Office',
-            homepage='https://www.amerika.social/downloads/office')
+            homepage='https://altstack.io/downloads/office')
     shutil.copytree(root, p.path('/opt/amerika/office'), symlinks=True, ignore=shutil.ignore_patterns('install-linux.sh'))
     p.path('/opt/amerika/office/amerika-office').chmod(0o755)
     p.path('/opt/amerika/office/chrome_crashpad_handler').chmod(0o755)
@@ -439,12 +439,12 @@ def build_office():
                              '    apparmor_parser -r -T -W /etc/apparmor.d/amerika-office || true\n  fi\nfi\nexit 0\n')
     p.scripts['prerm'] = ('#!/bin/sh\nset -e\nif [ "$1" = remove ] && [ -x /usr/sbin/apparmor_parser ]; then\n'
                           '  apparmor_parser -R /etc/apparmor.d/amerika-office 2>/dev/null || true\nfi\nexit 0\n')
-    desktop_file(p, '[Desktop Entry]\nType=Application\nName=Amerika Office\nComment=Amerika LLC collaborative office\n'
+    desktop_file(p, '[Desktop Entry]\nType=Application\nName=Amerika Office\nComment=AltStack LLC collaborative office\n'
                  'Exec=/usr/bin/amerika-office %U\nIcon=amerika-office\nTerminal=false\nCategories=Office;\n'
                  'StartupWMClass=amerika-office\n', 'amerika-office')
     if icon_svg('amerika-office'):
         p.copy(icon_svg('amerika-office'), '/usr/share/icons/hicolor/scalable/apps/amerika-office.svg')
-    p.copyright('Amerika Office desktop, Copyright Amerika LLC. Source: https://github.com/danecohn/AmerikaOffice\n'
+    p.copyright('Amerika Office desktop, Copyright AltStack LLC. Source: https://github.com/danecohn/AmerikaOffice\n'
                 'Built on Electron (MIT, /opt/amerika/office/LICENSE.electron.txt) and Chromium\n'
                 '(/opt/amerika/office/LICENSES.chromium.html). The hosted editor is ONLYOFFICE Community Edition\n'
                 '(AGPL-3.0); its branding and notices are intentionally retained.\n')
@@ -454,12 +454,12 @@ def build_office():
 def build_meta():
     ours = ('amerika-session', 'amerika-desktop-shell', 'amerika-theme', 'amerika-icon-theme', 'amerika-apps', 'amerika-software',
             'amerika-repo-keyring')
-    p = Pkg('amerika-desktop', DE_VERSION, 'Amerika OS desktop environment\nAmerika OS: its own shell on the KWin compositor, with the Claude and '
+    p = Pkg('amerika-desktop', DE_VERSION, 'AltStack Desktop desktop environment\nAltStack Desktop: its own shell on the KWin compositor, with the Claude and '
             'ChatGPT apps at the centre.\nInstalls the session, shell, settings, theme, apps and the Amerika Software manager.',
             depends=', '.join(f'{n} (>= {DE_VERSION})' for n in ours + tuple(META_DEPENDS)) + ', amerika-social, amerika-venture, mak-office',
             recommends=', '.join(META_RECOMMENDS),
-            arch=ARCH, title='Amerika OS Desktop', section='metapackages')
-    p.copyright('Copyright Amerika LLC, GPL-3.0-only.\n')
+            arch=ARCH, title='AltStack Desktop Desktop', section='metapackages')
+    p.copyright('Copyright AltStack LLC, GPL-3.0-only.\n')
     return p
 
 
@@ -533,8 +533,8 @@ def make_repo(debs):
         if f.is_file():
             rel_files[str(f.relative_to(APT_DIR / f'dists/{SUITE}'))] = f
     now = datetime.datetime.now(datetime.timezone.utc).strftime('%a, %d %b %Y %H:%M:%S UTC')
-    lines = ['Origin: Amerika', 'Label: Amerika OS', f'Suite: {SUITE}', f'Codename: {SUITE}', f'Date: {now}',
-             f'Architectures: {ARCH}', 'Components: main', 'Description: Amerika OS packages', 'SHA256:']
+    lines = ['Origin: Amerika', 'Label: AltStack Desktop', f'Suite: {SUITE}', f'Codename: {SUITE}', f'Date: {now}',
+             f'Architectures: {ARCH}', 'Components: main', 'Description: AltStack Desktop packages', 'SHA256:']
     for rel, f in rel_files.items():
         lines.append(f' {sha256(f)} {f.stat().st_size:>16} {rel}')
     release = APT_DIR / f'dists/{SUITE}/Release'

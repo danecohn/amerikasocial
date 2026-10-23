@@ -1,4 +1,4 @@
-# Gates before Amerika OS 3.1.0
+# Gates before AltStack Desktop 3.1.0
 
 3.1.0 is built as a local release candidate. The remaining gates below still need the owner's laptop, own API key, hardware and a
 VM install; do not describe them as verified, and do not change the production deployment based on unit/headless tests alone.

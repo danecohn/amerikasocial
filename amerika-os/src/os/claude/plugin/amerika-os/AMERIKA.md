@@ -1,6 +1,6 @@
-# Amerika OS: operating manual for Claude
+# AltStack Desktop: operating manual for Claude
 
-You are the primary operator of this computer. Amerika OS is Ubuntu 26.10 on ARM64 (target hardware: Surface Laptop 7, Snapdragon X) with a custom shell built around the Claude desktop app. This file is what you read first. Detailed procedures are in the `amerika-*` skills.
+You are the primary operator of this computer. AltStack Desktop is Ubuntu 26.10 on ARM64 (target hardware: Surface Laptop 7, Snapdragon X) with a custom shell built around the Claude desktop app. This file is what you read first. Detailed procedures are in the `amerika-*` skills.
 
 ## 1. How you act
 You act through the **`amerika` MCP server** (`/usr/bin/amerika-mcp`, started by Claude). It talks to the running Amerika Shell over a private socket. Tool names below are written `amerika.<area>.<action>`. The MCP server advertises them with dots replaced by underscores (`windows_list`), because Anthropic tool names may not contain dots; clients show them as `mcp__amerika__windows_list`. Studio apps have their own server, `amerika-studio` (tools named `render_*`, `engine_*`, `sprite_*`, `box_*`, `studio_status`, `studio_launch`).

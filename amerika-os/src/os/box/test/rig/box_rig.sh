@@ -1,5 +1,5 @@
 #!/bin/sh
-# AmerikaBox in the real webview shell. Run:  tests/rig/studio-rig.sh src/os/box/test/rig/box_rig.sh
+# AltStack Box in the real webview shell. Run:  tests/rig/studio-rig.sh src/os/box/test/rig/box_rig.sh
 set -eu
 ROOT=$(cd "$(dirname "$0")/../../../../.." && pwd)
 export LD_PRELOAD="${AMERIKA_LAYERSHELL_LIB:-}" GTK_A11Y=none

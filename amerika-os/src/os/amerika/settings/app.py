@@ -451,7 +451,7 @@ class SettingsApp(Gtk.Application):
         state = connect.status()
         for client, (button, status, conn, disc) in self.conn_buttons.items():
             on = state.get(client)
-            button.set_label('Disconnect' if on else 'Connect to Amerika OS')
+            button.set_label('Disconnect' if on else 'Connect to AltStack Desktop')
             if on:
                 button.remove_css_class('am-primary')
                 button.add_css_class('am-secondary')
@@ -681,7 +681,7 @@ class SettingsApp(Gtk.Application):
     def _page_login(self):
         box = page_box()
         box.append(label('LOGIN SCREEN', 'am-heading'))
-        box.append(label('Amerika OS has its own retro-futurist login screen. It uses the SDDM login manager instead of GDM, '
+        box.append(label('AltStack Desktop has its own retro-futurist login screen. It uses the SDDM login manager instead of GDM, '
                          'takes effect the next time you start or restart the computer, and can be switched back here at any time.', 'am-sub', wrap=True))
         col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         col.append(label('STATUS', 'am-label'))
@@ -703,7 +703,7 @@ class SettingsApp(Gtk.Application):
         col.append(self.login_note)
         box.append(card(col))
         box.append(card(label('IF THE LOGIN SCREEN EVER DOES NOT APPEAR', 'am-label'),
-                        label('Amerika OS switches back to the previous login screen by itself if SDDM cannot start. If you ever see a blank '
+                        label('AltStack Desktop switches back to the previous login screen by itself if SDDM cannot start. If you ever see a blank '
                               'screen anyway: press Ctrl+Alt+F3, log in on the text console, and run  sudo /usr/libexec/amerika/amerika-login-helper '
                               'disable  then  sudo reboot.', 'am-sub', wrap=True)))
         self._refresh_login()
@@ -808,8 +808,8 @@ class SettingsApp(Gtk.Application):
         box.append(label('ABOUT', 'am-heading'))
         info = system.os_info()
         col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        col.append(label(f'Amerika OS {__version__}', 'am-appname'))
-        col.append(label('Its own desktop, with Claude and ChatGPT at the centre. Retro-future by Amerika LLC.', 'am-sub', wrap=True))
+        col.append(label(f'AltStack Desktop {__version__}', 'am-appname'))
+        col.append(label('Its own desktop, with Claude and ChatGPT at the centre. Retro-future by AltStack LLC.', 'am-sub', wrap=True))
         for k, v in (('Base system', info.get('distribution')), ('Kernel', info.get('kernel')), ('Machine', info.get('machine')),
                      ('Host', info.get('host'))):
             col.append(label(f'{k.upper()}', 'am-label'))

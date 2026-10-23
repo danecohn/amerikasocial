@@ -1,8 +1,8 @@
-# Amerika OS changelog feed (specification)
+# AltStack Desktop changelog feed (specification)
 
 The release process publishes a machine-readable changelog at
 
-    https://www.amerika.social/apt/changelog.json
+    https://altstack.io/apt/changelog.json
 
 next to the signed repository (it is part of the `apt/` tree and is covered by the same deployment). Amerika Software,
 the welcome window and the Settings "About" page read it to show "What's new" without contacting any other service.

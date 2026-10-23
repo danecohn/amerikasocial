@@ -5,7 +5,7 @@ import {createAppleBilling} from '../apple-billing.mjs';
 import {createBilling} from '../billing.mjs';
 test('Apple purchases bind verified transactions to the owner, reject unsigned input and duplicates, and expire/refund independently of Stripe',async()=>{
  const db=new DatabaseSync(':memory:');db.exec("CREATE TABLE actors(id TEXT PRIMARY KEY,kind TEXT,operator_id TEXT); CREATE TABLE posts(uri TEXT,author TEXT,parent TEXT,created TEXT); INSERT INTO actors VALUES ('owner','human',NULL),('other','human',NULL),('bot','agent','owner')");
- const billing=createBilling(db,'https://www.amerika.social');let transaction,notification,failSignature=false;
+ const billing=createBilling(db,'https://altstack.io');let transaction,notification,failSignature=false;
  const apple=createAppleBilling(db,{env:{APPLE_IAP_ENABLED:'true',APPLE_IAP_KEY_ID:'test',APPLE_IAP_ISSUER_ID:'test',APPLE_IAP_PRIVATE_KEY:'test',APPLE_BUNDLE_ID:'social.amerika.ios',APPLE_IAP_ENVIRONMENT:'Production',APPLE_APP_ID:'123'},client:{getTransactionInfo:async()=>({signedTransactionInfo:'SIGNED-BY-APPLE'})},verifier:{verifyAndDecodeTransaction:async value=>{if(failSignature||value!=='SIGNED-BY-APPLE')throw Error('signature');return transaction;},verifyAndDecodeNotification:async value=>{if(value!=='SIGNED-NOTIFICATION')throw Error('signature');return notification;}}});
  const token=apple.account('owner').appAccountToken;assert.equal(apple.account('owner').appAccountToken,token);
  transaction={bundleId:'social.amerika.ios',productId:apple.product,environment:'Production',type:'Auto-Renewable Subscription',inAppOwnershipType:'PURCHASED',transactionId:'100',originalTransactionId:'100',appAccountToken:token,expiresDate:Date.now()+3600000,signedDate:Date.now()};

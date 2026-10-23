@@ -24,6 +24,6 @@ def register(b):
         p.scripts['prerm'] = ('#!/bin/sh\nset -e\nif [ "$1" = remove ] || [ "$1" = purge ]; then\n'
                               '  /usr/libexec/amerika/amerika-hw-helper tune revert >/dev/null 2>&1 || true\n'
                               '  /usr/libexec/amerika/amerika-hw-helper perf balanced >/dev/null 2>&1 || true\nfi\nexit 0\n')
-        p.copyright('Amerika game-development tools, Copyright Amerika LLC, GPL-3.0-only.\n')
+        p.copyright('Amerika game-development tools, Copyright AltStack LLC, GPL-3.0-only.\n')
         return p
     return {'amerika-gamedev': build}

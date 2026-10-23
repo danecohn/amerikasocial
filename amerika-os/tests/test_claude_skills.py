@@ -291,7 +291,7 @@ class Installer(unittest.TestCase):
         with zipfile.ZipFile(out / 'amerika-os-overview.zip') as zf:
             self.assertIn('amerika-os-overview/references/AMERIKA.md', zf.namelist())
         text = (out / 'custom-instructions.md').read_text()
-        self.assertIn('Amerika OS', text)
+        self.assertIn('AltStack Desktop', text)
         self.assertIn('operating manual', text.lower())
         before = zips[0].read_bytes()
         core.export(out)

@@ -1,4 +1,4 @@
-# Claude skills and plugin for Amerika OS
+# Claude skills and plugin for AltStack Desktop
 
 Package: `amerika-claude` (arch all, depends on `amerika-desktop-shell`). Installing the package changes nothing in anyone's home folder. Skills are installed only when the user runs `amerika-claude install` or presses the button in Settings > AI (`ai.connect.install_skills()`).
 
@@ -35,7 +35,7 @@ Claude Code plugin commands are invoked as `/amerika-os:<name>`; the short form 
 
 | Command | What it does |
 |---|---|
-| `/amerika-os:amerika` `[topic]` | Index of every Amerika OS command, grouped, with what each one does |
+| `/amerika-os:amerika` `[topic]` | Index of every AltStack Desktop command, grouped, with what each one does |
 | `/amerika-os:status` | One-screen status of this computer: system, power, network, windows, hardware, services |
 
 ### Hardware

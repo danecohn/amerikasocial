@@ -1,6 +1,6 @@
 ---
 name: files-and-projects
-description: Work with files and project folders on Amerika OS inside the home directory - list, read, write, tidy and trash files safely, and keep projects organised. Use when the user asks to find, read, create, edit, move, organise or delete files.
+description: Work with files and project folders on AltStack Desktop inside the home directory - list, read, write, tidy and trash files safely, and keep projects organised. Use when the user asks to find, read, create, edit, move, organise or delete files.
 ---
 
 # Files and projects

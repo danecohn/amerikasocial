@@ -1,6 +1,6 @@
-# Amerika OS, Claude first (concept 4.0)
+# AltStack Desktop, Claude first (concept 4.0)
 
-Amerika OS becomes a computer built around the **Claude desktop app** (primary) with the **ChatGPT desktop app** as the backup. No dock/app tray. Claude IS the home screen. The Copilot key opens the **Caster** to switch between the two. The Windows key opens the full app menu. A customizable top bar carries the time and status. Claude operates the computer through MCP tools and skills we ship.
+AltStack Desktop becomes a computer built around the **Claude desktop app** (primary) with the **ChatGPT desktop app** as the backup. No dock/app tray. Claude IS the home screen. The Copilot key opens the **Caster** to switch between the two. The Windows key opens the full app menu. A customizable top bar carries the time and status. Claude operates the computer through MCP tools and skills we ship.
 
 ## Honest limits (do not violate, do not promise otherwise)
 - The Claude and ChatGPT desktop apps are **proprietary Electron apps**. We do not patch, repack or modify them. "Highly customized" means: we place them (fullscreen, borderless, under our top bar, as the home window), size them (Electron scale flag for bigger text), launch/supervise them, and surround them with our own shell (bar, Caster, app menu, notifications). We cannot change their internal UI.
@@ -18,7 +18,7 @@ Amerika OS becomes a computer built around the **Claude desktop app** (primary) 
 | **Top bar** | shell | Customizable: widgets (launcher button, active-window title, AI chip, clock, date, status icons, tray, notifications) with enable/disable, left/center/right placement and order, clock format (12/24h, seconds, date), height, translucency; stored in settings `bar_layout`; Settings page "Top bar"; live apply. The clock/time is always shown on the home view by default. |
 | **App menu** | shell | Windows key opens the launcher as the full all-apps menu (grid, search, categories, Home/Settings/Power entries, "Ask Claude" row). |
 | **Text size** | shell | Setting `ai_text_scale` (default 1.25 for ChatGPT, 1.0 for Claude, per-app) applied as Electron `--force-device-scale-factor` when the shell launches/relaunches these apps, plus the `.desktop` overrides shipped for launches from elsewhere. Settings control with live preview text. |
-| **Claude skills & plugin** | skills | Skills (SKILL.md folders) and a Claude Code plugin that teach Claude to operate Amerika OS through the `amerika` MCP server, plus any missing MCP tools. Installed ONLY via an explicit Connect button/CLI (`amerika-claude install`), with backup/undo; also exportable as zips for Claude Desktop's Skills upload. |
+| **Claude skills & plugin** | skills | Skills (SKILL.md folders) and a Claude Code plugin that teach Claude to operate AltStack Desktop through the `amerika` MCP server, plus any missing MCP tools. Installed ONLY via an explicit Connect button/CLI (`amerika-claude install`), with backup/undo; also exportable as zips for Claude Desktop's Skills upload. |
 | **ChatGPT side** | later | The same but ChatGPT first; handed off to ChatGPT/Codex with a written handoff prompt when the Claude side is ready. |
 
 Existing pieces that stay: `amerika-mcp` + approval broker (risk classes read/act/sensitive/critical, modes ask/safe/trusted, Stop switch, audit log), Amerika Agent (OpenClaw, optional), Amerika Studio (Developer Edition), settings, login/boot screens.

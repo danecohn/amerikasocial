@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Amerika OS changelog feed",
+  "title": "AltStack Desktop changelog feed",
   "type": "object",
   "required": ["schema", "source", "generated", "channel", "releases"],
   "properties": {

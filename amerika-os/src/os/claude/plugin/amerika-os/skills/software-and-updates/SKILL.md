@@ -1,6 +1,6 @@
 ---
 name: software-and-updates
-description: Install, update or remove software on Amerika OS - Amerika Software (the amerika-software helper), apt, update channels (stable/testing) and what needs approval. Use when the user asks to install an app or package, check for updates, upgrade, or switch the update channel.
+description: Install, update or remove software on AltStack Desktop - Amerika Software (the amerika-software helper), apt, update channels (stable/testing) and what needs approval. Use when the user asks to install an app or package, check for updates, upgrade, or switch the update channel.
 ---
 
 # Software and updates

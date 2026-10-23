@@ -27,7 +27,7 @@ sh Install-MakOS-local.sh /absolute/path/to/extracted/apt
 
 The installer verifies the established signing fingerprint and signed APT metadata before adding the six packages.
 It does not select a session or change the login manager, boot theme or PAM. Log out normally and select MakOS
-in the login screen. To return, log out and choose Plasma or Amerika OS. If the screen is blank, Ctrl+Alt+F3
+in the login screen. To return, log out and choose Plasma or AltStack Desktop. If the screen is blank, Ctrl+Alt+F3
 opens a text login; inspect `~/.local/state/makos/shell.log`.
 
 Uninstall the preview with:

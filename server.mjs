@@ -44,6 +44,10 @@ const aptRepository=createAptRepository({dir:join(root,'apt-repo')});
 const pds = process.env.PDS_URL?.replace(/\/$/, '');
 // Explicit public origin supports HTTPS behind a hosting provider's proxy.
 const publicOrigin = process.env.PUBLIC_ORIGIN ? new URL(process.env.PUBLIC_ORIGIN).origin : null;
+// Explicit owned origins keep existing clients working during the domain move.
+const browserOriginAliases=new Set((process.env.BROWSER_ORIGIN_ALIASES||'').split(',').filter(Boolean).map(value=>{const u=new URL(value.trim());if(u.protocol!=='https:'||u.username||u.password)throw Error('Browser origin aliases must be owned HTTPS origins.');return u.origin;}));
+function browserOriginAllowed(req){return !req.headers.origin||req.headers.origin===(publicOrigin||`http${req.socket.encrypted?'s':''}://${req.headers.host}`)||browserOriginAliases.has(req.headers.origin);}
+
 if (publicOrigin && !/^https?:\/\//.test(publicOrigin)) throw new Error('PUBLIC_ORIGIN must be an HTTP or HTTPS origin.');
 if (pds && !/^https:\/\//.test(pds) && process.env.ALLOW_TEST_PDS !== '1') throw new Error('PDS_URL must use HTTPS.');
 const dir = resolve(process.env.DATA_DIR || join(root, 'data', pds ? 'network' : 'preview'));
@@ -84,7 +88,7 @@ function notify(recipient,sender,type,post=null,message=null) {
 function mentions(text) {
   const entries=[];
   for(const match of text.matchAll(/(?<![\w@])@([a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?)/g)) {
-    const name=match[1].toLowerCase();const a=db.prepare('SELECT id,handle FROM actors WHERE handle=?').get(name)||(!name.includes('.')&&handleDomain?db.prepare('SELECT id,handle FROM actors WHERE handle=?').get(name+'.'+handleDomain):null);
+    const name=match[1].toLowerCase();const a=actorByHandle(name);
     if(a)entries.push({actor:a,index:{byteStart:Buffer.byteLength(text.slice(0,match.index)),byteEnd:Buffer.byteLength(text.slice(0,match.index+match[0].length))}});
   }
   return entries;
@@ -111,6 +115,9 @@ if (previousMode && previousMode.value !== mode) {
 }
 function networkActor(id){return !!pds && id?.startsWith('did:');}
 const handleDomain=process.env.PDS_HANDLE_DOMAIN||null;
+const legacyHandleDomains=(process.env.LEGACY_HANDLE_DOMAINS||'').split(',').map(v=>v.trim()).filter(Boolean);
+function actorByHandle(value){const exact=db.prepare('SELECT * FROM actors WHERE handle=?').get(value);if(exact||value.includes('.'))return exact;for(const suffix of [...legacyHandleDomains,handleDomain].filter(Boolean)){const actor=db.prepare('SELECT * FROM actors WHERE handle=?').get(value+'.'+suffix);if(actor)return actor;}return null;}
+
 db.exec('CREATE TABLE IF NOT EXISTS login_sessions(token_hash TEXT PRIMARY KEY,actor TEXT NOT NULL,expires INTEGER NOT NULL)');
 db.prepare('INSERT OR IGNORE INTO settings VALUES (?,?)').run('mode', mode);
 if (!pds && !db.prepare('SELECT id FROM actors LIMIT 1').get()) {
@@ -314,6 +321,10 @@ const server = http.createServer(async(req,res)=>{
   try {
     const url=new URL(req.url,'http://localhost');
     const path=url.pathname;
+    const requestHost=(req.headers.host||'').split(':')[0].toLowerCase();
+    if(publicOrigin&&['GET','HEAD'].includes(req.method)&&requestHost==='www.altstack.org'){res.writeHead(302,{'Location':publicOrigin+url.pathname+url.search,'Cache-Control':'no-store'});res.end();return;}
+    if(publicOrigin&&['GET','HEAD'].includes(req.method)&&requestHost==='account.altstack.org'&&['/','/login','/signin'].includes(path)){res.writeHead(302,{'Location':publicOrigin+'/social'+url.search+'#account','Cache-Control':'no-store'});res.end();return;}
+
     if(path==='/game-crafter'||path.startsWith('/game-crafter/')){
       if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');
       const routes={'/game-crafter':['game-crafter.html','text/html; charset=utf-8'],'/game-crafter/support':['game-crafter-support.html','text/html; charset=utf-8'],'/game-crafter/privacy':['game-crafter-privacy.html','text/html; charset=utf-8'],'/game-crafter/terms':['game-crafter-terms.html','text/html; charset=utf-8'],'/game-crafter/style.css':['game-crafter.css','text/css'],'/game-crafter/icon.png':['game-crafter-icon.png','image/png'],'/game-crafter/download':['game-crafter-v1.0.2.zip','application/zip'],'/game-crafter/demo-game.zip':['game-crafter-demo.zip','application/zip']};
@@ -326,7 +337,7 @@ const server = http.createServer(async(req,res)=>{
     if(gameAsset){if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');return await gaming.content(gameAsset[1],decodeURIComponent(gameAsset[2]),req,res);}
     if(path.startsWith('/gaming/covers/')){const name=path.slice(15);if(!/^(last-lamp|saint-marrows|salt-mine-9|ward-seven|pickles-pickle-shop|rooms-we-kept)\.png$/.test(name))fail(404,'Not found.');if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');res.setHeader('Content-Type','image/png');res.setHeader('Cache-Control','public,max-age=3600');return res.end(req.method==='HEAD'?undefined:await readFile(join(root,'public','gaming-covers',name)));}
     if(path==='/gaming'||path==='/gaming/')res.setHeader('Content-Security-Policy',"default-src 'self'; style-src 'self'; script-src 'self'; frame-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'");
-    if(path.startsWith('/api/gaming/mcp-upload/')){if(req.method!=='PUT')fail(405,'Use PUT for game ZIP uploads.');if(req.headers.origin&&req.headers.origin!==(publicOrigin||'http://'+req.headers.host))fail(403,'Cross-origin uploads are disabled.');return json(res,201,await gamingPublisher.upload(path.slice('/api/gaming/mcp-upload/'.length),req.headers.authorization?.replace(/^Bearer /,''),req));}
+    if(path.startsWith('/api/gaming/mcp-upload/')){if(req.method!=='PUT')fail(405,'Use PUT for game ZIP uploads.');if(!browserOriginAllowed(req))fail(403,'Cross-origin uploads are disabled.');return json(res,201,await gamingPublisher.upload(path.slice('/api/gaming/mcp-upload/'.length),req.headers.authorization?.replace(/^Bearer /,''),req));}
     if(path.startsWith('/api/gaming/')){
       const credential=req.headers.authorization?.replace(/^Bearer /,''),signed=session(credential);const route=path.slice(12);
       if(req.method==='GET'&&route==='catalog')return json(res,200,gaming.catalog(signed?.actor));
@@ -334,7 +345,7 @@ const server = http.createServer(async(req,res)=>{
       const key='gaming:'+owner.id,bucket=limits.get(key)||{n:0,until:Date.now()+60000};if(bucket.until<Date.now()){bucket.n=0;bucket.until=Date.now()+60000;}limits.set(key,bucket);if(++bucket.n>180)fail(429,'Too many gaming requests. Retry shortly.');
       if(req.method==='GET'&&route==='mine')return json(res,200,gaming.mine(owner.id));
       if(req.method==='GET'&&route==='reports')return json(res,200,gaming.reports(owner.id));
-      if(!['POST','PUT'].includes(req.method))fail(405,'Method not allowed.');if(req.headers.origin&&req.headers.origin!==(publicOrigin||`http://${req.headers.host}`))fail(403,'Cross-origin requests are disabled.');
+      if(!['POST','PUT'].includes(req.method))fail(405,'Method not allowed.');if(!browserOriginAllowed(req))fail(403,'Cross-origin requests are disabled.');
       const target=/^games\/([a-z0-9-]{1,80})\/(archive|launch|save|manage|report)$/.exec(route);
       if(target&&target[2]==='archive'&&req.method==='PUT')return json(res,201,await gaming.upload(owner.id,target[1],req));
       if(req.method!=='POST')fail(405,'Method not allowed.');const payload=await body(req);
@@ -344,7 +355,7 @@ const server = http.createServer(async(req,res)=>{
       fail(404,'Gaming endpoint not found.');
     }
 
-    if(path.startsWith('/api/desktop/')){if(req.method!=='POST')fail(405,'Use POST.');if(req.headers.origin&&req.headers.origin!==(publicOrigin||`http://${req.headers.host}`))fail(403,'Cross-origin requests are disabled.');const b=await body(req);res.setHeader('Cache-Control','no-store');if(path==='/api/desktop/start')return json(res,201,desktopAuth.start(b.challenge,loginGuard.clientIp(req)));if(path==='/api/desktop/approve')return json(res,200,desktopAuth.approve(b.id,req.headers.authorization?.replace(/^Bearer /,'')));if(path==='/api/desktop/exchange')return json(res,200,desktopAuth.exchange(b.id,b.verifier));fail(404,'Not found.');}
+    if(path.startsWith('/api/desktop/')){if(req.method!=='POST')fail(405,'Use POST.');if(!browserOriginAllowed(req))fail(403,'Cross-origin requests are disabled.');const b=await body(req);res.setHeader('Cache-Control','no-store');if(path==='/api/desktop/start')return json(res,201,desktopAuth.start(b.challenge,loginGuard.clientIp(req)));if(path==='/api/desktop/approve')return json(res,200,desktopAuth.approve(b.id,req.headers.authorization?.replace(/^Bearer /,'')));if(path==='/api/desktop/exchange')return json(res,200,desktopAuth.exchange(b.id,b.verifier));fail(404,'Not found.');}
     if(path==='/desktop-connect'||path==='/desktop-connect.js'){if(req.method!=='GET')fail(405,'Use GET.');res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('Content-Type',path.endsWith('.js')?'text/javascript':'text/html');return res.end(await readFile(join(root,'public',path.endsWith('.js')?'desktop-connect.js':'desktop-connect.html')));}
     if(path==='/.well-known/openai-apps-challenge'){
       if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');
@@ -378,7 +389,7 @@ const server = http.createServer(async(req,res)=>{
     if(path==='/api/software-downloads'){if(req.method!=='GET')fail(405,'Use GET.');const data=await softwareDownloads(url.searchParams.get('product'));res.setHeader('Cache-Control','public,max-age=30');return json(res,200,data);}
     if (!path.startsWith('/api/')) {
       if(req.method!=='GET') fail(405,'Method not allowed.');
-      const officeOrigin=(process.env.OFFICE_ORIGIN||'https://amerikaoffice-production.up.railway.app').replace(/\/$/,'');
+      const officeOrigin=(process.env.OFFICE_ORIGIN||'https://office.altstack.org').replace(/\/$/,'');
       if(['/office','/office/','/drive','/drive/'].includes(url.pathname)){res.writeHead(302,{'Location':officeOrigin+'/','Cache-Control':'no-store'});res.end();return;}
       const files={'/social':['social.html','text/html'],'/social/':['social.html','text/html'],'/platform-nav.css':['platform-nav.css','text/css'],'/platform.css':['platform.css','text/css'],'/platform.js':['platform.js','text/javascript'],'/welcome':['welcome.html','text/html'],'/welcome/':['welcome.html','text/html'],'/makk.css':['makk.css','text/css'],'/desktop-ui.css':['desktop-ui.css','text/css'],'/fonts/Inter.ttf':['fonts/Inter.ttf','font/ttf'],'/fonts/Inter-OFL.txt':['fonts/Inter-OFL.txt','text/plain'],'/gaming':['gaming.html','text/html'],'/gaming/':['gaming.html','text/html'],'/gaming.js':['gaming.js','text/javascript'],'/gaming.css':['gaming.css','text/css'],'/gaming/developers':['gaming-guide.html','text/html'],'/gaming/sdk.js':['gaming-bridge.js','text/javascript'],'/downloads':['downloads.html','text/html'],'/downloads/':['downloads.html','text/html'],'/downloads.css':['downloads.css','text/css'],'/':['index.html','text/html'],'/moderate':['social.html','text/html'],'/privacy':['privacy.html','text/html'],'/terms':['terms.html','text/html'],'/plugin':['plugin.html','text/html'],'/support':['support.html','text/html'],'/legal.css':['legal.css','text/css'],'/moderation-webhooks.md':['moderation-webhooks.md','text/plain'],'/webhook-receivers.md':['webhook-receivers.md','text/plain'],'/moderation.js':['moderation.js','text/javascript'],'/app.js':['app.js','text/javascript'],'/account.js':['account.js','text/javascript'],'/dating.js':['dating.js','text/javascript'],'/communities.js':['communities.js','text/javascript'],'/features.css':['features.css','text/css'],'/style.css':['style.css','text/css'],'/agent.md':['agent.md','text/plain'],'/logo.svg':['logo.svg','image/svg+xml'],'/manifest.webmanifest':['manifest.webmanifest','application/manifest+json'],'/icon-32.png':['icon-32.png','image/png'],'/icon-180.png':['icon-180.png','image/png'],'/icon-192.png':['icon-192.png','image/png'],'/icon-512.png':['icon-512.png','image/png'],'/icon-maskable-512.png':['icon-maskable-512.png','image/png']};
       Object.assign(files,{'/venture':['venture-downloads.html','text/html'],'/downloads/venture':['venture-downloads.html','text/html'],'/downloads/office':['office-downloads.html','text/html'],'/downloads/os':['os-downloads.html','text/html'],'/os':['os-downloads.html','text/html'],'/os-downloads.css':['os-downloads.css','text/css'],'/os-downloads.js':['os-downloads.js','text/javascript'],'/software-downloads.js':['software-downloads.js','text/javascript'],'/software-downloads.css':['software-downloads.css','text/css'],'/venture-icon.svg':['venture-icon.svg','image/svg+xml']});
@@ -389,8 +400,8 @@ const server = http.createServer(async(req,res)=>{
     const token=req.headers.authorization?.replace(/^Bearer /,'');
     const s=session(token); const me=s?.actor;
     if(path==='/api/dating/media'){if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');return dating.mediaServe(url.searchParams.get('id'),url.searchParams.get('access')||'',req,res);}
-    if(path.startsWith('/api/communities/')){const action=path.slice(17);if(req.method==='GET')return json(res,200,communities.read(action,url,s));if(req.method!=='POST')fail(405,'Method not allowed.');if(req.headers.origin&&req.headers.origin!==(publicOrigin||`http://${req.headers.host}`))fail(403,'Cross-origin requests are disabled.');const key='communities:'+me;const l=limits.get(key)||{n:0,until:Date.now()+60000};if(l.until<Date.now()){l.n=0;l.until=Date.now()+60000;}limits.set(key,l);if(++l.n>60)fail(429,'Too many community requests.');return json(res,200,communities.write(action,await body(req),s));}
-    if(path.startsWith('/api/dating/')){const action=path.slice(12);if(req.method==='GET')return json(res,200,action==='admin/reports'?dating.reports(s):dating.get(action,url,s));if(req.method!=='POST')fail(405,'Method not allowed.');if(req.headers.origin&&req.headers.origin!==(publicOrigin||`http://${req.headers.host}`))fail(403,'Cross-origin requests are disabled.');const key='dating:'+me+':'+action;const l=limits.get(key)||{n:0,until:Date.now()+60000};if(l.until<Date.now()){l.n=0;l.until=Date.now()+60000;}limits.set(key,l);if(++l.n>(action==='upload'?20:60))fail(429,'Too many Dating requests. Retry shortly.');if(action==='upload')return json(res,201,await dating.upload(req,s,url));const b=await body(req);return json(res,200,action==='admin/action'?dating.action(s,b):dating.post(action,b,s));}
+    if(path.startsWith('/api/communities/')){const action=path.slice(17);if(req.method==='GET')return json(res,200,communities.read(action,url,s));if(req.method!=='POST')fail(405,'Method not allowed.');if(!browserOriginAllowed(req))fail(403,'Cross-origin requests are disabled.');const key='communities:'+me;const l=limits.get(key)||{n:0,until:Date.now()+60000};if(l.until<Date.now()){l.n=0;l.until=Date.now()+60000;}limits.set(key,l);if(++l.n>60)fail(429,'Too many community requests.');return json(res,200,communities.write(action,await body(req),s));}
+    if(path.startsWith('/api/dating/')){const action=path.slice(12);if(req.method==='GET')return json(res,200,action==='admin/reports'?dating.reports(s):dating.get(action,url,s));if(req.method!=='POST')fail(405,'Method not allowed.');if(!browserOriginAllowed(req))fail(403,'Cross-origin requests are disabled.');const key='dating:'+me+':'+action;const l=limits.get(key)||{n:0,until:Date.now()+60000};if(l.until<Date.now()){l.n=0;l.until=Date.now()+60000;}limits.set(key,l);if(++l.n>(action==='upload'?20:60))fail(429,'Too many Dating requests. Retry shortly.');if(action==='upload')return json(res,201,await dating.upload(req,s,url));const b=await body(req);return json(res,200,action==='admin/action'?dating.action(s,b):dating.post(action,b,s));}
 
     if(path==='/api/media'&&req.method==='GET')return media.serve(url.searchParams.get('id'),req,res);
     if(path==='/api/google/notifications'&&req.method==='POST')return json(res,200,await googleBilling.notification(req.headers.authorization?.replace(/^Bearer /,''),await body(req)));
@@ -474,7 +485,7 @@ const server = http.createServer(async(req,res)=>{
     }
     if(req.method!=='POST') fail(405,'Method not allowed.');
     // Browser requests must originate here. Agent clients omit Origin and use bearer auth.
-    if(req.headers.origin && req.headers.origin !== (publicOrigin || `http${req.socket.encrypted?'s':''}://${req.headers.host}`)) fail(403,'Cross-origin writes are disabled.');
+    if(!browserOriginAllowed(req)) fail(403,'Cross-origin writes are disabled.');
     const key=(me||(path==='/api/login'||path==='/api/register'?loginGuard.clientIp(req):req.socket.remoteAddress))+(path==='/api/login'||path==='/api/register'?':auth':':write');
     const limit=limits.get(key)||{n:0,until:Date.now()+60000};
     if(limit.until<Date.now()){limit.n=0;limit.until=Date.now()+60000;}
@@ -495,7 +506,7 @@ const server = http.createServer(async(req,res)=>{
       }finally{mediaUploadBusy=false;}
     }
     const b=await body(req);
-    if(path==='/api/recovery/reset'){const handle=typeof b.handle==='string'?b.handle.trim().replace(/^@/,'').toLowerCase():b.handle;const resolved=typeof handle==='string'&&!db.prepare('SELECT id FROM actors WHERE handle=?').get(handle)&&handleDomain&&!handle.includes('.')?handle+'.'+handleDomain:handle;await recovery.reset(resolved,b.code,b.password);return json(res,200,{ok:true});}
+    if(path==='/api/recovery/reset'){const handle=typeof b.handle==='string'?b.handle.trim().replace(/^@/,'').toLowerCase():b.handle;const resolved=typeof handle==='string'&&!handle.includes('.')?(actorByHandle(handle)?.handle||(handleDomain?handle+'.'+handleDomain:handle)):handle;await recovery.reset(resolved,b.code,b.password);return json(res,200,{ok:true});}
     if(path==='/api/register'||path==='/api/login'||path==='/api/agents') {
       const creatingAgent=path==='/api/agents';
       let owner=null;if(creatingAgent){if(!s)fail(401,'Sign in to create an agent.');owner=operatorOnly(s);requireRules(owner);}
@@ -504,7 +515,7 @@ const server = http.createServer(async(req,res)=>{
       if(password.length<10)fail(400,'Use a password of at least 10 characters.');
       let a,auth;
       if(path==='/api/register'||creatingAgent) {
-        if(pds&&handleDomain&&!handle.includes('.')){if(db.prepare('SELECT id FROM actors WHERE handle=?').get(handle))fail(409,'Handle already registered.');handle=handle+'.'+handleDomain;}
+        if(pds&&handleDomain&&!handle.includes('.')){if(actorByHandle(handle))fail(409,'Handle already registered.');handle=handle+'.'+handleDomain;}
         if (b.americanConfirmed !== true) fail(400,'Confirm that you are American to join. For agent accounts, the operator must be American.');
         if (b.rulesAccepted !== true) fail(400,'Agree to the Community Rules to join. Crypto miners, phishing, card fraud & testing, spam, pirated content, and anything illegal are strictly banned.');
         const name=textField(b.name,64,'a display name'); const kind=creatingAgent?'agent':b.kind;
@@ -516,7 +527,7 @@ const server = http.createServer(async(req,res)=>{
         const bio=typeof b.bio==='string'?b.bio.slice(0,300):'';
         if(pds) {
           const inviteCode=b.inviteCode||(process.env.PDS_ADMIN_PASSWORD?(await adminXrpc('com.atproto.server.createInviteCode',{useCount:1})).code:null);
-          auth=await xrpc('com.atproto.server.createAccount',{handle,password,email:'account-'+randomUUID()+'@accounts.amerika.social',...(inviteCode?{inviteCode}:{})});
+          auth=await xrpc('com.atproto.server.createAccount',{handle,password,email:'account-'+randomUUID()+'@'+(process.env.ACCOUNT_EMAIL_DOMAIN||'accounts.altstack.org'),...(inviteCode?{inviteCode}:{})});
           if(creatingAgent&&db.prepare('SELECT deleted_at FROM actors WHERE id=?').get(owner.id)?.deleted_at){accountSafety.orphan(auth.did);fail(410,'Your operator account has been deleted.');}
           a={id:auth.did,handle:auth.handle,name,kind,bio};
           db.prepare('INSERT INTO actors(id,handle,name,kind,bio) VALUES (?,?,?,?,?)').run(a.id,a.handle,name,kind,bio);if(creatingAgent)db.prepare('UPDATE actors SET operator_id=? WHERE id=?').run(owner.id,a.id);
@@ -530,8 +541,7 @@ const server = http.createServer(async(req,res)=>{
       } else {
         const loginIdentity=loginGuard.identity(req,res),releaseLogin=loginGuard.begin(loginIdentity);
         try{
-        a=db.prepare('SELECT * FROM actors WHERE handle=?').get(handle);
-        if(!a&&pds&&handleDomain&&!handle.includes('.'))a=db.prepare('SELECT * FROM actors WHERE handle=?').get(handle+'.'+handleDomain);
+        a=actorByHandle(handle);
         // Trust the enrolled account type, never a client-supplied human/agent flag.
         if(a?.kind!=='agent')await captcha.verify(b.captchaToken);
         if(pds&&(!a||networkActor(a.id))){ if(!a&&handleDomain&&!handle.includes('.'))handle=handle+'.'+handleDomain;auth=await xrpc('com.atproto.server.createSession',{identifier:a?.handle||handle,password}); a=db.prepare('SELECT * FROM actors WHERE id=?').get(auth.did); if(!a)fail(403,'This account is not enrolled in AltStack Social. Register through AltStack Social first.'); }

@@ -23,7 +23,7 @@ import { normalizeVideo } from './video.mjs';
 import http from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
 import { DatabaseSync, backup } from 'node:sqlite';
-import { randomBytes, randomUUID, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
+import { randomBytes, randomUUID, scryptSync, timingSafeEqual, createHash, createHmac } from 'node:crypto';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createBilling } from './billing.mjs';
@@ -353,6 +353,17 @@ const server = http.createServer(async(req,res)=>{
       if(route==='heartbeat'){gaming.lease(owner.id,payload.ticket);return json(res,200,{ok:true});}
       if(target){const [_,id,action]=target;if(action==='launch')return json(res,200,gaming.launch(owner.id,id));if(action==='save')return json(res,200,gaming.commit(owner.id,id,payload));if(action==='manage')return json(res,200,gaming.manage(owner.id,id,payload));if(action==='report')return json(res,201,gaming.report(owner.id,id,payload));}
       fail(404,'Gaming endpoint not found.');
+    }
+
+    if(path==='/api/internal/office-entitlement'){
+      if(req.method!=='GET')fail(405,'Use GET.');
+      const secret=process.env.OFFICE_ENTITLEMENT_SECRET;if(!secret||secret.length<32)fail(503,'Office entitlements are unavailable.');
+      const time=req.headers['x-altstack-time'],signature=req.headers['x-altstack-signature'];
+      if(typeof time!=='string'||!/^\d{13}$/.test(time)||Math.abs(Date.now()-Number(time))>60000||typeof signature!=='string'||!/^[-_A-Za-z0-9]{43}$/.test(signature))fail(401,'Invalid service authorization.');
+      const expected=createHmac('sha256',secret).update(time+'\nGET\n'+url.pathname+url.search).digest('base64url');
+      if(!timingSafeEqual(Buffer.from(signature),Buffer.from(expected)))fail(401,'Invalid service authorization.');
+      const actor=db.prepare('SELECT * FROM actors WHERE id=?').get(url.searchParams.get('actor'));if(!actor)fail(404,'Account not found.');enforcement.requireActive(actor);
+      res.setHeader('Cache-Control','no-store');return json(res,200,{actor:actor.id,plus:billing.plus(actor.id)});
     }
 
     if(path.startsWith('/api/desktop/')){if(req.method!=='POST')fail(405,'Use POST.');if(!browserOriginAllowed(req))fail(403,'Cross-origin requests are disabled.');const b=await body(req);res.setHeader('Cache-Control','no-store');if(path==='/api/desktop/start')return json(res,201,desktopAuth.start(b.challenge,loginGuard.clientIp(req)));if(path==='/api/desktop/approve')return json(res,200,desktopAuth.approve(b.id,req.headers.authorization?.replace(/^Bearer /,'')));if(path==='/api/desktop/exchange')return json(res,200,desktopAuth.exchange(b.id,b.verifier));fail(404,'Not found.');}

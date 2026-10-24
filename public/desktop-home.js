@@ -1,5 +1,6 @@
 'use strict';
 const $=s=>document.querySelector(s),apps=[
+ {id:'fmjournal',name:'F&M Journal',kind:'Reflect',description:'Offline-first food, mood and daily rhythm journaling. Optional AltStack sync and read/write AI connections.',href:'/fm-journal',icon:'fm-journal',symbol:'F&M'},
  {id:'office',name:'AltOffice',kind:'Create',description:'Documents, spreadsheets, presentations. Work together, and keep files in your shared Warehouse.',href:'/office',icon:'document',symbol:'A'},
  {id:'warehouse',name:'Warehouse',kind:'Keep',description:'Your AltDrive: private files, folders, sharing and sync. One storage allowance with Office.',href:'/warehouse',icon:'warehouse',symbol:'▱'},
  {id:'search',name:'AltStack Search',kind:'Discover',description:'Independent web metasearch. Multiple sources, no paid placements, no advertising.',href:'/search/',icon:'search',symbol:'⌕'},

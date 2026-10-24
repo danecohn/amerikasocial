@@ -2,3 +2,5 @@
 
 .app-icon.mail{background:linear-gradient(145deg,#e9f6ff,#4d8cc7);color:white;text-shadow:0 2px 3px #174e8366}.app-icon.calendar{background:linear-gradient(#e86776 0 23%,#fff 24%,#dce7f5);color:#35577c}.mobile-appnav{display:none}
 @media(max-width:760px){.desktop-heading .eyebrow{display:none}.desktop-heading h1{font-size:27px;line-height:1.2;margin-top:0}.desktop-heading>div>p:last-child{margin-bottom:0}.desktop{padding-top:20px;padding-bottom:105px}.app-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 4px}.desktop-app{min-height:112px}.desktop-app b{font-size:12px}.welcome-window{margin-top:10px}.dock-shell{bottom:max(8px,env(safe-area-inset-bottom));padding:9px 12px}.dock-app .app-icon{width:44px;height:44px}.dock-app{min-width:48px;min-height:48px}.dock-label{display:none}.dock-apps{gap:9px}.menubar{height:48px;padding-top:env(safe-area-inset-top)}.menubar button{min-width:36px;min-height:36px}}
+
+.app-icon.fm-journal{background:linear-gradient(145deg,#293024,#151a12);color:#d8fba8;border:1px solid #71875955;font-size:22px;letter-spacing:-1px;font-weight:500}

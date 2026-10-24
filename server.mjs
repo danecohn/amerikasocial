@@ -23,7 +23,7 @@ import { normalizeVideo } from './video.mjs';
 import http from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
 import { DatabaseSync, backup } from 'node:sqlite';
-import { randomBytes, randomUUID, scryptSync, timingSafeEqual, createHash } from 'node:crypto';
+import { randomBytes, randomUUID, scryptSync, timingSafeEqual, createHash, createHmac } from 'node:crypto';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createBilling } from './billing.mjs';
@@ -44,6 +44,10 @@ const aptRepository=createAptRepository({dir:join(root,'apt-repo')});
 const pds = process.env.PDS_URL?.replace(/\/$/, '');
 // Explicit public origin supports HTTPS behind a hosting provider's proxy.
 const publicOrigin = process.env.PUBLIC_ORIGIN ? new URL(process.env.PUBLIC_ORIGIN).origin : null;
+// Explicit owned origins keep existing clients working during the domain move.
+const browserOriginAliases=new Set((process.env.BROWSER_ORIGIN_ALIASES||'').split(',').filter(Boolean).map(value=>{const u=new URL(value.trim());if(u.protocol!=='https:'||u.username||u.password)throw Error('Browser origin aliases must be owned HTTPS origins.');return u.origin;}));
+function browserOriginAllowed(req){return !req.headers.origin||req.headers.origin===(publicOrigin||`http${req.socket.encrypted?'s':''}://${req.headers.host}`)||browserOriginAliases.has(req.headers.origin);}
+
 if (publicOrigin && !/^https?:\/\//.test(publicOrigin)) throw new Error('PUBLIC_ORIGIN must be an HTTP or HTTPS origin.');
 if (pds && !/^https:\/\//.test(pds) && process.env.ALLOW_TEST_PDS !== '1') throw new Error('PDS_URL must use HTTPS.');
 const dir = resolve(process.env.DATA_DIR || join(root, 'data', pds ? 'network' : 'preview'));
@@ -84,7 +88,7 @@ function notify(recipient,sender,type,post=null,message=null) {
 function mentions(text) {
   const entries=[];
   for(const match of text.matchAll(/(?<![\w@])@([a-zA-Z0-9](?:[a-zA-Z0-9.-]*[a-zA-Z0-9])?)/g)) {
-    const name=match[1].toLowerCase();const a=db.prepare('SELECT id,handle FROM actors WHERE handle=?').get(name)||(!name.includes('.')&&handleDomain?db.prepare('SELECT id,handle FROM actors WHERE handle=?').get(name+'.'+handleDomain):null);
+    const name=match[1].toLowerCase();const a=actorByHandle(name);
     if(a)entries.push({actor:a,index:{byteStart:Buffer.byteLength(text.slice(0,match.index)),byteEnd:Buffer.byteLength(text.slice(0,match.index+match[0].length))}});
   }
   return entries;
@@ -111,6 +115,9 @@ if (previousMode && previousMode.value !== mode) {
 }
 function networkActor(id){return !!pds && id?.startsWith('did:');}
 const handleDomain=process.env.PDS_HANDLE_DOMAIN||null;
+const legacyHandleDomains=(process.env.LEGACY_HANDLE_DOMAINS||'').split(',').map(v=>v.trim()).filter(Boolean);
+function actorByHandle(value){const exact=db.prepare('SELECT * FROM actors WHERE handle=?').get(value);if(exact||value.includes('.'))return exact;for(const suffix of [...legacyHandleDomains,handleDomain].filter(Boolean)){const actor=db.prepare('SELECT * FROM actors WHERE handle=?').get(value+'.'+suffix);if(actor)return actor;}return null;}
+
 db.exec('CREATE TABLE IF NOT EXISTS login_sessions(token_hash TEXT PRIMARY KEY,actor TEXT NOT NULL,expires INTEGER NOT NULL)');
 db.prepare('INSERT OR IGNORE INTO settings VALUES (?,?)').run('mode', mode);
 if (!pds && !db.prepare('SELECT id FROM actors LIMIT 1').get()) {
@@ -172,8 +179,8 @@ function fail(status,message) { throw Object.assign(new Error(message), { status
 function locationOwner(a){return a.kind==='agent'&&a.operator_id?db.prepare('SELECT us_location_verified_at FROM actors WHERE id=?').get(a.operator_id):a;}
 function requireMediaAccess(actor,video){
   if(billing.plus(actor.id))return;
-  if(video)fail(403,'Video posting requires Makk Social Plus.');
-  if(!locationVerified(locationOwner(actor)?.us_location_verified_at))fail(403,'Photo posting requires a current US location check or Makk Social Plus.');
+  if(video)fail(403,'Video posting requires AltStack Social Plus.');
+  if(!locationVerified(locationOwner(actor)?.us_location_verified_at))fail(403,'Photo posting requires a current US location check or AltStack Social Plus.');
 }
 function publicActor(a) {
   if (!a) return null;
@@ -287,9 +294,9 @@ function oauthTarget(id,user){
   return {id,kind:'gaming',owner:a.id,actor:a.id,name:'Amerika Gaming Publisher',actorName:a.name,scopes:['gaming.read','gaming.publish'],expires:null};
  }
  if(id==='service'){
-  if(!user)return {id:'service',kind:'operator',owner:null,actor:null,name:'Makk Social',actorName:'Your account and owned bots',scopes:['mcp'],expires:null};
+  if(!user)return {id:'service',kind:'operator',owner:null,actor:null,name:'AltStack Social',actorName:'Your account and owned bots',scopes:['mcp'],expires:null};
   const a=db.prepare('SELECT * FROM actors WHERE id=?').get(user);if(!a||a.kind!=='human'||a.suspended_at||a.rules_version!==rulesVersion||!a.rules_accepted_at)return null;
-  return {id:'service',kind:'operator',owner:a.id,actor:a.id,name:'Makk Social',actorName:a.name,scopes:['mcp'],expires:null};
+  return {id:'service',kind:'operator',owner:a.id,actor:a.id,name:'AltStack Social',actorName:a.name,scopes:['mcp'],expires:null};
  }
  const staffConnection=moderation.connection(id);if(staffConnection)return staffConnection;
  const current=new Date().toISOString();
@@ -314,6 +321,10 @@ const server = http.createServer(async(req,res)=>{
   try {
     const url=new URL(req.url,'http://localhost');
     const path=url.pathname;
+    const requestHost=(req.headers.host||'').split(':')[0].toLowerCase();
+    if(publicOrigin&&['GET','HEAD'].includes(req.method)&&requestHost==='www.altstack.org'){res.writeHead(302,{'Location':publicOrigin+url.pathname+url.search,'Cache-Control':'no-store'});res.end();return;}
+    if(publicOrigin&&['GET','HEAD'].includes(req.method)&&requestHost==='account.altstack.org'&&['/','/login','/signin'].includes(path)){res.writeHead(302,{'Location':publicOrigin+'/social'+url.search+'#account','Cache-Control':'no-store'});res.end();return;}
+
     if(path==='/game-crafter'||path.startsWith('/game-crafter/')){
       if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');
       const routes={'/game-crafter':['game-crafter.html','text/html; charset=utf-8'],'/game-crafter/support':['game-crafter-support.html','text/html; charset=utf-8'],'/game-crafter/privacy':['game-crafter-privacy.html','text/html; charset=utf-8'],'/game-crafter/terms':['game-crafter-terms.html','text/html; charset=utf-8'],'/game-crafter/style.css':['game-crafter.css','text/css'],'/game-crafter/icon.png':['game-crafter-icon.png','image/png'],'/game-crafter/download':['game-crafter-v1.0.2.zip','application/zip'],'/game-crafter/demo-game.zip':['game-crafter-demo.zip','application/zip']};
@@ -326,15 +337,15 @@ const server = http.createServer(async(req,res)=>{
     if(gameAsset){if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');return await gaming.content(gameAsset[1],decodeURIComponent(gameAsset[2]),req,res);}
     if(path.startsWith('/gaming/covers/')){const name=path.slice(15);if(!/^(last-lamp|saint-marrows|salt-mine-9|ward-seven|pickles-pickle-shop|rooms-we-kept)\.png$/.test(name))fail(404,'Not found.');if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');res.setHeader('Content-Type','image/png');res.setHeader('Cache-Control','public,max-age=3600');return res.end(req.method==='HEAD'?undefined:await readFile(join(root,'public','gaming-covers',name)));}
     if(path==='/gaming'||path==='/gaming/')res.setHeader('Content-Security-Policy',"default-src 'self'; style-src 'self'; script-src 'self'; frame-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'");
-    if(path.startsWith('/api/gaming/mcp-upload/')){if(req.method!=='PUT')fail(405,'Use PUT for game ZIP uploads.');if(req.headers.origin&&req.headers.origin!==(publicOrigin||'http://'+req.headers.host))fail(403,'Cross-origin uploads are disabled.');return json(res,201,await gamingPublisher.upload(path.slice('/api/gaming/mcp-upload/'.length),req.headers.authorization?.replace(/^Bearer /,''),req));}
+    if(path.startsWith('/api/gaming/mcp-upload/')){if(req.method!=='PUT')fail(405,'Use PUT for game ZIP uploads.');if(!browserOriginAllowed(req))fail(403,'Cross-origin uploads are disabled.');return json(res,201,await gamingPublisher.upload(path.slice('/api/gaming/mcp-upload/'.length),req.headers.authorization?.replace(/^Bearer /,''),req));}
     if(path.startsWith('/api/gaming/')){
       const credential=req.headers.authorization?.replace(/^Bearer /,''),signed=session(credential);const route=path.slice(12);
       if(req.method==='GET'&&route==='catalog')return json(res,200,gaming.catalog(signed?.actor));
-      if(!signed)fail(401,'Sign in to Makk Social to play and save progress.');enforcement.requireActive(db.prepare('SELECT * FROM actors WHERE id=?').get(signed.actor));requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(signed.actor));const owner=operatorOnly(signed);
+      if(!signed)fail(401,'Sign in to AltStack Social to play and save progress.');enforcement.requireActive(db.prepare('SELECT * FROM actors WHERE id=?').get(signed.actor));requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(signed.actor));const owner=operatorOnly(signed);
       const key='gaming:'+owner.id,bucket=limits.get(key)||{n:0,until:Date.now()+60000};if(bucket.until<Date.now()){bucket.n=0;bucket.until=Date.now()+60000;}limits.set(key,bucket);if(++bucket.n>180)fail(429,'Too many gaming requests. Retry shortly.');
       if(req.method==='GET'&&route==='mine')return json(res,200,gaming.mine(owner.id));
       if(req.method==='GET'&&route==='reports')return json(res,200,gaming.reports(owner.id));
-      if(!['POST','PUT'].includes(req.method))fail(405,'Method not allowed.');if(req.headers.origin&&req.headers.origin!==(publicOrigin||`http://${req.headers.host}`))fail(403,'Cross-origin requests are disabled.');
+      if(!['POST','PUT'].includes(req.method))fail(405,'Method not allowed.');if(!browserOriginAllowed(req))fail(403,'Cross-origin requests are disabled.');
       const target=/^games\/([a-z0-9-]{1,80})\/(archive|launch|save|manage|report)$/.exec(route);
       if(target&&target[2]==='archive'&&req.method==='PUT')return json(res,201,await gaming.upload(owner.id,target[1],req));
       if(req.method!=='POST')fail(405,'Method not allowed.');const payload=await body(req);
@@ -344,7 +355,18 @@ const server = http.createServer(async(req,res)=>{
       fail(404,'Gaming endpoint not found.');
     }
 
-    if(path.startsWith('/api/desktop/')){if(req.method!=='POST')fail(405,'Use POST.');if(req.headers.origin&&req.headers.origin!==(publicOrigin||`http://${req.headers.host}`))fail(403,'Cross-origin requests are disabled.');const b=await body(req);res.setHeader('Cache-Control','no-store');if(path==='/api/desktop/start')return json(res,201,desktopAuth.start(b.challenge,loginGuard.clientIp(req)));if(path==='/api/desktop/approve')return json(res,200,desktopAuth.approve(b.id,req.headers.authorization?.replace(/^Bearer /,'')));if(path==='/api/desktop/exchange')return json(res,200,desktopAuth.exchange(b.id,b.verifier));fail(404,'Not found.');}
+    if(path==='/api/internal/office-entitlement'){
+      if(req.method!=='GET')fail(405,'Use GET.');
+      const secret=process.env.OFFICE_ENTITLEMENT_SECRET;if(!secret||secret.length<32)fail(503,'Office entitlements are unavailable.');
+      const time=req.headers['x-altstack-time'],signature=req.headers['x-altstack-signature'];
+      if(typeof time!=='string'||!/^\d{13}$/.test(time)||Math.abs(Date.now()-Number(time))>60000||typeof signature!=='string'||!/^[-_A-Za-z0-9]{43}$/.test(signature))fail(401,'Invalid service authorization.');
+      const expected=createHmac('sha256',secret).update(time+'\nGET\n'+url.pathname+url.search).digest('base64url');
+      if(!timingSafeEqual(Buffer.from(signature),Buffer.from(expected)))fail(401,'Invalid service authorization.');
+      const actor=db.prepare('SELECT * FROM actors WHERE id=?').get(url.searchParams.get('actor'));if(!actor)fail(404,'Account not found.');enforcement.requireActive(actor);
+      res.setHeader('Cache-Control','no-store');return json(res,200,{actor:actor.id,plus:billing.plus(actor.id)});
+    }
+
+    if(path.startsWith('/api/desktop/')){if(req.method!=='POST')fail(405,'Use POST.');if(!browserOriginAllowed(req))fail(403,'Cross-origin requests are disabled.');const b=await body(req);res.setHeader('Cache-Control','no-store');if(path==='/api/desktop/start')return json(res,201,desktopAuth.start(b.challenge,loginGuard.clientIp(req)));if(path==='/api/desktop/approve')return json(res,200,desktopAuth.approve(b.id,req.headers.authorization?.replace(/^Bearer /,'')));if(path==='/api/desktop/exchange')return json(res,200,desktopAuth.exchange(b.id,b.verifier));fail(404,'Not found.');}
     if(path==='/desktop-connect'||path==='/desktop-connect.js'){if(req.method!=='GET')fail(405,'Use GET.');res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('Content-Type',path.endsWith('.js')?'text/javascript':'text/html');return res.end(await readFile(join(root,'public',path.endsWith('.js')?'desktop-connect.js':'desktop-connect.html')));}
     if(path==='/.well-known/openai-apps-challenge'){
       if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');
@@ -361,7 +383,7 @@ const server = http.createServer(async(req,res)=>{
       if(path==='/share-image'){const key='share-image:'+req.socket.remoteAddress;const l=limits.get(key)||{n:0,until:Date.now()+60000};if(l.until<Date.now()){l.n=0;l.until=Date.now()+60000;}limits.set(key,l);if(++l.n>60)fail(429,'Too many share image requests. Retry shortly.');const bytes=await sharing.image(uri,url.searchParams.get('format')==='preview');res.setHeader('Content-Type','image/png');res.setHeader('Content-Length',bytes.length);if(url.searchParams.get('download')==='1')res.setHeader('Content-Disposition','attachment; filename="amerika-social-post.png"');return res.end(req.method==='HEAD'?undefined:bytes);}
       res.setHeader('Content-Type','text/html; charset=utf-8');
       if(path==='/embed'){res.setHeader('Content-Security-Policy',"default-src 'none'; style-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors *");return res.end(req.method==='HEAD'?undefined:sharing.embed(uri));}
-      const html=sharing.page(await readFile(join(root,'public','index.html'),'utf8'),uri);return res.end(req.method==='HEAD'?undefined:html);
+      const html=sharing.page(await readFile(join(root,'public','social.html'),'utf8'),uri);return res.end(req.method==='HEAD'?undefined:html);
     }
     if(path.startsWith('/mcp/')){
       const id=path.slice(5);const resource=mcpUrl(id);const credential=req.headers.authorization?.replace(/^Bearer /,'');const auth=oauth.authenticate(credential,resource);
@@ -378,17 +400,19 @@ const server = http.createServer(async(req,res)=>{
     if(path==='/api/software-downloads'){if(req.method!=='GET')fail(405,'Use GET.');const data=await softwareDownloads(url.searchParams.get('product'));res.setHeader('Cache-Control','public,max-age=30');return json(res,200,data);}
     if (!path.startsWith('/api/')) {
       if(req.method!=='GET') fail(405,'Method not allowed.');
-      const files={'/makk.css':['makk.css','text/css'],'/desktop-ui.css':['makk.css','desktop-ui.css','text/css'],'/fonts/Inter.ttf':['fonts/Inter.ttf','font/ttf'],'/fonts/Inter-OFL.txt':['fonts/Inter-OFL.txt','text/plain'],'/gaming':['gaming.html','text/html'],'/gaming/':['gaming.html','text/html'],'/gaming.js':['gaming.js','text/javascript'],'/gaming.css':['gaming.css','text/css'],'/gaming/developers':['gaming-guide.html','text/html'],'/gaming/sdk.js':['gaming-bridge.js','text/javascript'],'/downloads':['downloads.html','text/html'],'/downloads/':['downloads.html','text/html'],'/downloads.css':['downloads.css','text/css'],'/':['index.html','text/html'],'/moderate':['index.html','text/html'],'/privacy':['privacy.html','text/html'],'/terms':['terms.html','text/html'],'/plugin':['plugin.html','text/html'],'/support':['support.html','text/html'],'/legal.css':['legal.css','text/css'],'/moderation-webhooks.md':['moderation-webhooks.md','text/plain'],'/webhook-receivers.md':['webhook-receivers.md','text/plain'],'/moderation.js':['moderation.js','text/javascript'],'/app.js':['app.js','text/javascript'],'/account.js':['account.js','text/javascript'],'/dating.js':['dating.js','text/javascript'],'/communities.js':['communities.js','text/javascript'],'/features.css':['features.css','text/css'],'/style.css':['style.css','text/css'],'/agent.md':['agent.md','text/plain'],'/logo.svg':['logo.svg','image/svg+xml'],'/manifest.webmanifest':['manifest.webmanifest','application/manifest+json'],'/icon-32.png':['icon-32.png','image/png'],'/icon-180.png':['icon-180.png','image/png'],'/icon-192.png':['icon-192.png','image/png'],'/icon-512.png':['icon-512.png','image/png'],'/icon-maskable-512.png':['icon-maskable-512.png','image/png']};
+      const officeOrigin=(process.env.OFFICE_ORIGIN||'https://office.altstack.org').replace(/\/$/,'');
+      if(['/office','/office/','/drive','/drive/'].includes(url.pathname)){res.writeHead(302,{'Location':officeOrigin+'/','Cache-Control':'no-store'});res.end();return;}
+      const files={'/social':['social.html','text/html'],'/social/':['social.html','text/html'],'/platform-nav.css':['platform-nav.css','text/css'],'/platform.css':['platform.css','text/css'],'/platform.js':['platform.js','text/javascript'],'/welcome':['welcome.html','text/html'],'/welcome/':['welcome.html','text/html'],'/makk.css':['makk.css','text/css'],'/desktop-ui.css':['desktop-ui.css','text/css'],'/fonts/Inter.ttf':['fonts/Inter.ttf','font/ttf'],'/fonts/Inter-OFL.txt':['fonts/Inter-OFL.txt','text/plain'],'/gaming':['gaming.html','text/html'],'/gaming/':['gaming.html','text/html'],'/gaming.js':['gaming.js','text/javascript'],'/gaming.css':['gaming.css','text/css'],'/gaming/developers':['gaming-guide.html','text/html'],'/gaming/sdk.js':['gaming-bridge.js','text/javascript'],'/downloads':['downloads.html','text/html'],'/downloads/':['downloads.html','text/html'],'/downloads.css':['downloads.css','text/css'],'/':['index.html','text/html'],'/moderate':['social.html','text/html'],'/privacy':['privacy.html','text/html'],'/terms':['terms.html','text/html'],'/plugin':['plugin.html','text/html'],'/support':['support.html','text/html'],'/legal.css':['legal.css','text/css'],'/moderation-webhooks.md':['moderation-webhooks.md','text/plain'],'/webhook-receivers.md':['webhook-receivers.md','text/plain'],'/moderation.js':['moderation.js','text/javascript'],'/app.js':['app.js','text/javascript'],'/account.js':['account.js','text/javascript'],'/dating.js':['dating.js','text/javascript'],'/communities.js':['communities.js','text/javascript'],'/features.css':['features.css','text/css'],'/style.css':['style.css','text/css'],'/agent.md':['agent.md','text/plain'],'/logo.svg':['logo.svg','image/svg+xml'],'/manifest.webmanifest':['manifest.webmanifest','application/manifest+json'],'/icon-32.png':['icon-32.png','image/png'],'/icon-180.png':['icon-180.png','image/png'],'/icon-192.png':['icon-192.png','image/png'],'/icon-512.png':['icon-512.png','image/png'],'/icon-maskable-512.png':['icon-maskable-512.png','image/png']};
       Object.assign(files,{'/venture':['venture-downloads.html','text/html'],'/downloads/venture':['venture-downloads.html','text/html'],'/downloads/office':['office-downloads.html','text/html'],'/downloads/os':['os-downloads.html','text/html'],'/os':['os-downloads.html','text/html'],'/os-downloads.css':['os-downloads.css','text/css'],'/os-downloads.js':['os-downloads.js','text/javascript'],'/software-downloads.js':['software-downloads.js','text/javascript'],'/software-downloads.css':['software-downloads.css','text/css'],'/venture-icon.svg':['venture-icon.svg','image/svg+xml']});
       files['/mobile-verification']=['mobile-verification.html','text/html'];
       const f=files[path]; if(!f) fail(404,'Not found.');
-      res.setHeader('Content-Type',f[1]); if(['makk.css','desktop-ui.css','gaming.html','gaming.js','gaming.css','gaming-guide.html','gaming-bridge.js','downloads.html','downloads.css','index.html','app.js','account.js','style.css','dating.js','communities.js','features.css','privacy.html','terms.html','plugin.html','support.html','legal.css','moderation.js'].includes(f[0]))res.setHeader('Cache-Control','no-store'); res.end(await readFile(join(root,'public',f[0]))); return;
+      res.setHeader('Content-Type',f[1]); if(['social.html','platform.css','platform.js','makk.css','desktop-ui.css','gaming.html','gaming.js','gaming.css','gaming-guide.html','gaming-bridge.js','downloads.html','downloads.css','index.html','app.js','account.js','style.css','dating.js','communities.js','features.css','privacy.html','terms.html','plugin.html','support.html','legal.css','moderation.js'].includes(f[0]))res.setHeader('Cache-Control','no-store'); res.end(await readFile(join(root,'public',f[0]))); return;
     }
     const token=req.headers.authorization?.replace(/^Bearer /,'');
     const s=session(token); const me=s?.actor;
     if(path==='/api/dating/media'){if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');return dating.mediaServe(url.searchParams.get('id'),url.searchParams.get('access')||'',req,res);}
-    if(path.startsWith('/api/communities/')){const action=path.slice(17);if(req.method==='GET')return json(res,200,communities.read(action,url,s));if(req.method!=='POST')fail(405,'Method not allowed.');if(req.headers.origin&&req.headers.origin!==(publicOrigin||`http://${req.headers.host}`))fail(403,'Cross-origin requests are disabled.');const key='communities:'+me;const l=limits.get(key)||{n:0,until:Date.now()+60000};if(l.until<Date.now()){l.n=0;l.until=Date.now()+60000;}limits.set(key,l);if(++l.n>60)fail(429,'Too many community requests.');return json(res,200,communities.write(action,await body(req),s));}
-    if(path.startsWith('/api/dating/')){const action=path.slice(12);if(req.method==='GET')return json(res,200,action==='admin/reports'?dating.reports(s):dating.get(action,url,s));if(req.method!=='POST')fail(405,'Method not allowed.');if(req.headers.origin&&req.headers.origin!==(publicOrigin||`http://${req.headers.host}`))fail(403,'Cross-origin requests are disabled.');const key='dating:'+me+':'+action;const l=limits.get(key)||{n:0,until:Date.now()+60000};if(l.until<Date.now()){l.n=0;l.until=Date.now()+60000;}limits.set(key,l);if(++l.n>(action==='upload'?20:60))fail(429,'Too many Dating requests. Retry shortly.');if(action==='upload')return json(res,201,await dating.upload(req,s,url));const b=await body(req);return json(res,200,action==='admin/action'?dating.action(s,b):dating.post(action,b,s));}
+    if(path.startsWith('/api/communities/')){const action=path.slice(17);if(req.method==='GET')return json(res,200,communities.read(action,url,s));if(req.method!=='POST')fail(405,'Method not allowed.');if(!browserOriginAllowed(req))fail(403,'Cross-origin requests are disabled.');const key='communities:'+me;const l=limits.get(key)||{n:0,until:Date.now()+60000};if(l.until<Date.now()){l.n=0;l.until=Date.now()+60000;}limits.set(key,l);if(++l.n>60)fail(429,'Too many community requests.');return json(res,200,communities.write(action,await body(req),s));}
+    if(path.startsWith('/api/dating/')){const action=path.slice(12);if(req.method==='GET')return json(res,200,action==='admin/reports'?dating.reports(s):dating.get(action,url,s));if(req.method!=='POST')fail(405,'Method not allowed.');if(!browserOriginAllowed(req))fail(403,'Cross-origin requests are disabled.');const key='dating:'+me+':'+action;const l=limits.get(key)||{n:0,until:Date.now()+60000};if(l.until<Date.now()){l.n=0;l.until=Date.now()+60000;}limits.set(key,l);if(++l.n>(action==='upload'?20:60))fail(429,'Too many Dating requests. Retry shortly.');if(action==='upload')return json(res,201,await dating.upload(req,s,url));const b=await body(req);return json(res,200,action==='admin/action'?dating.action(s,b):dating.post(action,b,s));}
 
     if(path==='/api/media'&&req.method==='GET')return media.serve(url.searchParams.get('id'),req,res);
     if(path==='/api/google/notifications'&&req.method==='POST')return json(res,200,await googleBilling.notification(req.headers.authorization?.replace(/^Bearer /,''),await body(req)));
@@ -400,7 +424,7 @@ const server = http.createServer(async(req,res)=>{
       if(path==='/api/recovery/status'){if(!s)fail(401,'Sign in to manage recovery.');if(s.keyId)fail(403,'Account sign-in required.');const target=billingActor(s,url.searchParams.get('actor'));return json(res,200,recovery.status(target.id));}
       if(path==='/api/welcome'){if(!s)fail(401,'Sign in to see invitations.');allow(s,'read');const actor=billingActor(s,url.searchParams.get('actor'));return json(res,200,welcome.status(actor.id));}
       if(path==='/api/share'){const uri=url.searchParams.get('uri');sharing.page('<head></head>',uri);return json(res,200,{url:sharing.url(uri),image:(publicOrigin||`http://localhost:${server.address().port}`)+'/share-image?uri='+encodeURIComponent(uri)});}
-      if(path==='/api/oembed'){let shared;try{shared=new URL(url.searchParams.get('url'));}catch{fail(400,'Choose a post URL.');}if(shared.origin!==(publicOrigin||`http://localhost:${server.address().port}`)||!shared.pathname.startsWith('/post/'))fail(400,'Choose an Makk Social post URL.');let uri;try{uri=decodeURIComponent(shared.pathname.slice(6));}catch{fail(400,'Invalid post URL.');}sharing.page('<head></head>',uri);const src=(publicOrigin||`http://localhost:${server.address().port}`)+'/embed?uri='+encodeURIComponent(uri);return json(res,200,{version:'1.0',type:'rich',provider_name:'Makk Social',provider_url:publicOrigin||`http://localhost:${server.address().port}`,width:550,height:550,html:`<iframe src="${escapeHtml(src)}" width="550" height="550" title="Makk Social post" loading="lazy" style="max-width:100%;border:0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"></iframe>`});}
+      if(path==='/api/oembed'){let shared;try{shared=new URL(url.searchParams.get('url'));}catch{fail(400,'Choose a post URL.');}if(shared.origin!==(publicOrigin||`http://localhost:${server.address().port}`)||!shared.pathname.startsWith('/post/'))fail(400,'Choose an AltStack Social post URL.');let uri;try{uri=decodeURIComponent(shared.pathname.slice(6));}catch{fail(400,'Invalid post URL.');}sharing.page('<head></head>',uri);const src=(publicOrigin||`http://localhost:${server.address().port}`)+'/embed?uri='+encodeURIComponent(uri);return json(res,200,{version:'1.0',type:'rich',provider_name:'AltStack Social',provider_url:publicOrigin||`http://localhost:${server.address().port}`,width:550,height:550,html:`<iframe src="${escapeHtml(src)}" width="550" height="550" title="AltStack Social post" loading="lazy" style="max-width:100%;border:0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"></iframe>`});}
       if(path==='/api/health'){db.prepare('SELECT 1').get();return json(res,200,{ok:true});}
       if(path.startsWith('/api/moderation/'))return json(res,200,moderation.get(path.slice(16),url,s));
       if(path==='/api/admin'){const a=me&&db.prepare('SELECT * FROM actors WHERE id=?').get(me);enforcement.requireAdmin(s,a);return json(res,200,{...enforcement.queue(),operations:operations.status(),billingConfigured:billing.enabled,billingVerification:billing.verification()});}
@@ -416,7 +440,7 @@ const server = http.createServer(async(req,res)=>{
         return json(res,200,{conversations:rows.filter(m=>!accountSafety.blocked(me,m.peer)).map(m=>({...m,peer:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(m.peer)),unread:db.prepare('SELECT COUNT(*) AS n FROM messages WHERE recipient=? AND sender=? AND seen=0').get(me,m.peer).n})),unread:db.prepare('SELECT sender FROM messages WHERE recipient=? AND seen=0').all(me).filter(n=>!accountSafety.blocked(me,n.sender)).length});
       }
       if(path==='/api/config')loginGuard.identity(req,res);
-      if(path==='/api/config') return json(res,200,{name:'Makk Social',tagline:"Why Can't We Be Friends?",americanConfirmationRequired:true,rules:{version:rulesVersion,prohibited},feedOrder:'newest-first',mode:pds?'atproto':'preview',pds:pds||null,handleDomain,managedInvites:!!process.env.PDS_ADMIN_PASSWORD,legacyAccounts:process.env.ALLOW_LEGACY_ACCOUNTS==='true',captcha:{enabled:captcha.required,siteKey:captcha.siteKey}});
+      if(path==='/api/config') return json(res,200,{name:'AltStack Social',canonicalOrigin:publicOrigin,tagline:"Why Can't We Be Friends?",americanConfirmationRequired:true,rules:{version:rulesVersion,prohibited},feedOrder:'newest-first',mode:pds?'atproto':'preview',pds:pds||null,handleDomain,managedInvites:!!process.env.PDS_ADMIN_PASSWORD,legacyAccounts:process.env.ALLOW_LEGACY_ACCOUNTS==='true',captcha:{enabled:captcha.required,siteKey:captcha.siteKey}});
       if(path==='/api/me') {const a=me&&db.prepare('SELECT * FROM actors WHERE id=?').get(me);return json(res,200,{actor:a?ownActor(a):null});}
       if(path==='/api/actors'){
        const cursor=Number(url.searchParams.get('cursor')||0);if(!Number.isSafeInteger(cursor)||cursor<0)fail(400,'Invalid directory cursor.');const params=[];let where='deleted_at IS NULL AND suspended_at IS NULL';if(pds)where+=" AND id NOT IN ('preview:atlas','preview:nova','preview:maya')";
@@ -472,7 +496,7 @@ const server = http.createServer(async(req,res)=>{
     }
     if(req.method!=='POST') fail(405,'Method not allowed.');
     // Browser requests must originate here. Agent clients omit Origin and use bearer auth.
-    if(req.headers.origin && req.headers.origin !== (publicOrigin || `http${req.socket.encrypted?'s':''}://${req.headers.host}`)) fail(403,'Cross-origin writes are disabled.');
+    if(!browserOriginAllowed(req)) fail(403,'Cross-origin writes are disabled.');
     const key=(me||(path==='/api/login'||path==='/api/register'?loginGuard.clientIp(req):req.socket.remoteAddress))+(path==='/api/login'||path==='/api/register'?':auth':':write');
     const limit=limits.get(key)||{n:0,until:Date.now()+60000};
     if(limit.until<Date.now()){limit.n=0;limit.until=Date.now()+60000;}
@@ -493,7 +517,7 @@ const server = http.createServer(async(req,res)=>{
       }finally{mediaUploadBusy=false;}
     }
     const b=await body(req);
-    if(path==='/api/recovery/reset'){const handle=typeof b.handle==='string'?b.handle.trim().replace(/^@/,'').toLowerCase():b.handle;const resolved=typeof handle==='string'&&!db.prepare('SELECT id FROM actors WHERE handle=?').get(handle)&&handleDomain&&!handle.includes('.')?handle+'.'+handleDomain:handle;await recovery.reset(resolved,b.code,b.password);return json(res,200,{ok:true});}
+    if(path==='/api/recovery/reset'){const handle=typeof b.handle==='string'?b.handle.trim().replace(/^@/,'').toLowerCase():b.handle;const resolved=typeof handle==='string'&&!handle.includes('.')?(actorByHandle(handle)?.handle||(handleDomain?handle+'.'+handleDomain:handle)):handle;await recovery.reset(resolved,b.code,b.password);return json(res,200,{ok:true});}
     if(path==='/api/register'||path==='/api/login'||path==='/api/agents') {
       const creatingAgent=path==='/api/agents';
       let owner=null;if(creatingAgent){if(!s)fail(401,'Sign in to create an agent.');owner=operatorOnly(s);requireRules(owner);}
@@ -502,7 +526,7 @@ const server = http.createServer(async(req,res)=>{
       if(password.length<10)fail(400,'Use a password of at least 10 characters.');
       let a,auth;
       if(path==='/api/register'||creatingAgent) {
-        if(pds&&handleDomain&&!handle.includes('.')){if(db.prepare('SELECT id FROM actors WHERE handle=?').get(handle))fail(409,'Handle already registered.');handle=handle+'.'+handleDomain;}
+        if(pds&&handleDomain&&!handle.includes('.')){if(actorByHandle(handle))fail(409,'Handle already registered.');handle=handle+'.'+handleDomain;}
         if (b.americanConfirmed !== true) fail(400,'Confirm that you are American to join. For agent accounts, the operator must be American.');
         if (b.rulesAccepted !== true) fail(400,'Agree to the Community Rules to join. Crypto miners, phishing, card fraud & testing, spam, pirated content, and anything illegal are strictly banned.');
         const name=textField(b.name,64,'a display name'); const kind=creatingAgent?'agent':b.kind;
@@ -514,7 +538,7 @@ const server = http.createServer(async(req,res)=>{
         const bio=typeof b.bio==='string'?b.bio.slice(0,300):'';
         if(pds) {
           const inviteCode=b.inviteCode||(process.env.PDS_ADMIN_PASSWORD?(await adminXrpc('com.atproto.server.createInviteCode',{useCount:1})).code:null);
-          auth=await xrpc('com.atproto.server.createAccount',{handle,password,email:'account-'+randomUUID()+'@accounts.amerika.social',...(inviteCode?{inviteCode}:{})});
+          auth=await xrpc('com.atproto.server.createAccount',{handle,password,email:'account-'+randomUUID()+'@'+(process.env.ACCOUNT_EMAIL_DOMAIN||'accounts.altstack.org'),...(inviteCode?{inviteCode}:{})});
           if(creatingAgent&&db.prepare('SELECT deleted_at FROM actors WHERE id=?').get(owner.id)?.deleted_at){accountSafety.orphan(auth.did);fail(410,'Your operator account has been deleted.');}
           a={id:auth.did,handle:auth.handle,name,kind,bio};
           db.prepare('INSERT INTO actors(id,handle,name,kind,bio) VALUES (?,?,?,?,?)').run(a.id,a.handle,name,kind,bio);if(creatingAgent)db.prepare('UPDATE actors SET operator_id=? WHERE id=?').run(owner.id,a.id);
@@ -528,11 +552,10 @@ const server = http.createServer(async(req,res)=>{
       } else {
         const loginIdentity=loginGuard.identity(req,res),releaseLogin=loginGuard.begin(loginIdentity);
         try{
-        a=db.prepare('SELECT * FROM actors WHERE handle=?').get(handle);
-        if(!a&&pds&&handleDomain&&!handle.includes('.'))a=db.prepare('SELECT * FROM actors WHERE handle=?').get(handle+'.'+handleDomain);
+        a=actorByHandle(handle);
         // Trust the enrolled account type, never a client-supplied human/agent flag.
         if(a?.kind!=='agent')await captcha.verify(b.captchaToken);
-        if(pds&&(!a||networkActor(a.id))){ if(!a&&handleDomain&&!handle.includes('.'))handle=handle+'.'+handleDomain;auth=await xrpc('com.atproto.server.createSession',{identifier:a?.handle||handle,password}); a=db.prepare('SELECT * FROM actors WHERE id=?').get(auth.did); if(!a)fail(403,'This account is not enrolled in Makk Social. Register through Makk Social first.'); }
+        if(pds&&(!a||networkActor(a.id))){ if(!a&&handleDomain&&!handle.includes('.'))handle=handle+'.'+handleDomain;auth=await xrpc('com.atproto.server.createSession',{identifier:a?.handle||handle,password}); a=db.prepare('SELECT * FROM actors WHERE id=?').get(auth.did); if(!a)fail(403,'This account is not enrolled in AltStack Social. Register through AltStack Social first.'); }
         else {if(!a?.password || !timingSafeEqual(Buffer.from(a.password,'hex'),scryptSync(password,a.salt,64)))fail(401,'Incorrect handle or password.');}
         loginGuard.success(loginIdentity);
         }catch(error){if(error.status===401||error.code==='AuthenticationRequired')loginGuard.failure(loginIdentity);throw error;}finally{releaseLogin();}
@@ -738,4 +761,4 @@ const server = http.createServer(async(req,res)=>{
 });
 server.requestTimeout=30*60000;
 void gaming.bootstrap();
-server.listen(Number(process.env.PORT||3000),process.env.HOST||'127.0.0.1',()=>console.log(`Makk Social ${pds?'AT Protocol':'local preview'} listening on ${JSON.stringify(server.address())}`));
+server.listen(Number(process.env.PORT||3000),process.env.HOST||'127.0.0.1',()=>console.log(`AltStack Social ${pds?'AT Protocol':'local preview'} listening on ${JSON.stringify(server.address())}`));

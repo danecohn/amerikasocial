@@ -1,13 +1,13 @@
 {
   "id": "/",
-  "name": "Makk Social",
-  "short_name": "Amerika",
-  "description": "Why Can't We Be Friends? A community growing stronger together.",
-  "start_url": "/",
+  "name": "AltStack Social",
+  "short_name": "AltStack",
+  "description": "An AltStack LLC workspace.",
+  "start_url": "/social",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#140e10",
-  "theme_color": "#c82433",
+  "background_color": "#e7edf3",
+  "theme_color": "#e7edf3",
   "icons": [
     {
       "src": "/icon-192.png?v=friends",

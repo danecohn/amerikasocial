@@ -15,11 +15,11 @@ def register(b):
 
     def build():
         p = b.Pkg(NAME, b.DE_VERSION,
-                  'Amerika Render: Blender with an AI modelling assistant\n'
+                  'Render: Blender with an AI modelling assistant\n'
                   'Talk to Blender: describe a model and the assistant builds, looks at and refines it with real Blender tools, '
-                  'then exports game-ready .glb files to your Amerika Studio project. Powered by Blender (GPL-3.0-or-later); '
-                  'Blender is a trademark of the Blender Foundation and Amerika Render is not affiliated with or endorsed by it.',
-                  arch='all', title='Amerika Render', category='Graphics', section='graphics',
+                  'then exports game-ready .glb files to your Studio project. Powered by Blender (GPL-3.0-or-later); '
+                  'Blender is a trademark of the Blender Foundation and Render is not affiliated with or endorsed by it.',
+                  arch='all', title='AltStack Render', category='Graphics', section='graphics',
                   depends=f'amerika-studio (>= {b.DE_VERSION}), blender (>= 5.0), python3, python3-numpy')
         addon = src / 'amerika_render'
         files = sorted(f for f in addon.iterdir() if f.is_file() and f.suffix in ('.py', '.toml'))
@@ -53,12 +53,12 @@ def register(b):
                                '  command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -q -t /usr/share/icons/hicolor 2>/dev/null || true\n'
                                'fi\nexit 0\n')
         p.copyright('Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/\n'
-                    'Upstream-Name: Amerika Render\n\n'
-                    'Files: *\nCopyright: 2026 Amerika LLC\nLicense: GPL-3.0-or-later\n'
+                    'Upstream-Name: Render\n\n'
+                    'Files: *\nCopyright: 2026 AltStack LLC\nLicense: GPL-3.0-or-later\n'
                     ' On Debian and Ubuntu systems the full text of the GNU General Public License version 3 is in\n'
                     ' /usr/share/common-licenses/GPL-3.\n\n'
-                    'Notice: Amerika Render is powered by Blender (GPL-3.0-or-later). Blender is a trademark of the\n'
-                    ' Blender Foundation; Amerika Render is not affiliated with or endorsed by the Blender Foundation.\n'
+                    'Notice: Render is powered by Blender (GPL-3.0-or-later). Blender is a trademark of the\n'
+                    ' Blender Foundation; Render is not affiliated with or endorsed by the Blender Foundation.\n'
                     ' This package does not contain Blender; it depends on the unmodified Ubuntu "blender" package\n'
                     ' (see /usr/share/doc/blender/copyright and https://projects.blender.org/blender/blender).\n')
         return p

@@ -1,14 +1,14 @@
 ---
 name: amerika-os-overview
-description: Start here on Amerika OS. Explains what this computer is, how Claude operates it through the amerika MCP tools, the approval model and how to verify work before claiming it. Use whenever the user asks you to do anything on or about this computer, or asks what you can do here.
+description: Start here on AltStack Desktop. Explains what this computer is, how Claude operates it through the amerika MCP tools, the approval model and how to verify work before claiming it. Use whenever the user asks you to do anything on or about this computer, or asks what you can do here.
 ---
 
-# Amerika OS overview
+# AltStack Desktop overview
 
-Amerika OS is a Linux desktop (Ubuntu 26.10 ARM64, aimed at the Surface Laptop 7) whose home screen is the Claude desktop app. A custom shell provides the top bar, the launcher (Windows key), the Caster (Copilot key: switch Claude/ChatGPT) and notifications. You operate the machine with the `amerika` MCP server. The full manual is `references/AMERIKA.md`; read it if you have not this session.
+AltStack Desktop is a Linux desktop (Ubuntu 26.10 ARM64, aimed at the Surface Laptop 7) whose home screen is the Claude desktop app. A custom shell provides the top bar, the launcher (Windows key), the Caster (Copilot key: switch Claude/ChatGPT) and notifications. You operate the machine with the `amerika` MCP server. The full manual is `references/AMERIKA.md`; read it if you have not this session.
 
 ## Procedure for any request
-1. **Connected?** Call `amerika.system.status`. If the tool does not exist or errors with "Amerika Shell is not running", stop and tell the user: log in to the Amerika OS session and press Connect in Settings > AI. Do not improvise with other tools.
+1. **Connected?** Call `amerika.system.status`. If the tool does not exist or errors with "Amerika Shell is not running", stop and tell the user: log in to the AltStack Desktop session and press Connect in Settings > AI. Do not improvise with other tools.
 2. **Look.** Use read tools that match the request: `amerika.windows.list`, `amerika.apps.list`, `amerika.settings.get`, `amerika.bar.get`, `amerika.files.list`.
 3. **Pick the narrowest tool.** A dedicated tool beats `amerika.shell.run`. Prefer settings over files, files over shell.
 4. **Act once, then check.** Make one change, read the state back, compare with what the user wanted.

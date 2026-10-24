@@ -51,7 +51,7 @@ def svg(name, way, body, width=9.5):
 
 INDEX = '''[Icon Theme]
 Name=Amerika Tesla
-Comment=Amerika OS matte app icons
+Comment=AltStack Desktop matte app icons
 Inherits=AmerikaOS,Adwaita,hicolor
 Directories=scalable/apps
 

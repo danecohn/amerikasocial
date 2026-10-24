@@ -71,7 +71,7 @@ class Tools:
         reg('windows.list', 'read', 'Open windows with id, title, app, position, size and state.', _schema(), self.windows_list)
         reg('desktops.list', 'read', 'Virtual desktops and the current one.', _schema(), self.desktops_list)
         reg('notifications.list', 'read', 'Recent desktop notifications.', _schema({'limit': I}), self.notifications_list)
-        reg('settings.get', 'read', 'Amerika OS preferences (accent, wallpaper, dock, AI mode).', _schema(), self.settings_get)
+        reg('settings.get', 'read', 'AltStack Desktop preferences (accent, wallpaper, dock, AI mode).', _schema(), self.settings_get)
         reg('files.list', 'read', 'List a folder inside the home directory.', _schema({'path': S}, ['path']), self.files_list)
         # agent-ui: status of the built-in agent. There is deliberately no tool that lets an agent ask, start or message an agent.
         reg('agent.status', 'read', 'Whether Amerika Agent is installed and running, its model and permission mode (never any key).',
@@ -99,7 +99,7 @@ class Tools:
         reg('notifications.send', 'act', 'Show a desktop notification.', _schema({'title': S, 'body': S}, ['title']), self.notifications_send)
         reg('notifications.set_dnd', 'act', 'Turn Do Not Disturb on or off.', _schema({'on': B}, ['on']), self.notifications_dnd)
         from ..settings.api import RULES as _SETTING_RULES  # claude-os: the writable keys follow the settings API (schema-validated by validate())
-        reg('settings.set', 'act', 'Change an Amerika OS preference (the keys the settings API allows): accent, secondary, wallpaper (horizon, grid, dusk), dock_size (32-96), clock_24h, copilot_app (claude, chatgpt, agent, ask), plus any key the settings API adds. Use settings.get to see current values.',
+        reg('settings.set', 'act', 'Change an AltStack Desktop preference (the keys the settings API allows): accent, secondary, wallpaper (horizon, grid, dusk), dock_size (32-96), clock_24h, copilot_app (claude, chatgpt, agent, ask), plus any key the settings API adds. Use settings.get to see current values.',
             _schema({'key': {'type': 'string', 'enum': sorted(_SETTING_RULES)}, 'value': {}}, ['key', 'value']),
             self.settings_set)
         reg('shell.show_launcher', 'act', 'Open or close the launcher.', _schema(), self.show_launcher)

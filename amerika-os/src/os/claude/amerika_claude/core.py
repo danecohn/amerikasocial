@@ -1,4 +1,4 @@
-"""Install, remove, export and check the Amerika OS skills and Claude Code plugin.
+"""Install, remove, export and check the AltStack Desktop skills and Claude Code plugin.
 
 Rules this module keeps:
 * It only runs when the user asks (the `amerika-claude` CLI or the Settings button). No package script calls it.
@@ -133,7 +133,7 @@ def plugin_files(src=None, studio=None):
             data = (json.dumps(cfg, indent=2) + '\n').encode()
         files[f'plugins/{PLUGIN}/{rel}'] = data
     meta = json.loads((src / '.claude-plugin/plugin.json').read_text())
-    market = {'name': PLUGIN, 'owner': {'name': 'Amerika OS'},
+    market = {'name': PLUGIN, 'owner': {'name': 'AltStack Desktop'},
               'metadata': {'description': 'Local marketplace created by amerika-claude. Remove with: amerika-claude remove'},
               'plugins': [{'name': meta['name'], 'source': f'./plugins/{PLUGIN}', 'description': meta['description'],
                            'version': meta['version']}]}
@@ -341,8 +341,8 @@ def custom_instructions():
         guide = source_dir() / 'AMERIKA.md'
     rules = ('Paste this into Claude Desktop > Settings > Profile > custom instructions (or a Project\'s instructions).\n\n')
     body = (
-        f'{INSTRUCTIONS_MARK}\n# Amerika OS\n\n{rules}---\n\n'
-        'You are running on Amerika OS, a Linux desktop built around Claude. When the `amerika` MCP server is connected you can operate '
+        f'{INSTRUCTIONS_MARK}\n# AltStack Desktop\n\n{rules}---\n\n'
+        'You are running on AltStack Desktop, a Linux desktop built around Claude. When the `amerika` MCP server is connected you can operate '
         'the computer with its tools (windows, apps, settings, notifications, files in the home folder, diagnostics). Rules:\n\n'
         '1. Look before you act: use read tools (system.status, windows.list, apps.list, settings.get) first, then make the smallest change.\n'
         '2. Never say something worked until a read tool confirms it. Report what you changed and how to undo it.\n'
@@ -350,7 +350,7 @@ def custom_instructions():
         '4. Stay inside the home folder. Never read or write keys, tokens, ~/.ssh, ~/.config, ~/.claude. Never print a secret you find.\n'
         '5. Prefer settings and the dedicated tools over shell.run; shell.run is critical and asks every time.\n'
         '6. Do not install software, change the update channel, power off or delete files unless the user clearly asked.\n'
-        '7. If the amerika tools are missing, tell the user to log in to the Amerika OS session and press Connect in Settings > AI.\n\n'
+        '7. If the amerika tools are missing, tell the user to log in to the AltStack Desktop session and press Connect in Settings > AI.\n\n'
         'The skills named amerika-* contain the detailed procedures; commands.md lists the slash commands (Claude Code plugin). The full operating manual follows.\n\n---\n\n')
     return body + (guide.read_text(encoding='utf-8') if guide.is_file() else '')
 
@@ -382,7 +382,7 @@ def export(dest, src=None):
     ci.write_text(custom_instructions(), encoding='utf-8')
     written.append(str(ci))
     sheet = Path(src) / 'commands.md' if src else source_dir() / 'commands.md'
-    cs.write_text(COMMANDS_MARK + '\n' + (sheet.read_text(encoding='utf-8') if sheet.is_file() else '# Amerika OS commands\n'), encoding='utf-8')
+    cs.write_text(COMMANDS_MARK + '\n' + (sheet.read_text(encoding='utf-8') if sheet.is_file() else '# AltStack Desktop commands\n'), encoding='utf-8')
     written.append(str(cs))
     return written
 

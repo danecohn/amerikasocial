@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=AmerikaBox
+Name=AltStack Box
 GenericName=Chiptune Maker
 Comment=Make chiptune music with BeepBox and an AI composer
 Exec=amerika-box %F

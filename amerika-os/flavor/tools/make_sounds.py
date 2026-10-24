@@ -54,7 +54,7 @@ SOUNDS = {
 
 INDEX = '''[Sound Theme]
 Name=Amerika
-Comment=Retro-futurist synth blips for Amerika OS
+Comment=Retro-futurist synth blips for AltStack Desktop
 Inherits=freedesktop
 Directories=stereo
 

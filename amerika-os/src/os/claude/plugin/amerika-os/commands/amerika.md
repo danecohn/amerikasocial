@@ -1,14 +1,14 @@
 ---
-description: "Index of every Amerika OS command, grouped, with what each one does"
+description: "Index of every AltStack Desktop command, grouped, with what each one does"
 argument-hint: "[topic]"
 allowed-tools: mcp__amerika__system_status, mcp__plugin_amerika-os_amerika__system_status
 ---
 
-Show the user the Amerika OS command index. Topic filter (may be empty): $ARGUMENTS
+Show the user the AltStack Desktop command index. Topic filter (may be empty): $ARGUMENTS
 Use this list:
 
 Start here:
-  /amerika-os:amerika [topic] - Index of every Amerika OS command, grouped, with what each one does
+  /amerika-os:amerika [topic] - Index of every AltStack Desktop command, grouped, with what each one does
   /amerika-os:status - One-screen status of this computer: system, power, network, windows, hardware, services
 
 Hardware:

@@ -1,7 +1,7 @@
 {
   "name": "amerika-os",
   "version": "1.0.0",
-  "description": "Lets Claude operate Amerika OS: skills, slash commands and the amerika MCP servers for windows, apps, settings, files, diagnostics and game development.",
-  "author": {"name": "Amerika OS"},
+  "description": "Lets Claude operate AltStack Desktop: skills, slash commands and the amerika MCP servers for windows, apps, settings, files, diagnostics and game development.",
+  "author": {"name": "AltStack Desktop"},
   "keywords": ["amerika-os", "desktop", "linux", "mcp", "system"]
 }

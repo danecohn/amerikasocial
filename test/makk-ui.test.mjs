@@ -15,7 +15,7 @@ test('Makk thread windows close, minimize, restore, maximize and respect editor 
   assert.equal((await fetch(base+'/makk.css')).status,200);
   for(const mobile of [false,true]){
    const errors=[],console=new VirtualConsole();console.on('jsdomError',error=>{if(!/navigation \(except hash changes\)/.test(error.message))errors.push(error.message);});
-   dom=await JSDOM.fromURL(base,{runScripts:'dangerously',resources:'usable',pretendToBeVisual:true,virtualConsole:console,beforeParse(w){w.fetch=(url,options)=>fetch(new URL(url,base),options);w.matchMedia=()=>({matches:mobile,addEventListener(){},removeEventListener(){}});w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};}});
+   dom=await JSDOM.fromURL(base+'/social',{runScripts:'dangerously',resources:'usable',pretendToBeVisual:true,virtualConsole:console,beforeParse(w){w.fetch=(url,options)=>fetch(new URL(url,base),options);w.matchMedia=()=>({matches:mobile,addEventListener(){},removeEventListener(){}});w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};}});
    const w=dom.window,d=w.document;
    await wait(()=>d.querySelector('#feed .post'));
    const threadButton=[...d.querySelectorAll('#feed button')].find(b=>b.textContent.includes('View thread'));
@@ -27,7 +27,7 @@ test('Makk thread windows close, minimize, restore, maximize and respect editor 
    d.querySelector('#auth-dialog').showModal();d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));assert.ok(!frame.classList.contains('hidden'),'an editor/dialog gets Escape before the thread');d.querySelector('#auth-dialog').close();
    d.dispatchEvent(new w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await wait(()=>frame.classList.contains('hidden'));assert.equal(w.location.hash,'#feed');
    threadButton.click();await wait(()=>!frame.classList.contains('hidden'));d.querySelector('#thread-back').click();await wait(()=>frame.classList.contains('hidden'));
-   assert.equal(d.title,'Makk Social — Why Can\'t We Be Friends?');assert.deepEqual(errors,[]);dom.window.close();dom=null;
+   assert.equal(d.title,'AltStack Social — Why Can\'t We Be Friends?');assert.deepEqual(errors,[]);dom.window.close();dom=null;
   }
  }finally{dom?.window.close();await new Promise(resolve=>{if(child.exitCode!==null)return resolve();child.once('exit',resolve);child.kill();});await rm(dir,{recursive:true,force:true});}
 });

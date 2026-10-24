@@ -2,7 +2,7 @@
   "schema": 1,
   "id": "org.amerika.welcome",
   "version": "3.0.8",
-  "title": "Welcome to Amerika OS",
+  "title": "Welcome to AltStack Desktop",
   "tagline": "Your own desktop, with Claude and ChatGPT at the centre.",
   "show_once_key": "welcome-3",
   "autostart": {"when": "first-login", "skip_in_live_session": true, "env_skip": "AMERIKA_LIVE"},
@@ -10,7 +10,7 @@
     {
       "id": "hello",
       "title": "Welcome",
-      "body": "Amerika OS is a desktop for Ubuntu 26.10 on ARM64. It is built on the KWin compositor with Amerika's own shell. Other sessions on this computer are never changed.",
+      "body": "AltStack Desktop is a desktop for Ubuntu 26.10 on ARM64. It is built on the KWin compositor with Amerika's own shell. Other sessions on this computer are never changed.",
       "actions": [{"id": "next", "label": "Get started", "type": "next"}]
     },
     {
@@ -44,7 +44,7 @@
       "title": "Help",
       "body": "Manual pages: man amerika-flavour, man amerika-settings. Support and release notes are on the Amerika website.",
       "actions": [
-        {"id": "support", "label": "Open the support page", "type": "link", "url": "https://www.amerika.social/downloads/os"},
+        {"id": "support", "label": "Open the support page", "type": "link", "url": "https://altstack.io/downloads/os"},
         {"id": "finish", "label": "Done", "type": "finish"}
       ]
     }

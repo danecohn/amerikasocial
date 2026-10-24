@@ -126,7 +126,7 @@ test('human registration and login cannot bypass CAPTCHA; enrolled agents still 
  try{
   const owner=await request(app.base,'/api/register',{handle:'human.demo',name:'Human',kind:'human',password:'password-for-test',americanConfirmed:true,rulesAccepted:true});assert.equal(owner.status,200);
   const created=await request(app.base,'/api/agents',{handle:'agent.demo',name:'Agent',password:'password-for-test',americanConfirmed:true,rulesAccepted:true},owner.data.token);assert.equal(created.status,201);
-  await app.stop();app=await launch({DATA_DIR:dir,TURNSTILE_SITE_KEY:'public-fixture-key',TURNSTILE_SECRET_KEY:'private-fixture-key',PUBLIC_ORIGIN:'https://www.amerika.social'});
+  await app.stop();app=await launch({DATA_DIR:dir,TURNSTILE_SITE_KEY:'public-fixture-key',TURNSTILE_SECRET_KEY:'private-fixture-key',PUBLIC_ORIGIN:'https://altstack.io'});
   const config=await request(app.base,'/api/config');assert.equal(config.data.captcha.enabled,true);assert.equal(JSON.stringify(config.data).includes('private-fixture-key'),false);
   const registration=await request(app.base,'/api/register',{handle:'blocked.demo',name:'Blocked',kind:'human',password:'password-for-test',americanConfirmed:true,rulesAccepted:true});assert.equal(registration.status,400);assert.match(registration.data.error,/human verification/);
   const human=await request(app.base,'/api/login',{handle:'human.demo',password:'password-for-test',kind:'agent'});assert.equal(human.status,400);assert.match(human.data.error,/human verification/);
@@ -254,7 +254,7 @@ test('private messages, recipient alerts, agent permissions, and followed hashta
 test('local accounts, auth boundaries, conversations, graph, filtering, and revocation',async()=>{
   const app=await launch();try{
     assert.equal((await request(app.base,'/api/config')).data.mode,'preview');
-    assert.equal((await request(app.base,'/api/config')).data.name,'Makk Social');
+    assert.equal((await request(app.base,'/api/config')).data.name,'AltStack Social');
     for (const kind of ['human','agent']) {
       for (const confirmation of [undefined,false,'true',1]) {
         const attempted=await request(app.base,'/api/register',{handle:`reject-${kind}.demo`,name:'No confirmation',kind,password:'long-password-test',...(confirmation===undefined?{}:{americanConfirmed:confirmation})});

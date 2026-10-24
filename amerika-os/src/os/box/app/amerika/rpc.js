@@ -1,4 +1,4 @@
-/* AmerikaBox: control endpoint for Amerika Agent.
+/* AltStack Box: control endpoint for local automation.
  * Installs window.amerikaStudio.onRpc with handlers for the box.* tools in src/os/studio/tools.json:
  *   song.get, song.set, song.compose_from_description, song.apply_change, play, stop, export.wav, app.prompt
  * Methods arrive WITHOUT the "box." prefix. Results are plain JSON; errors carry a JSON-RPC code in .code. */

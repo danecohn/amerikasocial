@@ -1,4 +1,4 @@
-# Amerika OS welcome / first-run spec
+# AltStack Desktop welcome / first-run spec
 
 `welcome.json` describes the pages and actions of the welcome window that follows the one-time look-and-feel setup of
 `amerika-first-run` (`src/os/amerika/firstrun.py`, owned by the shell team and **not** edited here). The shell UI can load

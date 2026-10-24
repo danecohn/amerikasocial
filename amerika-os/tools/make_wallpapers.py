@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-"""Renders the Amerika OS wallpapers (horizon, grid, dusk) with Qt's painter into src/os/wallpapers."""
+"""Renders the AltStack Desktop wallpapers (horizon, grid, dusk) with Qt's painter into src/os/wallpapers."""
 import math
 import random
 import sys

@@ -17,7 +17,7 @@ APPS = [
     App('paper', 'Paper', 'file-document', ('libreoffice --writer',)),
     App('digits', 'Digits', 'file-spreadsheet', ('libreoffice --calc',)),
     App('slides', 'Slides', 'file-presentation', ('libreoffice --impress',)),
-    App('makbox', 'MakBox', 'music', ('makos-studio-app makbox',)),
+    App('makbox', 'AltStack Box', 'music', ('makos-studio-app makbox',)),
     App('render', 'Render', 'photos', ('makos-studio-app render',)),
     App('engine', 'Engine', 'desktops', ('makos-studio-app engine',)),
     App('sprite', 'Sprite', 'preview', ('makos-studio-app sprite',)),

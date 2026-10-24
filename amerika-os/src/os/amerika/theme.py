@@ -6,12 +6,12 @@ gi.require_version('Gdk', '4.0')
 from gi.repository import Gdk, Gtk  # noqa: E402
 
 CSS = '''
-@define-color am_bg #0b0a14;
-@define-color am_panel #14131f;
-@define-color am_panel_hi #22212f;
-@define-color am_line #3a3950;
-@define-color am_text #ecebf5;
-@define-color am_dim #9a98b0;
+@define-color am_bg #e7edf3;
+@define-color am_panel #f8fafc;
+@define-color am_panel_hi #dde6ef;
+@define-color am_line #aebdcb;
+@define-color am_text #233649;
+@define-color am_dim #51677c;
 @define-color am_accent %(accent)s;
 @define-color am_second %(secondary)s;
 
@@ -22,7 +22,7 @@ CSS = '''
 /* ---------- top bar ---------- */
 window.am-bar, window.am-bar > * { background: transparent; }
 .am-bar-box {
-  background-image: linear-gradient(to bottom, #262535, #12111b);
+  background-image: linear-gradient(to bottom, #fafcfe, #cbd5df);
   border-bottom: 1px solid alpha(@am_accent, .55);
   box-shadow: 0 1px 14px alpha(@am_accent, .35), inset 0 1px 0 alpha(white, .10);
   color: @am_text; padding: 0 10px; min-height: 36px;
@@ -43,7 +43,7 @@ window.am-bar, window.am-bar > * { background: transparent; }
 .am-tray-menu-item:hover { background: alpha(@am_second, .15); }
 .am-ai-chip {
   border-radius: 999px; padding: 2px 12px; font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
-  color: #0b0a14; background-image: linear-gradient(to right, @am_second, @am_accent);
+  color: #e7edf3; background-image: linear-gradient(to right, @am_second, @am_accent);
   box-shadow: 0 0 14px alpha(@am_second, .7);
 }
 .am-ai-chip.idle { color: @am_dim; background-image: none; background: alpha(white, .06); box-shadow: none; }
@@ -138,7 +138,7 @@ row:selected { background: alpha(@am_accent, .25); }
 /* ---------- agent ---------- */
 .am-agent-chip {
   border-radius: 999px; padding: 2px 12px; min-height: 18px; font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
-  color: #0b0a14; border: 1px solid alpha(white, .0);
+  color: #e7edf3; border: 1px solid alpha(white, .0);
   background-image: linear-gradient(to right, @am_accent, shade(@am_accent, .8));
   box-shadow: 0 0 14px alpha(@am_accent, .6);
 }
@@ -149,7 +149,7 @@ row:selected { background: alpha(@am_accent, .25); }
 .am-agent-chip.error { color: white; background-image: linear-gradient(to bottom, #ff4d4d, #9c1c1c); box-shadow: 0 0 14px alpha(#ff4d4d, .7); }
 .am-agent-chip.paused { color: #ffb02e; background-image: none; background: alpha(#ffb02e, .12); border-color: alpha(#ffb02e, .6); box-shadow: none; }
 .am-pill { border-radius: 999px; padding: 1px 10px; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; }
-.am-pill.on { color: #0b0a14; background-image: linear-gradient(to right, #39ff88, #19e3ff); box-shadow: 0 0 10px alpha(#39ff88, .55); }
+.am-pill.on { color: #e7edf3; background-image: linear-gradient(to right, #39ff88, #19e3ff); box-shadow: 0 0 10px alpha(#39ff88, .55); }
 .am-pill.off { color: @am_dim; background: alpha(white, .08); }
 .am-pill.error { color: white; background: alpha(#ff4d4d, .55); border: 1px solid #ff4d4d; }
 .am-keystate { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: @am_dim; }
@@ -164,7 +164,7 @@ row:selected { background: alpha(@am_accent, .25); }
 .am-term text { background: transparent; color: #39ff88; }
 window.am-agent-window { background: @am_bg; color: @am_text; }
 .am-agent-frame { border: 1px solid alpha(@am_accent, .55); box-shadow: inset 0 0 28px alpha(@am_accent, .14), inset 0 0 0 1px alpha(@am_second, .25); }
-.am-agent-header { background-image: linear-gradient(to bottom, #262535, #12111b); border-bottom: 1px solid alpha(@am_accent, .55); box-shadow: 0 1px 14px alpha(@am_accent, .30); padding: 8px 14px; }
+.am-agent-header { background-image: linear-gradient(to bottom, #fafcfe, #cbd5df); border-bottom: 1px solid alpha(@am_accent, .55); box-shadow: 0 1px 14px alpha(@am_accent, .30); padding: 8px 14px; }
 .am-agent-title { font-size: 13px; font-weight: 800; letter-spacing: 3px; color: @am_text; text-shadow: 0 0 12px alpha(@am_accent, .7); }
 .am-agent-dot { min-width: 10px; min-height: 10px; border-radius: 999px; background: @am_dim; }
 .am-agent-dot.idle { background: @am_second; box-shadow: 0 0 10px @am_second; }
@@ -181,8 +181,8 @@ window.am-agent-window { background: @am_bg; color: @am_text; }
 .am-answer-meta { font-size: 10px; font-weight: 800; letter-spacing: 2px; color: @am_second; }
 .am-risk { border-radius: 999px; padding: 2px 12px; font-size: 10px; font-weight: 800; letter-spacing: 2px; }
 .am-risk.read { color: @am_dim; background: alpha(white, .08); }
-.am-risk.act { color: #0b0a14; background: @am_second; box-shadow: 0 0 10px alpha(@am_second, .6); }
-.am-risk.sensitive { color: #0b0a14; background: #ffb02e; box-shadow: 0 0 10px alpha(#ffb02e, .6); }
+.am-risk.act { color: #e7edf3; background: @am_second; box-shadow: 0 0 10px alpha(@am_second, .6); }
+.am-risk.sensitive { color: #e7edf3; background: #ffb02e; box-shadow: 0 0 10px alpha(#ffb02e, .6); }
 .am-risk.critical { color: white; background: #e0243a; box-shadow: 0 0 12px alpha(#ff4d4d, .8); }
 .am-client { font-size: 11px; font-weight: 800; letter-spacing: 2px; color: @am_second; }
 
@@ -217,7 +217,7 @@ window.am-caster { background: alpha(#05040a, .84); }
 .am-bar-btn.flat-time { background-image: none; border-color: transparent; }
 .am-bar-btn.flat-time:hover { border-color: @am_accent; }
 .am-bar-btn.home { border-color: alpha(@am_accent, .55); }
-.am-preview-bar { background-image: linear-gradient(to bottom, #262535, #12111b); border: 1px solid alpha(@am_accent, .55); border-radius: 10px; padding: 4px 10px; min-height: 30px; }
+.am-preview-bar { background-image: linear-gradient(to bottom, #fafcfe, #cbd5df); border: 1px solid alpha(@am_accent, .55); border-radius: 10px; padding: 4px 10px; min-height: 30px; }
 .am-preview-chip { background: alpha(white, .08); border: 1px solid alpha(white, .16); border-radius: 999px; padding: 1px 10px; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: @am_text; }
 .am-claude-first { border-color: alpha(@am_second, .6); box-shadow: 0 0 24px alpha(@am_second, .22); }
 .am-mode-card { background: alpha(white, .04); border: 1px solid alpha(white, .14); border-radius: 16px; padding: 14px; color: @am_text; }
@@ -320,7 +320,7 @@ entry:focus-within { border-color: @am_accent; }
 """
 
 
-def apply(accent='#ff2e63', secondary='#19e3ff', style='retro'):
+def apply(accent='#1764bd', secondary='#237dcc', style='retro'):
     """Install the CSS for the default display. Returns the provider so callers can reload it."""
     provider = Gtk.CssProvider()
     text = CSS % {'accent': accent, 'secondary': secondary}

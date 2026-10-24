@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generates the Amerika Studio icons (hub + the four apps) in the Amerika OS "horizon cartridge" style.
+"""Generates the Amerika Studio icons (hub + the four apps) in the AltStack Desktop "horizon cartridge" style.
 
 Output: src/os/studio/icons/hicolor/scalable/apps/amerika-{studio,render,engine,sprite,box}.svg and
         src/os/studio/icons/hicolor/symbolic/apps/amerika-studio-symbolic.svg

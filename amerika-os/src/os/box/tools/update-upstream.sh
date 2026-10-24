@@ -16,7 +16,7 @@ cd "$WORK/bb"
 git checkout -q "$COMMIT"
 curl -sL -o "$WORK/src.tar.gz" "https://codeload.github.com/johnnesky/beepbox/tar.gz/$COMMIT"
 echo "tarball sha256: $(sha256sum "$WORK/src.tar.gz" | cut -d' ' -f1)"
-git config user.email box@amerika.invalid; git config user.name "Amerika Box"
+git config user.email box@amerika.invalid; git config user.name "AltStack Box"
 git am -q "$HERE"/patches/*.patch
 npm ci --ignore-scripts >/dev/null
 npm run build-synth >/dev/null

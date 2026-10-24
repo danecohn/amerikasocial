@@ -1,5 +1,5 @@
 "use strict";
-// Node tests for the AmerikaBox song tools, run against BeepBox's real Song/Synth classes (headless).
+// Node tests for the AltStack Box song tools, run against BeepBox's real Song/Synth classes (headless).
 //   ../tools/node/bin/node --test src/os/box/test/
 const test = require("node:test");
 const assert = require("node:assert/strict");

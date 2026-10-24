@@ -1,9 +1,9 @@
 {
   "id": "/",
-  "name": "AltStack Social",
+  "name": "AltStack",
   "short_name": "AltStack",
-  "description": "An AltStack LLC workspace.",
-  "start_url": "/social",
+  "description": "Your alternative stack: Mail, Calendar, Office, Warehouse, Search and Social.",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#e7edf3",
@@ -26,6 +26,24 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "AltOffice",
+      "url": "/office"
+    },
+    {
+      "name": "Mail",
+      "url": "/mail"
+    },
+    {
+      "name": "Calendar",
+      "url": "/calendar"
+    },
+    {
+      "name": "Social",
+      "url": "/social"
     }
   ]
 }

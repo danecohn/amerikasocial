@@ -1,0 +1,20 @@
+name: Verify AltStack ecosystem release
+on:
+  push:
+    branches: [altstack/ecosystem-20261024]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24.22.1'
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - name: Build production image
+        run: docker build -t altstack-platform .

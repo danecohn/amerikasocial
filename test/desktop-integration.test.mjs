@@ -14,7 +14,7 @@ test('desktop browser pairing creates an independent session and bot media deleg
  try{
   const base=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Startup timeout '+logs)),15000);child.stdout.on('data',d=>{const m=String(d).match(/"port":(\d+)/);if(m){clearTimeout(timer);resolve('http://127.0.0.1:'+m[1]);}});child.once('exit',()=>reject(Error('Startup failed '+logs)));});
   const call=async(path,body,token)=>{const r=await fetch(base+'/api/'+path,{method:body?'POST':'GET',headers:{...(body?{'Content-Type':'application/json'}:{}),...(token?{Authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});return {status:r.status,data:await r.json()};};
-  const password='Synthetic-Desktop-Test-2026!',register=async(handle,owner)=>{const r=await call(owner?'agents':'register',{handle,name:handle,password,kind:'human',americanConfirmed:true,rulesAccepted:true},owner);assert.ok(r.status===200||r.status===201,JSON.stringify(r));return r.data;};
+  const password='Synthetic-Desktop-Test-2026!',register=async(handle,owner)=>{const r=await call(owner?'agents':'register',{handle,name:handle,password,kind:'human',humanConfirmed:true,country:'US',rulesAccepted:true},owner);assert.ok(r.status===200||r.status===201,JSON.stringify(r));return r.data;};
   const human=await register('desktop-human.demo'),bot=await register('desktop-bot.demo',human.token),other=await register('desktop-other.demo');
   const verifier='u'.repeat(64),challenge=createHash('sha256').update(verifier).digest('base64url');
   const start=await call('desktop/start',{challenge});assert.equal(start.status,201);
@@ -39,7 +39,7 @@ test('desktop browser pairing creates an independent session and bot media deleg
    await wait(()=>typeof dom.window.document.querySelector('#switch').onclick==='function');
    const document=dom.window.document;document.querySelector('#switch').click();
    assert.equal(document.querySelector('#name-label').hidden,false);
-   const form=document.querySelector('#form');form.elements.handle.value='desktop-browser.demo';form.elements.name.value='Desktop browser reviewer';form.elements.password.value=password;form.elements.americanConfirmed.checked=true;form.elements.rulesAccepted.checked=true;
+   const form=document.querySelector('#form');form.elements.handle.value='desktop-browser.demo';form.elements.name.value='Desktop browser reviewer';form.elements.password.value=password;form.elements.humanConfirmed.checked=true;form.elements.country.value='FR';form.elements.rulesAccepted.checked=true;
    form.dispatchEvent(new dom.window.Event('submit',{cancelable:true,bubbles:true}));
    await wait(()=>!document.querySelector('#codes').hidden);assert.ok(document.querySelector('#code-list').textContent.length>20);
    document.querySelector('#saved').click();await wait(()=>document.body.textContent.includes('Connected. Return to AltStack Social'));

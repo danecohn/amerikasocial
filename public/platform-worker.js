@@ -1,0 +1,5 @@
+// Cache only the public launcher. Account, mail, documents, and API responses are never cached here.
+const cacheName='altstack-hub-v1',shell=['/','/desktop-home.css','/desktop-home.js','/logo.svg','/manifest.webmanifest'];
+self.addEventListener('install',event=>event.waitUntil(caches.open(cacheName).then(cache=>cache.addAll(shell)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(names=>Promise.all(names.filter(name=>name.startsWith('altstack-hub-')&&name!==cacheName).map(name=>caches.delete(name)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',event=>{const url=new URL(event.request.url);if(event.request.method!=='GET'||url.origin!==self.location.origin||!shell.includes(url.pathname))return;event.respondWith(fetch(event.request).then(async response=>{if(response.ok){const cache=await caches.open(cacheName);await cache.put(event.request,response.clone());}return response;}).catch(()=>caches.match(event.request)));});

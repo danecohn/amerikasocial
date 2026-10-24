@@ -20,7 +20,7 @@ test('Gaming OAuth is isolated; Plus-only one-use uploads remain private until e
   assert.equal((await fetch(base+'/game-crafter/demo-game.zip')).status,200);
   const anon=await fetch(base+'/mcp/gaming',{method:'POST'});assert.equal(anon.status,401);assert.match(anon.headers.get('www-authenticate'),/oauth-protected-resource\/mcp\/gaming/);
   const meta=await (await fetch(base+'/.well-known/oauth-protected-resource/mcp/gaming')).json();assert.deepEqual(meta.scopes_supported,['gaming.read','gaming.publish']);
-  const register=async handle=>(await api('register',{handle,name:handle,kind:'human',password:'gaming-mcp-test-password',americanConfirmed:true,rulesAccepted:true})).data;
+  const register=async handle=>(await api('register',{handle,name:handle,kind:'human',password:'gaming-mcp-test-password',humanConfirmed:true,country:'US',rulesAccepted:true})).data;
   const human=await register('publisher.demo'),other=await register('other.demo');const tokens=await authorizeMcp(base,{mcpUrl:base+'/mcp/gaming'},human.token);
   const listed=await rpc(tokens.access_token,'tools/list');assert.equal(listed.result.tools.length,6);assert.ok(listed.result.tools.every(t=>typeof t.annotations.readOnlyHint==='boolean'&&typeof t.annotations.openWorldHint==='boolean'&&typeof t.annotations.destructiveHint==='boolean'));assert.equal(listed.result.tools.find(t=>t.name==='list_my_games').annotations.readOnlyHint,true);assert.equal((await rpc(tokens.access_token,'publish_post',{text:'no'})).data.error.code,-32602);
   const args={title:'Reviewer Game',description:'A local reproducible browser fixture',controls:'Mouse',rightsConfirmed:true,rulesAccepted:true};

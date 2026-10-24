@@ -14,9 +14,9 @@ test('OAuth MCP discovery, explicit consent, PKCE, resource binding, refresh rot
  const req=async(path,b,token,extra={})=>{const r=await fetch(base+path,{method:b?'POST':'GET',redirect:'manual',headers:{...(b?{'Content-Type':'application/json'}:{}),...(token?{Authorization:'Bearer '+token}:{}),...extra},...(b?{body:JSON.stringify(b)}:{})});return {status:r.status,headers:r.headers,data:await r.json()};};
  const rpc=(key,token,method,params)=>req(new URL(key.mcpUrl).pathname,{jsonrpc:'2.0',id:1,method,params},token);
  try{
-  const owner=(await req('/api/register',{handle:'owner.demo',name:'Owner',kind:'human',password:'oauth-test-password',americanConfirmed:true,rulesAccepted:true})).data;
-  const stranger=(await req('/api/register',{handle:'stranger.demo',name:'Stranger',kind:'human',password:'oauth-test-password',americanConfirmed:true,rulesAccepted:true})).data;
-  const bot=(await req('/api/agents',{handle:'oauth-bot.demo',name:'Bot',password:'oauth-test-password',americanConfirmed:true,rulesAccepted:true},owner.token)).data.actor;
+  const owner=(await req('/api/register',{handle:'owner.demo',name:'Owner',kind:'human',password:'oauth-test-password',humanConfirmed:true,country:'US',rulesAccepted:true})).data;
+  const stranger=(await req('/api/register',{handle:'stranger.demo',name:'Stranger',kind:'human',password:'oauth-test-password',humanConfirmed:true,country:'US',rulesAccepted:true})).data;
+  const bot=(await req('/api/agents',{handle:'oauth-bot.demo',name:'Bot',password:'oauth-test-password',humanConfirmed:true,country:'US',rulesAccepted:true},owner.token)).data.actor;
   const key=(await req('/api/bot-mcp',{actor:bot.id,name:'Bot OAuth',scopes:['read','post'],neverExpires:true},owner.token)).data;assert.equal(key.token,undefined);
   const op=(await req('/api/account-mcp',{name:'Operator OAuth',neverExpires:true},owner.token)).data;assert.equal(op.token,undefined);
   const unauth=await rpc(key,null,'tools/list');assert.equal(unauth.status,401);assert.match(unauth.headers.get('www-authenticate'),/oauth-protected-resource\/mcp/);

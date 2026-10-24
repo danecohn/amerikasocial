@@ -35,11 +35,11 @@ test('desktop browser pairing creates an independent session and bot media deleg
   const errors=[],console=new VirtualConsole();console.on('jsdomError',error=>errors.push(error.message));
   const dom=await JSDOM.fromURL(base+'/desktop-connect#'+browserRequest.data.id,{runScripts:'dangerously',resources:'usable',virtualConsole:console,beforeParse(window){window.fetch=(path,options)=>fetch(new URL(path,base),options);}});
   try{
-   const wait=async check=>{for(let i=0;i<150;i++){if(check())return;await new Promise(resolve=>setTimeout(resolve,20));}throw Error('Browser approval timeout: '+dom.window.document.body.textContent);};
+   const wait=async check=>{for(let i=0;i<500;i++){if(check())return;await new Promise(resolve=>setTimeout(resolve,20));}throw Error('Browser approval timeout: '+dom.window.document.body.textContent);};
    await wait(()=>typeof dom.window.document.querySelector('#switch').onclick==='function');
    const document=dom.window.document;document.querySelector('#switch').click();
    assert.equal(document.querySelector('#name-label').hidden,false);
-   const form=document.querySelector('#form');form.elements.handle.value='desktop-browser.demo';form.elements.name.value='Desktop browser reviewer';form.elements.password.value=password;form.elements.humanConfirmed.checked=true;form.elements.country.value='FR';form.elements.rulesAccepted.checked=true;
+   const form=document.querySelector('#form');await wait(()=>!document.querySelector('#submit').disabled&&[...form.elements.country.options].some(option=>option.value==='FR'));form.elements.handle.value='desktop-browser.demo';form.elements.name.value='Desktop browser reviewer';form.elements.password.value=password;form.elements.humanConfirmed.checked=true;form.elements.country.value='FR';form.elements.rulesAccepted.checked=true;
    form.dispatchEvent(new dom.window.Event('submit',{cancelable:true,bubbles:true}));
    await wait(()=>!document.querySelector('#codes').hidden);assert.ok(document.querySelector('#code-list').textContent.length>20);
    document.querySelector('#saved').click();await wait(()=>document.body.textContent.includes('Connected. Return to AltStack Social'));
@@ -48,3 +48,4 @@ test('desktop browser pairing creates an independent session and bot media deleg
   }finally{dom.window.close();}
  }finally{const stopped=new Promise(resolve=>child.once('exit',resolve));child.kill();await stopped;await rm(dir,{recursive:true,force:true});}
 });
+

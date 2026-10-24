@@ -3,3 +3,6 @@ test('only published assets in the fixed project repository are exposed',async()
 test('empty releases have no fabricated downloads',async()=>{const read=createSoftwareDownloads({request:async()=>Response.json([])});const d=await read('office');assert.equal(d.status,'building');assert.deepEqual(d.assets,[]);});
 test('arbitrary repository names cannot be requested',async()=>{await assert.rejects(createSoftwareDownloads()('other'),/Unknown product/);});
 test('upstream failures are handled without exposing internal errors',async()=>{const read=createSoftwareDownloads({request:async()=>{throw Error('private details');}});const d=await read('venture');assert.equal(d.status,'unavailable');assert.deepEqual(d.assets,[]);});
+
+test('retired Mail releases cannot become fallback downloads',async()=>{const repo='https://github.com/danecohn/AltStackMail/releases/download/';const releases=['altstack-mail-v1.0.1','altstack-mail-v1.0.0'].map(tag=>({tag_name:tag,assets:[{name:'AltStackMail-windows-arm64.exe',browser_download_url:repo+tag+'/AltStackMail-windows-arm64.exe',size:100}]}));const read=createSoftwareDownloads({request:async()=>Response.json(releases)});const result=await read('mail');assert.equal(result.assets.length,1);assert.equal(result.assets[0].version,'altstack-mail-v1.0.1');});
+

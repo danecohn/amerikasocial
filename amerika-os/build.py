@@ -37,7 +37,7 @@ SIGN_HOME = Path(os.environ.get('AMERIKA_SIGNING_HOME', Path.home() / '.local/sh
 KEY_NAME = 'Amerika OS Archive Signing Key'
 ARCH = 'arm64'
 SUITE = 'stable'
-MAINTAINER = 'Amerika LLC <noreply@amerika.social>'
+MAINTAINER = 'Artemis Softworks LLC <noreply@amerika.social>'
 HOMEPAGE = 'https://www.amerika.social/downloads/os'
 SYSTEM_SHELL = Path('/usr/share/plasma/shells/org.kde.plasma.desktop')
 OS = SRC / 'os'
@@ -384,7 +384,7 @@ def build_social():
 
 def build_venture():
     root = extract(app_archive('venture'), STAGE / '_payload-venture')
-    p = Pkg('amerika-venture', '158.0.1-amerika1', 'Amerika Venture browser\nAmerika LLC browser distribution based on '
+    p = Pkg('amerika-venture', '158.0.1-amerika1', 'Amerika Venture browser\nArtemis Softworks LLC browser distribution based on '
             'Mozilla Firefox 158.0.1 with Amerika branding. Updates arrive\nthrough this repository.',
             arch=ARCH, title='Amerika Venture', category='Internet',
             provides='www-browser', homepage='https://www.amerika.social/downloads/venture')
@@ -396,7 +396,7 @@ def build_venture():
     p.file('/usr/bin/amerika-venture', '#!/bin/sh\nexec /opt/amerika/venture/AmerikaVenture "$@"\n', 0o755)
     p.depends = ', '.join(shlib_depends(p.root / 'opt/amerika/venture') or ['libc6'])
     desktop_file(p, '[Desktop Entry]\nType=Application\nName=Amerika Venture\nGenericName=Web Browser\n'
-                 'Comment=Amerika LLC browser based on Firefox\nExec=/usr/bin/amerika-venture %u\nIcon=amerika-venture\n'
+                 'Comment=Artemis Softworks LLC browser based on Firefox\nExec=/usr/bin/amerika-venture %u\nIcon=amerika-venture\n'
                  'Terminal=false\nCategories=Network;WebBrowser;\nMimeType=text/html;x-scheme-handler/http;'
                  'x-scheme-handler/https;\nStartupNotify=true\nStartupWMClass=AmerikaVenture\n', 'amerika-venture')
     if icon_svg('amerika-venture'):
@@ -439,7 +439,7 @@ def build_office():
                              '    apparmor_parser -r -T -W /etc/apparmor.d/amerika-office || true\n  fi\nfi\nexit 0\n')
     p.scripts['prerm'] = ('#!/bin/sh\nset -e\nif [ "$1" = remove ] && [ -x /usr/sbin/apparmor_parser ]; then\n'
                           '  apparmor_parser -R /etc/apparmor.d/amerika-office 2>/dev/null || true\nfi\nexit 0\n')
-    desktop_file(p, '[Desktop Entry]\nType=Application\nName=Amerika Office\nComment=Amerika LLC collaborative office\n'
+    desktop_file(p, '[Desktop Entry]\nType=Application\nName=Amerika Office\nComment=Artemis Softworks LLC collaborative office\n'
                  'Exec=/usr/bin/amerika-office %U\nIcon=amerika-office\nTerminal=false\nCategories=Office;\n'
                  'StartupWMClass=amerika-office\n', 'amerika-office')
     if icon_svg('amerika-office'):

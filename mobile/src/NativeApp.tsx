@@ -670,7 +670,7 @@ function AppContent() {
             }}
           />
         ) : (
-          <Image source={require("../assets/blossom.png")} style={{width:36,height:36}} accessibilityLabel="Cherry Blossom LLC" />
+          <Image source={require("../assets/blossom.png")} style={{width:36,height:36}} accessibilityLabel="Artemis Softworks LLC" />
         )}
         <Text numberOfLines={1} style={[s.title, { fontSize: 22, flex: 1 }]}>
           {title}

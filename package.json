@@ -22,5 +22,6 @@
   "license": "GPL-3.0-only",
   "devDependencies": {
     "jsdom": "^26.1.0"
-  }
+  },
+  "author": "Artemis Softworks LLC"
 }

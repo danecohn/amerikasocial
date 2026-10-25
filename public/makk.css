@@ -1,4 +1,4 @@
-/* Makk Social · Cherry Blossom LLC. Original silver desktop surfaces, GPL-3.0-only. */
+/* Makk Social · Artemis Softworks LLC. Original silver desktop surfaces, GPL-3.0-only. */
 :root{color-scheme:light;--brand:#ff0058;--bg:#dce5ee;--panel:#f8f9fb;--line:#b8c2cd;--muted:#526273;--text:#202d3a;--lime:#b0003d;--red:#c90045;--sans:Inter,'DejaVu Sans','Segoe UI',sans-serif}
 body{background:linear-gradient(135deg,#edf2f7,#c9d8e6) fixed;color:var(--text);font-size:15px}
 button,input,textarea,select{font:inherit}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #ff0058;outline-offset:3px}

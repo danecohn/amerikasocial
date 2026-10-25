@@ -5,7 +5,7 @@ Talks only to the local Amerika Studio bridge (127.0.0.1:18890); the add-on neve
 """
 bl_info = {
     'name': 'Amerika Render',
-    'author': 'Amerika LLC',
+    'author': 'Artemis Softworks LLC',
     'version': (3, 1, 1),
     'blender': (4, 2, 0),
     'location': '3D Viewport > Sidebar > Amerika',

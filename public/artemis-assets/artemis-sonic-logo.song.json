@@ -1,0 +1,617 @@
+{
+  "format": "BeepBox",
+  "version": 9,
+  "scale": "expert",
+  "key": "C",
+  "introBars": 0,
+  "loopBars": 2,
+  "beatsPerBar": 4,
+  "ticksPerBeat": 4,
+  "beatsPerMinute": 100,
+  "layeredInstruments": false,
+  "patternInstruments": false,
+  "channels": [
+    {
+      "type": "pitch",
+      "instruments": [
+        {
+          "type": "FM",
+          "volume": 60,
+          "eqFilter": [],
+          "effects": [
+            "chord type",
+            "reverb"
+          ],
+          "chord": "simultaneous",
+          "reverb": 33,
+          "fadeInSeconds": 0,
+          "fadeOutTicks": -1,
+          "algorithm": "1←(2 3 4)",
+          "feedbackType": "1⟲",
+          "feedbackAmplitude": 0,
+          "operators": [
+            {
+              "frequency": "1×",
+              "amplitude": 15
+            },
+            {
+              "frequency": "3×",
+              "amplitude": 6
+            },
+            {
+              "frequency": "5×",
+              "amplitude": 4
+            },
+            {
+              "frequency": "1×",
+              "amplitude": 0
+            }
+          ],
+          "envelopes": [
+            {
+              "target": "operatorAmplitude",
+              "envelope": "twang 2",
+              "index": 1
+            },
+            {
+              "target": "noteVolume",
+              "envelope": "twang 3"
+            }
+          ]
+        }
+      ],
+      "patterns": [
+        {
+          "notes": [
+            {
+              "pitches": [
+                62,
+                69
+              ],
+              "points": [
+                {
+                  "tick": 0,
+                  "pitchBend": 0,
+                  "volume": 100
+                },
+                {
+                  "tick": 4,
+                  "pitchBend": 0,
+                  "volume": 100
+                }
+              ],
+              "continuesLastPattern": false
+            },
+            {
+              "pitches": [
+                76
+              ],
+              "points": [
+                {
+                  "tick": 4,
+                  "pitchBend": 0,
+                  "volume": 100
+                },
+                {
+                  "tick": 6,
+                  "pitchBend": 0,
+                  "volume": 100
+                }
+              ]
+            },
+            {
+              "pitches": [
+                77
+              ],
+              "points": [
+                {
+                  "tick": 6,
+                  "pitchBend": 0,
+                  "volume": 100
+                },
+                {
+                  "tick": 12,
+                  "pitchBend": 0,
+                  "volume": 100
+                }
+              ]
+            },
+            {
+              "pitches": [
+                74
+              ],
+              "points": [
+                {
+                  "tick": 12,
+                  "pitchBend": 0,
+                  "volume": 100
+                },
+                {
+                  "tick": 16,
+                  "pitchBend": 0,
+                  "volume": 33
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "notes": [
+            {
+              "pitches": [
+                74
+              ],
+              "points": [
+                {
+                  "tick": 0,
+                  "pitchBend": 0,
+                  "volume": 100
+                },
+                {
+                  "tick": 8,
+                  "pitchBend": 0,
+                  "volume": 33
+                }
+              ],
+              "continuesLastPattern": true
+            }
+          ]
+        }
+      ],
+      "sequence": [
+        1,
+        2
+      ],
+      "octaveScrollBar": 3
+    },
+    {
+      "type": "drum",
+      "instruments": [
+        {
+          "type": "drumset",
+          "volume": 100,
+          "eqFilter": [],
+          "effects": [
+            "chord type"
+          ],
+          "chord": "arpeggio",
+          "drums": [
+            {
+              "filterEnvelope": "twang 2",
+              "spectrum": [
+                57,
+                57,
+                57,
+                57,
+                57,
+                57,
+                57,
+                57,
+                57,
+                57,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "filterEnvelope": "twang 2",
+              "spectrum": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                71,
+                71,
+                71,
+                71,
+                71,
+                71,
+                71,
+                71,
+                71,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "filterEnvelope": "twang 2",
+              "spectrum": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                71,
+                71,
+                71,
+                71,
+                71,
+                71,
+                71,
+                71,
+                71,
+                71,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "filterEnvelope": "twang 2",
+              "spectrum": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                71,
+                71,
+                71,
+                71,
+                71,
+                71,
+                71,
+                71,
+                71,
+                71,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "filterEnvelope": "decay 1",
+              "spectrum": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                0,
+                0
+              ]
+            },
+            {
+              "filterEnvelope": "decay 1",
+              "spectrum": [
+                0,
+                0,
+                0,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                0
+              ]
+            },
+            {
+              "filterEnvelope": "twang 3",
+              "spectrum": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "filterEnvelope": "decay 1",
+              "spectrum": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100
+              ]
+            },
+            {
+              "filterEnvelope": "twang 3",
+              "spectrum": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100
+              ]
+            },
+            {
+              "filterEnvelope": "twang 1",
+              "spectrum": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100
+              ]
+            },
+            {
+              "filterEnvelope": "decay 2",
+              "spectrum": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100
+              ]
+            },
+            {
+              "filterEnvelope": "twang 1",
+              "spectrum": [
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                100,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          ],
+          "envelopes": []
+        }
+      ],
+      "patterns": [
+        {
+          "notes": []
+        },
+        {
+          "notes": []
+        }
+      ],
+      "sequence": [
+        0,
+        0
+      ]
+    }
+  ]
+}

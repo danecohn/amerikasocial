@@ -17,4 +17,4 @@ async function load(){
  if(!count){document.querySelector('#release-status').append(' ',el('a',{href:data.repository+'/actions',text:'View build progress ↗'}));}
  if(count<6)setTimeout(()=>load().catch(()=>{}),45000);
 }
-load().catch(()=>{document.querySelector('#release-status').replaceChildren(el('span',{text:'Download status is temporarily unavailable. '}),el('a',{href:'https://github.com/danecohn/'+({gameproducer:'GameProducer',office:'AmerikaOffice',venture:'AmerikaVenture',social:'AmerikaWindows',mail:'AltStackMail'}[product])+'/releases',text:'View published releases ↗'}));});
+load().catch(()=>{document.querySelector('#release-status').replaceChildren(el('span',{text:'Download status is temporarily unavailable. '}),el('a',{href:'https://github.com/danecohn/'+({mind:'artemismind',prompter:'artemisprompter',gameproducer:'GameProducer',office:'AmerikaOffice',venture:'AmerikaVenture',social:'AmerikaWindows',mail:'AltStackMail'}[product])+'/releases',text:'View published releases ↗'}));});

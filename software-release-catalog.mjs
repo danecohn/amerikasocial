@@ -519,5 +519,35 @@ export const verifiedReleases = {
         }
       ]
     }
+  ],
+  "lookout": [
+    {
+      "tag_name": "v0.1.0",
+      "published_at": "2026-10-25T06:42:38Z",
+      "html_url": "https://github.com/danecohn/lookout/releases/tag/v0.1.0",
+      "draft": false,
+      "assets": [
+        {
+          "name": "ArtemisLookout-mac-arm64.dmg",
+          "browser_download_url": "https://github.com/danecohn/lookout/releases/download/v0.1.0/ArtemisLookout-mac-arm64.dmg",
+          "size": 5172000
+        },
+        {
+          "name": "ArtemisLookout-mac-arm64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/lookout/releases/download/v0.1.0/ArtemisLookout-mac-arm64.dmg.sha256",
+          "size": 105
+        },
+        {
+          "name": "ArtemisLookout-mac-x64.dmg",
+          "browser_download_url": "https://github.com/danecohn/lookout/releases/download/v0.1.0/ArtemisLookout-mac-x64.dmg",
+          "size": 5199031
+        },
+        {
+          "name": "ArtemisLookout-mac-x64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/lookout/releases/download/v0.1.0/ArtemisLookout-mac-x64.dmg.sha256",
+          "size": 103
+        }
+      ]
+    }
   ]
 };

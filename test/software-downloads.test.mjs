@@ -12,7 +12,7 @@ test('GameProducer exposes all six verified repository assets and adjacent check
 
 test('rate limited GitHub uses verified current installers for all six platforms',async()=>{
  const read=createSoftwareDownloads({request:async()=>new Response('',{status:403})});
- for(const product of ['social','office','venture','mail','gameproducer']){
+ for(const product of ['social','office','venture','mail','gameproducer','mind','prompter']){
   const result=await read(product);assert.equal(result.assets.length,6);assert.equal(result.source,'verified-catalogue');
   assert.ok(result.assets.every(a=>a.checksumUrl===a.url+'.sha256'));
  }

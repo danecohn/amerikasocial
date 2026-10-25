@@ -379,5 +379,145 @@ export const verifiedReleases = {
         }
       ]
     }
+  ],
+  "mind": [
+    {
+      "tag_name": "v0.1.0",
+      "published_at": "2026-10-25T03:36:54Z",
+      "html_url": "https://github.com/danecohn/artemismind/releases/tag/v0.1.0",
+      "draft": false,
+      "assets": [
+        {
+          "name": "ArtemisMind-linux-arm64.AppImage",
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-linux-arm64.AppImage",
+          "size": 129676395
+        },
+        {
+          "name": "ArtemisMind-linux-arm64.AppImage.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-linux-arm64.AppImage.sha256",
+          "size": 99
+        },
+        {
+          "name": "ArtemisMind-linux-x86_64.AppImage",
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-linux-x86_64.AppImage",
+          "size": 128491828
+        },
+        {
+          "name": "ArtemisMind-linux-x86_64.AppImage.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-linux-x86_64.AppImage.sha256",
+          "size": 100
+        },
+        {
+          "name": "ArtemisMind-mac-arm64.dmg",
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-mac-arm64.dmg",
+          "size": 134110380
+        },
+        {
+          "name": "ArtemisMind-mac-arm64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-mac-arm64.dmg.sha256",
+          "size": 92
+        },
+        {
+          "name": "ArtemisMind-mac-x64.dmg",
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-mac-x64.dmg",
+          "size": 139620253
+        },
+        {
+          "name": "ArtemisMind-mac-x64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-mac-x64.dmg.sha256",
+          "size": 90
+        },
+        {
+          "name": "ArtemisMind-win-arm64.exe",
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-win-arm64.exe",
+          "size": 117148880
+        },
+        {
+          "name": "ArtemisMind-win-arm64.exe.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-win-arm64.exe.sha256",
+          "size": 92
+        },
+        {
+          "name": "ArtemisMind-win-x64.exe",
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-win-x64.exe",
+          "size": 122607274
+        },
+        {
+          "name": "ArtemisMind-win-x64.exe.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-win-x64.exe.sha256",
+          "size": 90
+        }
+      ]
+    }
+  ],
+  "prompter": [
+    {
+      "tag_name": "v0.1.1",
+      "published_at": "2026-10-25T03:38:32Z",
+      "html_url": "https://github.com/danecohn/artemisprompter/releases/tag/v0.1.1",
+      "draft": false,
+      "assets": [
+        {
+          "name": "ArtemisPrompter-linux-arm64.AppImage",
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-linux-arm64.AppImage",
+          "size": 129692901
+        },
+        {
+          "name": "ArtemisPrompter-linux-arm64.AppImage.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-linux-arm64.AppImage.sha256",
+          "size": 103
+        },
+        {
+          "name": "ArtemisPrompter-linux-x86_64.AppImage",
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-linux-x86_64.AppImage",
+          "size": 128512388
+        },
+        {
+          "name": "ArtemisPrompter-linux-x86_64.AppImage.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-linux-x86_64.AppImage.sha256",
+          "size": 104
+        },
+        {
+          "name": "ArtemisPrompter-mac-arm64.dmg",
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-mac-arm64.dmg",
+          "size": 134147043
+        },
+        {
+          "name": "ArtemisPrompter-mac-arm64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-mac-arm64.dmg.sha256",
+          "size": 96
+        },
+        {
+          "name": "ArtemisPrompter-mac-x64.dmg",
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-mac-x64.dmg",
+          "size": 139661110
+        },
+        {
+          "name": "ArtemisPrompter-mac-x64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-mac-x64.dmg.sha256",
+          "size": 94
+        },
+        {
+          "name": "ArtemisPrompter-win-arm64.exe",
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-win-arm64.exe",
+          "size": 117177476
+        },
+        {
+          "name": "ArtemisPrompter-win-arm64.exe.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-win-arm64.exe.sha256",
+          "size": 96
+        },
+        {
+          "name": "ArtemisPrompter-win-x64.exe",
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-win-x64.exe",
+          "size": 122635737
+        },
+        {
+          "name": "ArtemisPrompter-win-x64.exe.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-win-x64.exe.sha256",
+          "size": 94
+        }
+      ]
+    }
   ]
 };

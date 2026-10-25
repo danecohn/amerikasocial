@@ -1,6 +1,6 @@
 'use strict';
 const product=document.body.dataset.product;
-const families=[{id:'windows',label:'Windows',glyph:'▦',platforms:['windows','win']},{id:'macos',label:'macOS',glyph:'⌘',platforms:['macos','mac']},{id:'linux',label:'Linux',glyph:'>_',platforms:['linux']}];
+const families=(product==='lookout'?[{id:'macos',label:'macOS',glyph:'⌘',platforms:['mac']}]:[{id:'windows',label:'Windows',glyph:'▦',platforms:['windows','win']},{id:'macos',label:'macOS',glyph:'⌘',platforms:['macos','mac']},{id:'linux',label:'Linux',glyph:'>_',platforms:['linux']}]);
 function el(tag,props={},...children){const n=document.createElement(tag);for(const[k,v]of Object.entries(props)){if(k==='text')n.textContent=v;else if(k==='class')n.className=v;else n.setAttribute(k,v);}for(const c of children)n.append(c);return n;}
 function formatBytes(n){return(n/1048576).toFixed(1)+' MB';}
 async function load(){
@@ -16,6 +16,6 @@ async function load(){
  }
  const count=data.assets.length;document.querySelector('#release-status').textContent=count?(count+' platform download'+(count===1?' is':'s are')+' available. Other builds appear here after validation and publication.'):'The first platform builds are being prepared. Published downloads appear here automatically; there are no placeholder download links.';
  if(!count){document.querySelector('#release-status').append(' ',el('a',{href:data.repository+'/actions',text:'View build progress ↗'}));}
- if(count<6)setTimeout(()=>load().catch(()=>{}),45000);
+ if(count<(product==='lookout'?2:6))setTimeout(()=>load().catch(()=>{}),45000);
 }
-load().catch(()=>{document.querySelector('#release-status').replaceChildren(el('span',{text:'Download status is temporarily unavailable. '}),el('a',{href:'https://github.com/danecohn/'+({mind:'artemismind',prompter:'artemisprompter',gameproducer:'GameProducer',office:'AmerikaOffice',venture:'AmerikaVenture',social:'AmerikaWindows',mail:'AltStackMail'}[product])+'/releases',text:'View published releases ↗'}));});
+load().catch(()=>{document.querySelector('#release-status').replaceChildren(el('span',{text:'Download status is temporarily unavailable. '}),el('a',{href:'https://github.com/danecohn/'+({lookout:'lookout',mind:'artemismind',prompter:'artemisprompter',gameproducer:'GameProducer',office:'AmerikaOffice',venture:'AmerikaVenture',social:'AmerikaWindows',mail:'AltStackMail'}[product])+'/releases',text:'View published releases ↗'}));});

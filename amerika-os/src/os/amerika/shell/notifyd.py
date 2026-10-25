@@ -49,7 +49,7 @@ class Notifications(GObject.Object):
         if method == 'GetCapabilities':
             invocation.return_value(GLib.Variant('(as)', (['body', 'actions', 'icon-static', 'persistence'],)))
         elif method == 'GetServerInformation':
-            invocation.return_value(GLib.Variant('(ssss)', ('Amerika Shell', 'AltStack LLC', '3.0', '1.2')))
+            invocation.return_value(GLib.Variant('(ssss)', ('Amerika Shell', 'Artemis Softworks LLC', '3.0', '1.2')))
         elif method == 'CloseNotification':
             self.close(params.unpack()[0], 3)
             invocation.return_value(None)

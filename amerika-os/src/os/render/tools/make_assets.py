@@ -10,7 +10,7 @@ def splash():
     logo.thumbnail((240,240),Image.Resampling.LANCZOS)
     image.paste(logo,((960-logo.width)//2,70),logo)
     d=ImageDraw.Draw(image);d.text((430,360),'AltStack Render',fill='#233649')
-    d.text((380,460),'Powered by Blender · AltStack LLC',fill='#51677c')
+    d.text((380,460),'Powered by Blender · Artemis Softworks LLC',fill='#51677c')
     image.save(HERE/'data/splash.png')
 if __name__=='__main__':
     icon();splash()

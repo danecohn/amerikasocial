@@ -2,7 +2,7 @@
 <!DOCTYPE policyconfig PUBLIC "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
  "http://www.freedesktop.org/standards/PolicyKit/1.0/policyconfig.dtd">
 <policyconfig>
-  <vendor>Amerika LLC</vendor>
+  <vendor>Artemis Softworks LLC</vendor>
   <vendor_url>https://www.amerika.social</vendor_url>
   <action id="org.amerika.settings.manage">
     <description>Change protected system settings</description>

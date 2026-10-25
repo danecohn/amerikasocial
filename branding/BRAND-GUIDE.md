@@ -1,4 +1,4 @@
-# AltStack LLC — identity and product direction
+# Artemis Softworks LLC — identity and product direction
 
 AltStack is an alternative stack for everyone: open-source social, productivity, browsing, and creative tools, running on your computer and in the cloud where each product supports it.
 

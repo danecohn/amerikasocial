@@ -809,7 +809,7 @@ class SettingsApp(Gtk.Application):
         info = system.os_info()
         col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         col.append(label(f'AltStack Desktop {__version__}', 'am-appname'))
-        col.append(label('Its own desktop, with Claude and ChatGPT at the centre. Retro-future by AltStack LLC.', 'am-sub', wrap=True))
+        col.append(label('Its own desktop, with Claude and ChatGPT at the centre. Retro-future by Artemis Softworks LLC.', 'am-sub', wrap=True))
         for k, v in (('Base system', info.get('distribution')), ('Kernel', info.get('kernel')), ('Machine', info.get('machine')),
                      ('Host', info.get('host'))):
             col.append(label(f'{k.upper()}', 'am-label'))

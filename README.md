@@ -1,6 +1,15 @@
 # AltStack Social
 
-**AltStack LLC · An alternative stack for everyone.**
+<!-- artemis-publisher:start -->
+<img src="brand/artemis/artemis-wordmark.svg" alt="Artemis Softworks LLC" width="340">
+
+**A product of Artemis Softworks LLC.** Founded by **Demetria Althea Cohn**.
+
+Companion software for macOS, thoughtfully available for Windows and Linux. See the [Artemis identity and design system](brand/artemis/BRAND.md). Platform availability varies by product and release.
+<!-- artemis-publisher:end -->
+
+
+**Artemis Softworks LLC · An alternative stack for everyone.**
 
 
 Why Can't We Be Friends? An independent AT Protocol community bringing Americans and their agents together. Production website: https://www.amerika.social. Account server: https://pds.amerika.social.
@@ -97,6 +106,6 @@ AltStack Social project code is licensed under the GNU General Public License, v
 
 Game versions, upload staging and SQLite game saves live under the persistent `DATA_DIR`. Each save is account/game scoped, limited to 1 MB and uses compare-and-swap revisions to prevent another window silently overwriting newer progress. The SDK exposes confirmed saves and restores localStorage before community scripts execute. Originals additionally restore Godot save files and room checkpoints. See `/gaming/developers` for the package contract and SDK. SQLite backups include game saves; game files remain on the Railway volume and need the volume’s own backup policy.
 
-`gaming-originals.json` pins five official web packages by SHA-256. Background startup installs them from the project’s GitHub release, retries unavailable assets and upgrades changed packages while preserving saves. Hidden or disabled games remain withdrawn. The build tool `scripts/build-gaming.py` creates isolated copies of the supplied Godot projects, adds the cloud-save adapter and AltStack LLC startup branding, and exports single-threaded WebGL 2 editions. Original source folders are untouched. Pickle’s copied texture assets are optimized with Pillow by `scripts/optimize-gaming.py`. Build outputs and user-submitted game content are separate from the platform-code license.
+`gaming-originals.json` pins five official web packages by SHA-256. Background startup installs them from the project’s GitHub release, retries unavailable assets and upgrades changed packages while preserving saves. Hidden or disabled games remain withdrawn. The build tool `scripts/build-gaming.py` creates isolated copies of the supplied Godot projects, adds the cloud-save adapter and Artemis Softworks LLC startup branding, and exports single-threaded WebGL 2 editions. Original source folders are untouched. Pickle’s copied texture assets are optimized with Pillow by `scripts/optimize-gaming.py`. Build outputs and user-submitted game content are separate from the platform-code license.
 
 Pickle browser builds also apply `scripts/patch-pickles.py`: the animated assistant is isolated from the text terminal, spoken lines use a non-positional Voice bus, and source-keyed ducking keeps backgrounds lowered until every speaker finishes. `scripts/gaming-qa/pickles.gd` and its scene can be copied to the isolated project’s `scripts/dev/amerika_browser_check.*` and run headlessly; use a separate copied-project user-data directory when running the game checks. These checks verify display separation, screen materials, voice routing, and overlapping speaker ducking.

@@ -3,12 +3,12 @@ const path=require('path');
 const dir='artifacts/game-crafter-release/game-crafter';
 let p=JSON.parse(fs.readFileSync(path.join(dir,'plugin.json'),'utf8'));
 p.version='1.0.2';
-p.author={name:'AltStack LLC',email:'support@amerika.social'};
+p.author={name:'Artemis Softworks LLC',email:'support@amerika.social'};
 p.description='Design, build, verify and package Godot games, then upload and publish finished browser games through the Amerika Gaming OAuth connection.';
 p.homepage='https://altstack.io/game-crafter';
 const o=p.extensions['com.openai'],i=o.interface;
 i.logo='assets/icon.png';i.composerIcon='assets/icon.png';
-i.developerName='AltStack LLC';
+i.developerName='Artemis Softworks LLC';
 i.longDescription='Game Crafter helps you design, build, repair, test and package editable Godot games using its game-development reference library. Work through a playable slice, original assets, interaction and save systems, and verification of the actual export. The included Amerika Gaming Publisher connection checks your publishing eligibility, lists your games, prepares private browser-game uploads, reports validation status and publishes a validated draft only when you explicitly ask. Building and ZIP transfer require file and command tools in your AI workspace, plus a suitable engine and export templates. This is not a remote compilation service. The Gaming connection uses OAuth and has no access to social posts, private messages or bots. You must own the rights to submitted content. Browser exports must be self-contained; native desktop builds cannot run in the Gaming player.';
 i.websiteURL=p.homepage;i.supportURL=p.homepage+'/support';i.privacyPolicyURL=p.homepage+'/privacy';i.termsOfServiceURL=p.homepage+'/terms';
 o.review={commerce:true,commerce_description:'Publishing requires an existing AltStack Social Plus entitlement. This plugin does not sell subscriptions, start checkout or accept payments. Users manage Plus separately on AltStack Social or through their platform billing provider.',test_cases:{positive:[
@@ -48,7 +48,7 @@ if(!skill.includes('## Publish a finished browser game to Amerika Gaming'))skill
 fs.writeFileSync(skillPath,skill);
 fs.writeFileSync(path.join(dir,'README.md'),`# Game Crafter v1.0.2
 
-Published by AltStack LLC. Developed by Forgotten Woods Studios and AltStack LLC. Original supplied package credited Eva Cohn; original library credits remain intact.
+Published by Artemis Softworks LLC. Developed by Forgotten Woods Studios and Artemis Softworks LLC. Original supplied package credited Eva Cohn; original library credits remain intact.
 
 A Godot game-development library plus the Amerika Gaming Publisher MCP. Design, build, repair and test games with the supplied skills; upload finished self-contained browser games as private drafts and explicitly publish them to Amerika Gaming.
 

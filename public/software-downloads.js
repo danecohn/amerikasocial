@@ -7,7 +7,8 @@ async function load(){
  const response=await fetch('/api/software-downloads?product='+encodeURIComponent(product));if(!response.ok)throw Error('Release information unavailable.');const data=await response.json();const cards=document.querySelector('#download-cards');cards.replaceChildren();
  for(const family of families){const card=el('article',{class:'card'},el('div',{class:'platform','aria-hidden':'true',text:family.glyph}),el('h3',{text:family.label}));
   for(const arch of ['x64','arm64']){const title=arch==='arm64'?(family.id==='macos'?'Apple Silicon · ARM64':'ARM64'):(family.id==='macos'?'Intel · x64':'Intel / AMD · x64');const group=el('div',{class:'arch-download'},el('h4',{text:title}));
-   const asset=data.assets.find(x=>family.platforms.some(p=>x.name.toLowerCase().includes('-'+p+'-'))&&x.name.toLowerCase().includes('-'+arch+'.'));
+   const architectureAliases=arch==='x64'?['x64','x86_64']:['arm64'];
+   const asset=data.assets.find(x=>family.platforms.some(p=>x.name.toLowerCase().includes('-'+p+'-'))&&architectureAliases.some(a=>x.name.toLowerCase().includes('-'+a+'.')));
    if(asset){const url=new URL(asset.url);if(url.origin!=='https://github.com')continue;const extension=asset.name.endsWith('.tar.gz')?'TAR.GZ':asset.name.split('.').pop().toUpperCase();group.append(el('a',{class:'button primary',href:asset.url,text:'Download '+family.label+' '+(arch==='arm64'?'ARM64':'x64')+' ↓'}),el('small',{text:formatBytes(asset.size)+' · '+extension+' · '+asset.version}),el('a',{class:'checksum',href:asset.url+'.sha256',text:'SHA-256 checksum'}));}
    else group.append(el('div',{class:'build-pending',text:data.status==='unavailable'?'Release status unavailable. Check the releases page.':'Build pending publication'}));card.append(group);
   }

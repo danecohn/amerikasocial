@@ -1,4 +1,4 @@
-const products={venture:'danecohn/AmerikaVenture',office:'danecohn/AmerikaOffice'};
+const products={gameproducer:'danecohn/GameProducer',venture:'danecohn/AmerikaVenture',office:'danecohn/AmerikaOffice'};
 export function createSoftwareDownloads({request=fetch,now=()=>Date.now()}={}){
  const cache=new Map();
  return async function releases(product){

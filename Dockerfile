@@ -18,3 +18,5 @@ ENV DATA_DIR=/data
 EXPOSE 3000
 CMD ["node", "server.mjs"]
 
+
+COPY company-host.mjs ./

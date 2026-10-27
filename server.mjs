@@ -1,3 +1,4 @@
+import {companyHostRoute} from './company-host.mjs';
 import {createCollections} from './collections.mjs';
 const serveCollections=createCollections();
 import {createAssetsGallery} from './assets-gallery.mjs';
@@ -337,6 +338,11 @@ const server = http.createServer(async(req,res)=>{
   try {
     const url=new URL(req.url,'http://localhost');
     const path=url.pathname;
+    const companyRoute=companyHostRoute(req,url,{platformOrigin:publicOrigin||'https://www.amerika.social'});
+    if(companyRoute?.kind==='method-not-allowed')fail(405,'Company pages are read-only. Open the linked app to sign in.');
+    if(companyRoute?.kind==='redirect'){res.writeHead(302,{'Location':companyRoute.location,'Cache-Control':'no-store'});res.end();return;}
+    if(companyRoute?.kind==='company'){res.setHeader('Content-Type','text/html; charset=utf-8');res.setHeader('Cache-Control','no-cache');return res.end(req.method==='HEAD'?undefined:await readFile(join(root,'public','vigiltech.html'),'utf8'));}
+
     if(path.startsWith('/sso/')){
       if(!identity)fail(503,'VigilTech account connections are not configured.');
       if(/^\/sso\/interaction\/[-_a-zA-Z0-9]+\/confirm$/.test(path)){if(req.method!=='POST')fail(405,'Use POST.');await identity.confirm(req,res);return;}

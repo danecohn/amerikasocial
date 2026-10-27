@@ -13,7 +13,7 @@ test('GameProducer exposes all six verified repository assets and adjacent check
 test('rate limited GitHub uses verified current installers for all six platforms',async()=>{
  const read=createSoftwareDownloads({request:async()=>new Response('',{status:403})});
  for(const product of ['social','office','venture','mail','gameproducer','mind','prompter']){
-  const result=await read(product);assert.equal(result.assets.length,6);assert.equal(result.source,'verified-catalogue');
+  const result=await read(product);assert.equal(result.assets.length,product==='social'?12:product==='gameproducer'?8:6);assert.equal(result.source,'verified-catalogue');
   assert.ok(result.assets.every(a=>a.checksumUrl===a.url+'.sha256'));
  }
  assert.equal((await read('office')).assets[0].version,'altoffice-desktop-v0.3.0');
@@ -31,3 +31,5 @@ test('Mind and Prompter expose only their own six native installers',async()=>{f
 test('Lookout exposes only its two native Mac installers',async()=>{const base='https://github.com/danecohn/lookout/releases/download/v0.1.0/';const names=['ArtemisLookout-mac-x64.dmg','ArtemisLookout-mac-arm64.dmg','ArtemisLookout-win-x64.exe','AltStackVenture-macos-x64.dmg'];const assets=names.flatMap(name=>[{name,browser_download_url:base+name,size:100},{name:name+'.sha256',browser_download_url:base+name+'.sha256',size:64}]);const read=createSoftwareDownloads({request:async()=>Response.json([{tag_name:'v0.1.0',assets}])});const d=await read('lookout');assert.equal(d.assets.length,2);assert.ok(d.assets.every(a=>a.name.startsWith('ArtemisLookout-mac-')&&a.checksumUrl===a.url+'.sha256'));});
 
 test('Vigil Mail installers retain legacy download compatibility',async()=>{const request=async()=>Response.json([{tag_name:'altstack-mail-v1.0.7',published_at:'2026-10-27T00:00:00Z',html_url:'https://github.com/danecohn/AltStackMail/releases/tag/altstack-mail-v1.0.7',assets:[{name:'VigilMail-macos-arm64.dmg',browser_download_url:'https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.7/VigilMail-macos-arm64.dmg',size:12345678}]}]);const data=await createSoftwareDownloads({request})('mail');assert.equal(data.assets.length,1);assert.equal(data.assets[0].name,'VigilMail-macos-arm64.dmg')});
+
+test('new installer formats and all legacy filenames remain downloadable',async()=>{const read=createSoftwareDownloads({request:async()=>{throw Error('offline')}});const social=await read('social');for(const arch of ['x64','arm64'])for(const suffix of ['windows-'+arch+'-setup.exe','windows-'+arch+'.zip','linux-'+arch+'.AppImage','linux-'+arch+'.deb','linux-'+arch+'.tar.gz','macos-'+arch+'.dmg'])assert.ok(social.assets.some(a=>a.name==='AltStackSocial-'+suffix&&a.version==='altstack-social-v1.3.2'));const producer=await read('gameproducer');assert.equal(producer.assets.filter(a=>a.name.endsWith('.deb')&&a.version==='v0.1.6').length,2);});

@@ -1,4 +1,4 @@
-@font-face{font-family:Inter;src:url(/fonts/Inter.ttf);font-weight:100 900;font-display:swap}
+
 :root{color-scheme:dark;--bg:#0d0d13;--panel:#16161f;--line:#34344a;--text:#ecebf2;--muted:#a3a1b4;--red:#e0243a;--pink:#ff3d6e;--chrome:linear-gradient(180deg,#f4f4fa,#9a9aae 55%,#d8d8e6)}
 *{box-sizing:border-box}html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}

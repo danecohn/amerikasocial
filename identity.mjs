@@ -1,4 +1,4 @@
-// AltStack account provider. Protocol handling is delegated to oidc-provider.
+// Cohnsoft account provider. Protocol handling is delegated to oidc-provider.
 import Provider from 'oidc-provider';
 import {createHash,generateKeyPairSync,createPrivateKey,sign,randomBytes} from 'node:crypto';
 import {existsSync,readFileSync,writeFileSync} from 'node:fs';
@@ -42,7 +42,7 @@ export function createIdentity({db,dir,origin,warehouseOrigin,clientSecret,cooki
  async function confirm(req,res){
   if(req.headers.origin!==origin)throw Object.assign(Error('Request origin rejected.'),{status:403});
   const chunks=[];let length=0;for await(const chunk of req){length+=chunk.length;if(length>8192)throw Object.assign(Error('Request too large.'),{status:413});chunks.push(chunk);}const fields=new URLSearchParams(Buffer.concat(chunks).toString());
-  const s=readSession(fields.get('altstack_session'));if(!s||s.keyId)throw Object.assign(Error('Sign in with your AltStack account.'),{status:401});
+  const s=readSession(fields.get('altstack_session'));if(!s||s.keyId)throw Object.assign(Error('Sign in with your Cohnsoft account.'),{status:401});
   const a=account(s.actor);if(!a||a.kind!=='human'||a.deleted_at||a.suspended_at)throw Object.assign(Error('This account cannot sign in.'),{status:403});
   const details=await provider.interactionDetails(req,res);await prepare(a,details.params.client_id);const uid=enroll(a.id);let grant;
   if(details.grantId)grant=await provider.Grant.find(details.grantId);

@@ -380,7 +380,7 @@ const server = http.createServer(async(req,res)=>{
     if(path==='/api/internal/mail-account'){
       if(req.method!=='GET')fail(405,'Use GET.');const secret=process.env.MAIL_SERVICE_SECRET;if(!secret||secret.length<32)fail(503,'Mail account connections are unavailable.');
       const time=req.headers['x-altstack-time'],signature=req.headers['x-altstack-signature'];if(typeof time!=='string'||!/^\d{13}$/.test(time)||Math.abs(Date.now()-Number(time))>60000||typeof signature!=='string'||!/^[-_A-Za-z0-9]{43}$/.test(signature))fail(401,'Invalid service authorization.');const expected=createHmac('sha256',secret).update(time+'\nGET\n'+url.pathname+url.search).digest('base64url');if(!timingSafeEqual(Buffer.from(signature),Buffer.from(expected)))fail(401,'Invalid service authorization.');
-      const actor=db.prepare('SELECT * FROM actors WHERE id=?').get(url.searchParams.get('actor'));if(!actor)fail(404,'Account not found.');enforcement.requireActive(actor);if(actor.kind!=='human')fail(403,'Sign in with your huma Cohnsoft account.');res.setHeader('Cache-Control','no-store');return json(res,200,{actor:actor.id,active:true});
+      const actor=db.prepare('SELECT * FROM actors WHERE id=?').get(url.searchParams.get('actor'));if(!actor)fail(404,'Account not found.');enforcement.requireActive(actor);if(actor.kind!=='human')fail(403,'Sign in with your human Cohnsoft account.');res.setHeader('Cache-Control','no-store');return json(res,200,{actor:actor.id,active:true});
     }
     if(path==='/api/internal/warehouse-entitlement'){
       if(req.method!=='GET')fail(405,'Use GET.');const secret=process.env.WAREHOUSE_SERVICE_SECRET;if(!secret||secret.length<32||!identity)fail(503,'Warehouse entitlements are unavailable.');

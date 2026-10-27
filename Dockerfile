@@ -1,7 +1,7 @@
 FROM node:24-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg fontconfig fonts-dejavu-core fonts-noto-color-emoji && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-LABEL org.opencontainers.image.licenses="GPL-3.0-only"
+LABEL org.opencontainers.image.licenses="GPL-3.0-or-later"
 COPY LICENSE ./LICENSE
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts
@@ -10,7 +10,7 @@ COPY apt-repo ./apt-repo
 COPY certificates ./certificates
 COPY geo ./geo
 COPY public ./public
-COPY public/brand/cohnsoft/fonts/*.ttf /usr/local/share/fonts/cohnsoft/
+COPY public/brand/vigiltech/fonts/*.ttf /usr/local/share/fonts/vigiltech/
 RUN fc-cache -f
 COPY scripts ./scripts
 ENV HOST=0.0.0.0

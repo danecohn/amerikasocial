@@ -1,20 +1,7 @@
 {
-  "repository": "danecohn/cohnsoftassets",
-  "assetCommit": "5baba6fad8155d339c0b7ba57af339eb7a23114b",
-  "cssReviewCommit": "fe615226fb2509acb4a6a9fad60e42b4244394dc",
+  "repository": "https://github.com/danecohn/cohnsoftassets",
+  "commit": "30186592391b296d788f29b411d5701ef4f972e3",
   "files": [
-    {
-      "path": "LICENSE",
-      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
-    },
-    {
-      "path": "BRAND.md",
-      "sha256": "cc0c0d8830515d00fd6a416e9c98fea61975e0a26815a7b482f095d8b34dc480"
-    },
-    {
-      "path": "tokens.json",
-      "sha256": "da363a4f696a3d9105e82757d20aaabf35271729c14eb949fc7c2d1262130af7"
-    },
     {
       "path": "css/goldengate.css",
       "sha256": "67fde17b3a59b3ca141f11a8153892ed8f2fa5025ed040ca95e3cb9aec27e988"
@@ -24,48 +11,264 @@
       "sha256": "f35487b1fa51ad038449a59daa0a33444f6b0b48f4900fdc7ca98822e605e040"
     },
     {
-      "path": "fonts/VigilSans-Regular.woff2",
-      "sha256": "9742fc194977abd82be65c79ca09302034c332cba0c4c32eff1a3a1250df6f33"
-    },
-    {
-      "path": "fonts/VigilSans-Bold.woff2",
-      "sha256": "3473a272b16f6c52085ce69646523fec7c4b7ed4a8f16e31ddcf4265aebbf7c2"
+      "path": "fonts/VigilSans-Bold.ttf",
+      "sha256": "9304fdb629c3bf25ec79460b6fb4b7e9554bc61a081b6e86c622e1abbae75545"
     },
     {
       "path": "fonts/VigilSans-Regular.ttf",
       "sha256": "585f3a9dacb3d14e4c7dd31430a79cca9da87fffc24f06017790147296e34577"
     },
     {
-      "path": "fonts/VigilSans-Bold.ttf",
-      "sha256": "9304fdb629c3bf25ec79460b6fb4b7e9554bc61a081b6e86c622e1abbae75545"
-    },
-    {
       "path": "fonts/OFL.txt",
       "sha256": "c985424e4b443932ae3d7d306f39a3f20fcdbdc747c743fbf9bf28d8aeea134c"
     },
     {
-      "path": "icons/favicon-32.png",
-      "sha256": "d500f723bc49510995a9d3f6632caf99c0e706d6eeacdf22b8a96dbc3a37bdde"
+      "path": "fonts/VigilSans-Bold.woff2",
+      "sha256": "3473a272b16f6c52085ce69646523fec7c4b7ed4a8f16e31ddcf4265aebbf7c2"
+    },
+    {
+      "path": "fonts/VigilSans-Regular.woff2",
+      "sha256": "9742fc194977abd82be65c79ca09302034c332cba0c4c32eff1a3a1250df6f33"
+    },
+    {
+      "path": "icons/vigiltech.ico",
+      "sha256": "3efe1085d2741c180bce89c3a5c1c01fb9a5a9bfaa8b14bd962091367d057df2"
+    },
+    {
+      "path": "icons/favicon.ico",
+      "sha256": "3efe1085d2741c180bce89c3a5c1c01fb9a5a9bfaa8b14bd962091367d057df2"
+    },
+    {
+      "path": "icons/icon-256.png",
+      "sha256": "78e3a2b50ff33cdd8050ef62cf549f63557650b8fe7192901559e8e2d120d626"
+    },
+    {
+      "path": "icons/vigiltech.icns",
+      "sha256": "ac7a2d545cd64f6eed459aad69e2baf61fa3a54e62a872af71250faeab5d8593"
     },
     {
       "path": "icons/apple-touch-icon.png",
       "sha256": "8b615f5e11840cd9109b73fbfa3a029b1086cf945a7f58d451d91e249bc08d5b"
     },
     {
+      "path": "icons/favicon-32.png",
+      "sha256": "d500f723bc49510995a9d3f6632caf99c0e706d6eeacdf22b8a96dbc3a37bdde"
+    },
+    {
+      "path": "icons/icon-512.png",
+      "sha256": "50acf8dd80a64fb4b7e91d88a509bf71d6e6ae058d8a98c07e2cd2a5668bc33b"
+    },
+    {
+      "path": "logos/app-icon/vigiltech-app-32.png",
+      "sha256": "1291983847f81740d874e7c1a915772d9e257665905d3616a6c05f82ceb9589c"
+    },
+    {
+      "path": "logos/app-icon/vigiltech-app-256.png",
+      "sha256": "550e8e3f8450488d5b2d2687d3e61bc905684d0ad3334b93ad302b0034bf8ba9"
+    },
+    {
+      "path": "logos/app-icon/vigiltech-app.svg",
+      "sha256": "0d20e1baf338a22bf88ef7a8ab195473fcef94866e3176b3be3c2841d938e7dd"
+    },
+    {
+      "path": "logos/app-icon/vigiltech-app-64.png",
+      "sha256": "8c3d81a36066d4a9a3356ed0c96a47a8ce9272bc0a0008e7d57364a6ce2dd4b3"
+    },
+    {
+      "path": "logos/app-icon/vigiltech-app-1024.png",
+      "sha256": "9d037e1c8a9e78ce416512c099f2bb64ce584e694ac35130ae02c49aea9c004a"
+    },
+    {
+      "path": "logos/app-icon/vigiltech-app-512.png",
+      "sha256": "5576a22d13359654bb8e236d9dbe9ccb63526468e6251dec0ed601c9f92820a9"
+    },
+    {
+      "path": "logos/app-icon/vigiltech-app-16.png",
+      "sha256": "d937f1545fe35e3dbde9ed74e6dd3311d5ed22524cc03ff882a6e8a1b8b0d9f7"
+    },
+    {
+      "path": "logos/app-icon/vigiltech-app-128.png",
+      "sha256": "0fcd2f3618a8b85ad95061ee555dcbc6e934ebf231da3032d3cf7d5f23ad0c1b"
+    },
+    {
+      "path": "logos/mark/vigiltech-mark-48.png",
+      "sha256": "5f1772ad8774f16655d2f797cba93bd1d4bf55d2da5266354ca879d656c5f287"
+    },
+    {
       "path": "logos/mark/vigiltech-mark-64.png",
       "sha256": "ba511113536e29d6cde0457172f173310fe3aaf55a3afb6b01a6e4e32016932a"
     },
     {
-      "path": "logos/lockup/vigiltech-lockup-dark@2x.png",
-      "sha256": "640e9a4f03c8edac5238b176caced21d21e1c44e1de6de6a0fea001e74420267"
+      "path": "logos/mark/vigiltech-mark-16.png",
+      "sha256": "daf3518fa6b84a4cdd68ba72ac25320f0ebb5a1a5876f38cb4d2208415e32e19"
+    },
+    {
+      "path": "logos/mark/vigiltech-mark-1024.png",
+      "sha256": "54445a8e1dc036c9ab6c71c56c50934ddd67396dbf5212d2702ad14f355c82ce"
+    },
+    {
+      "path": "logos/mark/vigiltech-mark-256.png",
+      "sha256": "78e3a2b50ff33cdd8050ef62cf549f63557650b8fe7192901559e8e2d120d626"
+    },
+    {
+      "path": "logos/mark/vigiltech-mark.svg",
+      "sha256": "d56ebead7c4691b82cfd62db3970fb7a5ad74163f08378946323a135028fe58c"
+    },
+    {
+      "path": "logos/mark/vigiltech-mark-128.png",
+      "sha256": "c42bda2c2adbb70df6be005bd18d757eba653acae3b1ca63a7f4ff193c9be1de"
+    },
+    {
+      "path": "logos/mark/vigiltech-mark-512.png",
+      "sha256": "50acf8dd80a64fb4b7e91d88a509bf71d6e6ae058d8a98c07e2cd2a5668bc33b"
+    },
+    {
+      "path": "logos/mark/vigiltech-mark-32.png",
+      "sha256": "d500f723bc49510995a9d3f6632caf99c0e706d6eeacdf22b8a96dbc3a37bdde"
+    },
+    {
+      "path": "logos/social/vigiltech-social-2400x1260.png",
+      "sha256": "ebd4e2b58002a82add3e67adc8ed02aa55bd487e1f11a8311bab7ee60a5a592d"
+    },
+    {
+      "path": "logos/social/vigiltech-social-1200x630.png",
+      "sha256": "5ea3d969bf5aa8da60be69d0007cec19c9edfd622237a3e32f9cf54356e684a5"
+    },
+    {
+      "path": "logos/pixel/vigiltech-pixel-mark@1x.png",
+      "sha256": "b86dbaae8ae843e736997bc1a319830f6ebf0f432173c032ba5645ef45b495f2"
+    },
+    {
+      "path": "logos/pixel/vigiltech-pixel-mark@16x.png",
+      "sha256": "2db11b163510f4a124095c0dc0f160a237f1aa5af9ecc4cfe55c560e60006cc5"
+    },
+    {
+      "path": "logos/pixel/vigiltech-pixel-mark@8x.png",
+      "sha256": "b9a7c12704d2afe0411d424db7956c27035af882530818d77a4c3b9d6eafe9b5"
+    },
+    {
+      "path": "logos/wallpaper/vigiltech-wallpaper-night-preview.png",
+      "sha256": "e5194bcd65074f8424f7edf7ab611e3f5c876bbf64246d18a44e77fec6963974"
+    },
+    {
+      "path": "logos/wallpaper/vigiltech-wallpaper-dawn-2560x1600.png",
+      "sha256": "f45d7f9ff25df7b79e5747f68586ff589d2d6c5a3678723a607841a8046af84d"
+    },
+    {
+      "path": "logos/wallpaper/vigiltech-wallpaper-dawn-preview.png",
+      "sha256": "46bba5b94b7f5aade94e65389c7c02e102ec1c1b8b93790eb5114ce10ee59112"
+    },
+    {
+      "path": "logos/wallpaper/vigiltech-wallpaper-night-2560x1600.png",
+      "sha256": "799d542d3eb3f75f54b9a8bf55cfd4e97faaf570e535728fb2757ecf72a1c5dc"
+    },
+    {
+      "path": "logos/glyph/vigiltech-glyph-pink.png",
+      "sha256": "ea0e047938a0a7b7bccdc43337a1eabe5870622eee4790c87966939ece1e28c3"
+    },
+    {
+      "path": "logos/glyph/vigiltech-glyph-white.svg",
+      "sha256": "0c22621f91dc07b3540deff4188b2dece0daae53cf9c37905d605f60833baa57"
+    },
+    {
+      "path": "logos/glyph/vigiltech-glyph-white.png",
+      "sha256": "09f70c09e5332440284e89688caca639a0adc88f1d5e567fcc9cfe0729ddb171"
+    },
+    {
+      "path": "logos/glyph/vigiltech-glyph-pink.svg",
+      "sha256": "e27b02b386993598016343832f6b9ad5d33d48e70b040e0d0179e28f61960426"
+    },
+    {
+      "path": "logos/glyph/vigiltech-glyph-black.svg",
+      "sha256": "4bf85b393ca23ccb3559322e8e47c59de2b716e24266b6924d249485fe89cd49"
+    },
+    {
+      "path": "logos/glyph/vigiltech-glyph-black.png",
+      "sha256": "aeef26f103d3ef2fb00125b207d8322c51f284d3bc547733f4aa27e0da5adbea"
+    },
+    {
+      "path": "logos/lockup/vigiltech-lockup.svg",
+      "sha256": "a186920210746cd4bbfefb42b8c45bd172542bdc9fdbe9d2a1da8f72cd31cfe0"
+    },
+    {
+      "path": "logos/lockup/vigiltech-wordmark-black.svg",
+      "sha256": "faf08a56a3ee6e30eb5c7aea5fc1e4d3df31fe869b40a19f408c9aa7d1cd8506"
     },
     {
       "path": "logos/lockup/vigiltech-lockup@2x.png",
       "sha256": "ae29453070cbaa74e95643d9ae4444d8048be3c0f8509dc36432d965770706c7"
     },
     {
-      "path": "logos/wallpaper/vigiltech-wallpaper-night-preview.png",
-      "sha256": "e5194bcd65074f8424f7edf7ab611e3f5c876bbf64246d18a44e77fec6963974"
+      "path": "logos/lockup/vigiltech-wordmark-dark.png",
+      "sha256": "4e95a5da1246fa5d1d33dffffa05fae556509a7a8e8b13ff448a3a7333c02ce3"
+    },
+    {
+      "path": "logos/lockup/vigiltech-lockup-dark.svg",
+      "sha256": "322e699e2ea6797af1271e372f1c6213f87c60fe5391be1a00af3dfd18393995"
+    },
+    {
+      "path": "logos/lockup/vigiltech-lockup-stacked@2x.png",
+      "sha256": "2f5b8624063cb492db3961da63ab43d0b4542c5c45798211e7e5996cf5110782"
+    },
+    {
+      "path": "logos/lockup/vigiltech-wordmark.svg",
+      "sha256": "c70e42f144c8be186dcae7526f59b071792a3d1e4d705c5f8466882c9d58de14"
+    },
+    {
+      "path": "logos/lockup/vigiltech-lockup@4x.png",
+      "sha256": "6f179893b96a4e8a5c66b7aa178b49ac55f7e269420696b9eb0e616fb311b04c"
+    },
+    {
+      "path": "logos/lockup/vigiltech-wordmark.png",
+      "sha256": "de142aa7258b297accc632ffde22d9d69889af0cf84f76c57abf047541642cc8"
+    },
+    {
+      "path": "logos/lockup/vigiltech-lockup-dark.png",
+      "sha256": "ee2b8f4a62c32325bc09900878d3cfa991dd4ec8bbec0ec11bd47f16a6afde4f"
+    },
+    {
+      "path": "logos/lockup/vigiltech-wordmark-dark.svg",
+      "sha256": "48fd24419a28a2013e3875b2d29a27a8003303c96c9a15831911acd0443ab11e"
+    },
+    {
+      "path": "logos/lockup/vigiltech-wordmark-black.png",
+      "sha256": "fe594cab045f93a84fde5e2c138f270fd55da1d34a2e8126fe875a5d456fef7d"
+    },
+    {
+      "path": "logos/lockup/vigiltech-lockup.png",
+      "sha256": "5f88ee12fab2b59d6c06b5023b2001893a10340554e54f8cba7e2f65c57531f1"
+    },
+    {
+      "path": "logos/lockup/vigiltech-wordmark-white.svg",
+      "sha256": "cabf830be6a1948de57b06b04df0884516744690670d44ece5a2799d9635dbcd"
+    },
+    {
+      "path": "logos/lockup/vigiltech-lockup-dark@4x.png",
+      "sha256": "6adf425b9f3984bad2cd3c3a08af234c88d4a85c28c6c42fa7e9c267db54cfa9"
+    },
+    {
+      "path": "logos/lockup/vigiltech-lockup-dark@2x.png",
+      "sha256": "640e9a4f03c8edac5238b176caced21d21e1c44e1de6de6a0fea001e74420267"
+    },
+    {
+      "path": "logos/lockup/vigiltech-wordmark-white.png",
+      "sha256": "9b4085d199e6f52b4285ffc77555b5ad4450790c2f49a9be1d80756fa71dbce1"
+    },
+    {
+      "path": "logos/lockup/vigiltech-lockup-stacked.png",
+      "sha256": "be05595351c52f6d140ee50cc7e7772e1631059c058687cdb7c206c9d025d0f8"
+    },
+    {
+      "path": "BRAND.md",
+      "sha256": "cc0c0d8830515d00fd6a416e9c98fea61975e0a26815a7b482f095d8b34dc480"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "tokens.json",
+      "sha256": "da363a4f696a3d9105e82757d20aaabf35271729c14eb949fc7c2d1262130af7"
     }
   ]
 }

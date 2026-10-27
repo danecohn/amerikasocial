@@ -1,5 +1,5 @@
 {
-  "name": "amerika-social",
+  "name": "vigil-social",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -20,9 +20,9 @@
     "stripe": "23.0.0",
     "yauzl": "^3.4.0"
   },
-  "license": "GPL-3.0-only",
+  "license": "GPL-3.0-or-later",
   "devDependencies": {
     "jsdom": "^26.1.0"
   },
-  "author": "Cohnsoft"
+  "author": "VigilTech"
 }

@@ -25,4 +25,25 @@ body.vt .nav-item.active{color:var(--vt-pink-700);background:var(--vt-tint-soft)
 body.vt .nav-item.active .ui-icon{stroke:currentColor}
 [data-theme=dark] body.vt .nav-item.active{color:var(--vt-pink-400)}
 
-body.vt .company-primary{background:var(--vt-pink-600)!important;color:#fff!important}body.vt .company-emblem{filter:none}body.vt{font-synthesis:none}body.vt .company-kicker{letter-spacing:normal}
+/* Shared accessible primary action and reading settings. */
+body.vt{font-synthesis:none}body.vt[data-font=system]{font-family:var(--vt-font-system)!important}
+.vt .primary,.vt .button.primary,.vt button.primary,.vt .download-button,.vt .btn-primary,body.vt .primary{background:var(--vt-pink-600)!important;color:#fff!important;border-color:var(--vt-pink-600)!important}
+.vt :focus-visible{outline:3px solid var(--vt-tint-strong)!important;outline-offset:3px}
+body.vt .desktop{background:linear-gradient(var(--vt-glass),var(--vt-glass)),url('/brand/vigiltech/logos/wallpaper/vigiltech-wallpaper-night-2560x1600.png') center/cover fixed}
+.vt .dock-label,.vt .company-kicker{letter-spacing:normal}
+@media(pointer:coarse){.vt button,.vt summary,.vt input,.vt select,.vt .button,.vt .vt-btn{min-height:44px}}
+@media(prefers-reduced-transparency:reduce){body.vt .desktop{background:var(--vt-bg)}.vt .menubar,.vt .top,.vt .sidebar,.vt .titlebar{background:var(--vt-surface)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}}
+@media(forced-colors:active){body.vt .primary{background:Highlight!important;color:HighlightText!important;border-color:Highlight!important}body.vt .desktop{background:Canvas}.vt :focus-visible{outline-color:Highlight!important}}
+/* Launcher cards and welcome sheet follow the selected appearance. */
+body.vt .desktop-app{background:var(--vt-surface);border:1px solid var(--vt-separator);box-shadow:var(--vt-shadow-1);color:var(--vt-label)}
+body.vt .desktop-app b,body.vt .welcome-content h2,body.vt .about-content h2{color:var(--vt-label)}
+body.vt .desktop-app small,body.vt .dock-label{color:var(--vt-label-2)}
+body.vt .desktop-app img,body.vt .dock-app img,body.vt .company-product img{border-radius:22.37%}
+body.vt .storage-note{background:var(--vt-surface-2);color:var(--vt-label-2);border-color:var(--vt-separator)}
+body.vt .dock-apps{background:var(--vt-glass);border-color:var(--vt-glass-edge);box-shadow:var(--vt-shadow-2)}
+body.vt .desktop-app img,body.vt .dock-app img,body.vt .company-product img{border-radius:22.37%!important}
+:root{--vt-desktop-wallpaper:url('/brand/vigiltech/logos/wallpaper/vigiltech-wallpaper-night-2560x1600.png')}
+:root[data-theme=light]{--vt-desktop-wallpaper:url('/brand/vigiltech/logos/wallpaper/vigiltech-wallpaper-dawn-2560x1600.png')}
+@media(prefers-color-scheme:light){:root:not([data-theme=dark]){--vt-desktop-wallpaper:url('/brand/vigiltech/logos/wallpaper/vigiltech-wallpaper-dawn-2560x1600.png')}}
+body.vt .desktop{background-image:linear-gradient(var(--vt-glass),var(--vt-glass)),var(--vt-desktop-wallpaper)}
+@media(prefers-reduced-transparency:reduce){body.vt .desktop{background-image:none}}

@@ -629,5 +629,95 @@ export const verifiedReleases = {
         }
       ]
     }
+  ],
+  "journal": [
+    {
+      "tag_name": "desktop-v1.0.3",
+      "published_at": "2026-10-27T12:32:47Z",
+      "html_url": "https://github.com/danecohn/F-M-Journal/releases/tag/desktop-v1.0.3",
+      "draft": false,
+      "assets": [
+        {
+          "name": "FMJournal-linux-arm64.AppImage",
+          "browser_download_url": "https://github.com/danecohn/F-M-Journal/releases/download/desktop-v1.0.3/FMJournal-linux-arm64.AppImage",
+          "size": 140129972
+        },
+        {
+          "name": "FMJournal-linux-arm64.AppImage.sha256",
+          "browser_download_url": "https://github.com/danecohn/F-M-Journal/releases/download/desktop-v1.0.3/FMJournal-linux-arm64.AppImage.sha256",
+          "size": 97
+        },
+        {
+          "name": "FMJournal-linux-arm64.deb",
+          "browser_download_url": "https://github.com/danecohn/F-M-Journal/releases/download/desktop-v1.0.3/FMJournal-linux-arm64.deb",
+          "size": 102792452
+        },
+        {
+          "name": "FMJournal-linux-arm64.deb.sha256",
+          "browser_download_url": "https://github.com/danecohn/F-M-Journal/releases/download/desktop-v1.0.3/FMJournal-linux-arm64.deb.sha256",
+          "size": 92
+        },
+        {
+          "name": "FMJournal-linux-x64.AppImage",
+          "browser_download_url": "https://github.com/danecohn/F-M-Journal/releases/download/desktop-v1.0.3/FMJournal-linux-x64.AppImage",
+          "size": 138915146
+        },
+        {
+          "name": "FMJournal-linux-x64.AppImage.sha256",
+          "browser_download_url": "https://github.com/danecohn/F-M-Journal/releases/download/desktop-v1.0.3/FMJournal-linux-x64.AppImage.sha256",
+          "size": 95
+        },
+        {
+          "name": "FMJournal-linux-x64.deb",
+          "browser_download_url": "https://github.com/danecohn/F-M-Journal/releases/download/desktop-v1.0.3/FMJournal-linux-x64.deb",
+          "size": 107761636
+        },
+        {
+          "name": "FMJournal-linux-x64.deb.sha256",
+          "browser_download_url": "https://github.com/danecohn/F-M-Journal/releases/download/desktop-v1.0.3/FMJournal-linux-x64.deb.sha256",
+          "size": 90
+        },
+        {
+          "name": "FMJournal-mac-arm64.dmg",
+          "browser_download_url": "https://github.com/danecohn/F-M-Journal/releases/download/desktop-v1.0.3/FMJournal-mac-arm64.dmg",
+          "size": 158875530
+        },
+        {
+          "name": "FMJournal-mac-arm64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/F-M-Journal/releases/download/desktop-v1.0.3/FMJournal-mac-arm64.dmg.sha256",
+          "size": 90
+        },
+        {
+          "name": "FMJournal-mac-x64.dmg",
+          "browser_download_url": "https://github.com/danecohn/F-M-Journal/releases/download/desktop-v1.0.3/FMJournal-mac-x64.dmg",
+          "size": 165879252
+        },
+        {
+          "name": "FMJournal-mac-x64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/F-M-Journal/releases/download/desktop-v1.0.3/FMJournal-mac-x64.dmg.sha256",
+          "size": 88
+        },
+        {
+          "name": "FMJournal-win-arm64.exe",
+          "browser_download_url": "https://github.com/danecohn/F-M-Journal/releases/download/desktop-v1.0.3/FMJournal-win-arm64.exe",
+          "size": 114779763
+        },
+        {
+          "name": "FMJournal-win-arm64.exe.sha256",
+          "browser_download_url": "https://github.com/danecohn/F-M-Journal/releases/download/desktop-v1.0.3/FMJournal-win-arm64.exe.sha256",
+          "size": 90
+        },
+        {
+          "name": "FMJournal-win-x64.exe",
+          "browser_download_url": "https://github.com/danecohn/F-M-Journal/releases/download/desktop-v1.0.3/FMJournal-win-x64.exe",
+          "size": 121078704
+        },
+        {
+          "name": "FMJournal-win-x64.exe.sha256",
+          "browser_download_url": "https://github.com/danecohn/F-M-Journal/releases/download/desktop-v1.0.3/FMJournal-win-x64.exe.sha256",
+          "size": 88
+        }
+      ]
+    }
   ]
 };

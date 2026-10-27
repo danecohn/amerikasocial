@@ -12,8 +12,8 @@ test('GameProducer exposes all six verified repository assets and adjacent check
 
 test('rate limited GitHub uses verified current installers for all six platforms',async()=>{
  const read=createSoftwareDownloads({request:async()=>new Response('',{status:403})});
- for(const product of ['social','office','venture','mail','gameproducer','mind','prompter']){
-  const result=await read(product);assert.equal(result.assets.length,product==='social'?12:product==='gameproducer'?8:6);assert.equal(result.source,'verified-catalogue');
+ for(const product of ['social','office','venture','mail','gameproducer','mind','prompter','journal']){
+  const result=await read(product);assert.equal(result.assets.length,product==='social'?12:(product==='gameproducer'||product==='journal')?8:6);assert.equal(result.source,'verified-catalogue');
   assert.ok(result.assets.every(a=>a.checksumUrl===a.url+'.sha256'));
  }
  assert.equal((await read('office')).assets[0].version,'altoffice-desktop-v0.3.0');
@@ -37,3 +37,5 @@ test('new installer formats and all legacy filenames remain downloadable',async(
 test('Journal metadata accepts only existing platform filenames and adjacent repository checksums',async()=>{const url='https://github.com/danecohn/F-M-Journal/releases/download/desktop-v1.0.3/';const files=['FMJournal-linux-arm64.deb','FMJournal-win-x64.exe'];const assets=files.flatMap(name=>[{name,browser_download_url:url+name,size:100},{name:name+'.sha256',browser_download_url:url+name+'.sha256',size:64}]);assets.push({name:'FMJournal-mac-x64.dmg',browser_download_url:'https://other.example/app.dmg'});const read=createSoftwareDownloads({request:async()=>Response.json([{tag_name:'desktop-v1.0.3',assets}])});const data=await read('journal');assert.deepEqual(data.assets.map(a=>a.name),files);assert.ok(data.assets.every(a=>a.checksumUrl===a.url+'.sha256'));});
 
 test('Lookout fallback exposes both current signed-integrity Mac images',async()=>{const read=createSoftwareDownloads({request:async()=>{throw Error('offline')}});const data=await read('lookout');assert.equal(data.assets.length,2);assert.ok(data.assets.every(a=>a.version==='v0.1.2'&&a.checksumUrl===a.url+'.sha256'));});
+
+test('Journal offline catalogue retains all eight current installers and checksums',async()=>{const read=createSoftwareDownloads({request:async()=>{throw Error('offline')}});const data=await read('journal');assert.equal(data.assets.length,8);assert.ok(data.assets.every(a=>a.version==='desktop-v1.0.3'&&a.checksumUrl===a.url+'.sha256'));});

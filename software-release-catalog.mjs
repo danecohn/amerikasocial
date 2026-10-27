@@ -222,69 +222,69 @@ export const verifiedReleases = {
   ],
   "venture": [
     {
-      "tag_name": "altstack-venture-zen-v1.23.4b-3",
-      "published_at": "2026-10-25T01:57:12Z",
-      "html_url": "https://github.com/danecohn/AmerikaVenture/releases/tag/altstack-venture-zen-v1.23.4b-3",
+      "tag_name": "altstack-venture-zen-v1.23.4b-4",
+      "published_at": "2026-10-27T12:19:27Z",
+      "html_url": "https://github.com/danecohn/AmerikaVenture/releases/tag/altstack-venture-zen-v1.23.4b-4",
       "draft": false,
       "assets": [
         {
           "name": "AltStackVenture-linux-arm64.tar.gz",
-          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-3/AltStackVenture-linux-arm64.tar.gz",
-          "size": 149757251
+          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-4/AltStackVenture-linux-arm64.tar.gz",
+          "size": 149695012
         },
         {
           "name": "AltStackVenture-linux-arm64.tar.gz.sha256",
-          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-3/AltStackVenture-linux-arm64.tar.gz.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-4/AltStackVenture-linux-arm64.tar.gz.sha256",
           "size": 101
         },
         {
           "name": "AltStackVenture-linux-x64.tar.gz",
-          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-3/AltStackVenture-linux-x64.tar.gz",
-          "size": 161666882
+          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-4/AltStackVenture-linux-x64.tar.gz",
+          "size": 161606508
         },
         {
           "name": "AltStackVenture-linux-x64.tar.gz.sha256",
-          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-3/AltStackVenture-linux-x64.tar.gz.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-4/AltStackVenture-linux-x64.tar.gz.sha256",
           "size": 99
         },
         {
           "name": "AltStackVenture-macos-arm64.dmg",
-          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-3/AltStackVenture-macos-arm64.dmg",
-          "size": 265397967
+          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-4/AltStackVenture-macos-arm64.dmg",
+          "size": 264610639
         },
         {
           "name": "AltStackVenture-macos-arm64.dmg.sha256",
-          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-3/AltStackVenture-macos-arm64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-4/AltStackVenture-macos-arm64.dmg.sha256",
           "size": 98
         },
         {
           "name": "AltStackVenture-macos-x64.dmg",
-          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-3/AltStackVenture-macos-x64.dmg",
-          "size": 264623222
+          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-4/AltStackVenture-macos-x64.dmg",
+          "size": 265407742
         },
         {
           "name": "AltStackVenture-macos-x64.dmg.sha256",
-          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-3/AltStackVenture-macos-x64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-4/AltStackVenture-macos-x64.dmg.sha256",
           "size": 96
         },
         {
           "name": "AltStackVenture-windows-arm64.zip",
-          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-3/AltStackVenture-windows-arm64.zip",
-          "size": 165318041
+          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-4/AltStackVenture-windows-arm64.zip",
+          "size": 165253545
         },
         {
           "name": "AltStackVenture-windows-arm64.zip.sha256",
-          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-3/AltStackVenture-windows-arm64.zip.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-4/AltStackVenture-windows-arm64.zip.sha256",
           "size": 101
         },
         {
           "name": "AltStackVenture-windows-x64.zip",
-          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-3/AltStackVenture-windows-x64.zip",
-          "size": 177495584
+          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-4/AltStackVenture-windows-x64.zip",
+          "size": 177431218
         },
         {
           "name": "AltStackVenture-windows-x64.zip.sha256",
-          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-3/AltStackVenture-windows-x64.zip.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaVenture/releases/download/altstack-venture-zen-v1.23.4b-4/AltStackVenture-windows-x64.zip.sha256",
           "size": 99
         }
       ]
@@ -372,159 +372,159 @@ export const verifiedReleases = {
   ],
   "mail": [
     {
-      "tag_name": "altstack-mail-v1.0.5",
-      "published_at": "2026-10-25T01:22:57Z",
-      "html_url": "https://github.com/danecohn/AltStackMail/releases/tag/altstack-mail-v1.0.5",
+      "tag_name": "altstack-mail-v1.0.7",
+      "published_at": "2026-10-27T07:34:21Z",
+      "html_url": "https://github.com/danecohn/AltStackMail/releases/tag/altstack-mail-v1.0.7",
       "draft": false,
       "assets": [
         {
-          "name": "AltStackMail-linux-arm64.AppImage",
-          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.5/AltStackMail-linux-arm64.AppImage",
-          "size": 127200197
+          "name": "VigilMail-linux-arm64.AppImage",
+          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.7/VigilMail-linux-arm64.AppImage",
+          "size": 129487652
         },
         {
-          "name": "AltStackMail-linux-arm64.AppImage.sha256",
-          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.5/AltStackMail-linux-arm64.AppImage.sha256",
-          "size": 100
+          "name": "VigilMail-linux-arm64.AppImage.sha256",
+          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.7/VigilMail-linux-arm64.AppImage.sha256",
+          "size": 97
         },
         {
-          "name": "AltStackMail-linux-x64.AppImage",
-          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.5/AltStackMail-linux-x64.AppImage",
-          "size": 126015569
+          "name": "VigilMail-linux-x64.AppImage",
+          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.7/VigilMail-linux-x64.AppImage",
+          "size": 128307175
         },
         {
-          "name": "AltStackMail-linux-x64.AppImage.sha256",
-          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.5/AltStackMail-linux-x64.AppImage.sha256",
-          "size": 98
-        },
-        {
-          "name": "AltStackMail-macos-arm64.dmg",
-          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.5/AltStackMail-macos-arm64.dmg",
-          "size": 131711182
-        },
-        {
-          "name": "AltStackMail-macos-arm64.dmg.sha256",
-          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.5/AltStackMail-macos-arm64.dmg.sha256",
+          "name": "VigilMail-linux-x64.AppImage.sha256",
+          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.7/VigilMail-linux-x64.AppImage.sha256",
           "size": 95
         },
         {
-          "name": "AltStackMail-macos-x64.dmg",
-          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.5/AltStackMail-macos-x64.dmg",
-          "size": 137225059
+          "name": "VigilMail-macos-arm64.dmg",
+          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.7/VigilMail-macos-arm64.dmg",
+          "size": 134307942
         },
         {
-          "name": "AltStackMail-macos-x64.dmg.sha256",
-          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.5/AltStackMail-macos-x64.dmg.sha256",
-          "size": 93
+          "name": "VigilMail-macos-arm64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.7/VigilMail-macos-arm64.dmg.sha256",
+          "size": 92
         },
         {
-          "name": "AltStackMail-source.tar.gz",
-          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.5/AltStackMail-source.tar.gz",
-          "size": 44635110
+          "name": "VigilMail-macos-x64.dmg",
+          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.7/VigilMail-macos-x64.dmg",
+          "size": 139857385
         },
         {
-          "name": "AltStackMail-source.tar.gz.sha256",
-          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.5/AltStackMail-source.tar.gz.sha256",
-          "size": 93
-        },
-        {
-          "name": "AltStackMail-web.tar.gz",
-          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.5/AltStackMail-web.tar.gz",
-          "size": 21055722
-        },
-        {
-          "name": "AltStackMail-web.tar.gz.sha256",
-          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.5/AltStackMail-web.tar.gz.sha256",
+          "name": "VigilMail-macos-x64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.7/VigilMail-macos-x64.dmg.sha256",
           "size": 90
         },
         {
-          "name": "AltStackMail-windows-arm64.exe",
-          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.5/AltStackMail-windows-arm64.exe",
-          "size": 115966519
+          "name": "VigilMail-source.tar.gz",
+          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.7/VigilMail-source.tar.gz",
+          "size": 47215803
         },
         {
-          "name": "AltStackMail-windows-arm64.exe.sha256",
-          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.5/AltStackMail-windows-arm64.exe.sha256",
-          "size": 98
+          "name": "VigilMail-source.tar.gz.sha256",
+          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.7/VigilMail-source.tar.gz.sha256",
+          "size": 90
         },
         {
-          "name": "AltStackMail-windows-x64.exe",
-          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.5/AltStackMail-windows-x64.exe",
-          "size": 121425077
+          "name": "VigilMail-web.tar.gz",
+          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.7/VigilMail-web.tar.gz",
+          "size": 23657332
         },
         {
-          "name": "AltStackMail-windows-x64.exe.sha256",
-          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.5/AltStackMail-windows-x64.exe.sha256",
-          "size": 96
+          "name": "VigilMail-web.tar.gz.sha256",
+          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.7/VigilMail-web.tar.gz.sha256",
+          "size": 87
+        },
+        {
+          "name": "VigilMail-windows-arm64.exe",
+          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.7/VigilMail-windows-arm64.exe",
+          "size": 117465183
+        },
+        {
+          "name": "VigilMail-windows-arm64.exe.sha256",
+          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.7/VigilMail-windows-arm64.exe.sha256",
+          "size": 95
+        },
+        {
+          "name": "VigilMail-windows-x64.exe",
+          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.7/VigilMail-windows-x64.exe",
+          "size": 122923945
+        },
+        {
+          "name": "VigilMail-windows-x64.exe.sha256",
+          "browser_download_url": "https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.7/VigilMail-windows-x64.exe.sha256",
+          "size": 93
         }
       ]
     }
   ],
   "mind": [
     {
-      "tag_name": "v0.1.0",
-      "published_at": "2026-10-25T03:36:54Z",
-      "html_url": "https://github.com/danecohn/artemismind/releases/tag/v0.1.0",
+      "tag_name": "v0.1.2",
+      "published_at": "2026-10-27T12:24:32Z",
+      "html_url": "https://github.com/danecohn/artemismind/releases/tag/v0.1.2",
       "draft": false,
       "assets": [
         {
           "name": "ArtemisMind-linux-arm64.AppImage",
-          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-linux-arm64.AppImage",
-          "size": 129676395
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.2/ArtemisMind-linux-arm64.AppImage",
+          "size": 131193008
         },
         {
           "name": "ArtemisMind-linux-arm64.AppImage.sha256",
-          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-linux-arm64.AppImage.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.2/ArtemisMind-linux-arm64.AppImage.sha256",
           "size": 99
         },
         {
           "name": "ArtemisMind-linux-x86_64.AppImage",
-          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-linux-x86_64.AppImage",
-          "size": 128491828
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.2/ArtemisMind-linux-x86_64.AppImage",
+          "size": 130012518
         },
         {
           "name": "ArtemisMind-linux-x86_64.AppImage.sha256",
-          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-linux-x86_64.AppImage.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.2/ArtemisMind-linux-x86_64.AppImage.sha256",
           "size": 100
         },
         {
           "name": "ArtemisMind-mac-arm64.dmg",
-          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-mac-arm64.dmg",
-          "size": 134110380
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.2/ArtemisMind-mac-arm64.dmg",
+          "size": 135950892
         },
         {
           "name": "ArtemisMind-mac-arm64.dmg.sha256",
-          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-mac-arm64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.2/ArtemisMind-mac-arm64.dmg.sha256",
           "size": 92
         },
         {
           "name": "ArtemisMind-mac-x64.dmg",
-          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-mac-x64.dmg",
-          "size": 139620253
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.2/ArtemisMind-mac-x64.dmg",
+          "size": 141468878
         },
         {
           "name": "ArtemisMind-mac-x64.dmg.sha256",
-          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-mac-x64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.2/ArtemisMind-mac-x64.dmg.sha256",
           "size": 90
         },
         {
           "name": "ArtemisMind-win-arm64.exe",
-          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-win-arm64.exe",
-          "size": 117148880
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.2/ArtemisMind-win-arm64.exe",
+          "size": 118290758
         },
         {
           "name": "ArtemisMind-win-arm64.exe.sha256",
-          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-win-arm64.exe.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.2/ArtemisMind-win-arm64.exe.sha256",
           "size": 92
         },
         {
           "name": "ArtemisMind-win-x64.exe",
-          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-win-x64.exe",
-          "size": 122607274
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.2/ArtemisMind-win-x64.exe",
+          "size": 123749399
         },
         {
           "name": "ArtemisMind-win-x64.exe.sha256",
-          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.0/ArtemisMind-win-x64.exe.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemismind/releases/download/v0.1.2/ArtemisMind-win-x64.exe.sha256",
           "size": 90
         }
       ]
@@ -532,69 +532,69 @@ export const verifiedReleases = {
   ],
   "prompter": [
     {
-      "tag_name": "v0.1.1",
-      "published_at": "2026-10-25T03:38:32Z",
-      "html_url": "https://github.com/danecohn/artemisprompter/releases/tag/v0.1.1",
+      "tag_name": "v0.1.3",
+      "published_at": "2026-10-27T12:23:55Z",
+      "html_url": "https://github.com/danecohn/artemisprompter/releases/tag/v0.1.3",
       "draft": false,
       "assets": [
         {
           "name": "ArtemisPrompter-linux-arm64.AppImage",
-          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-linux-arm64.AppImage",
-          "size": 129692901
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.3/ArtemisPrompter-linux-arm64.AppImage",
+          "size": 130762854
         },
         {
           "name": "ArtemisPrompter-linux-arm64.AppImage.sha256",
-          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-linux-arm64.AppImage.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.3/ArtemisPrompter-linux-arm64.AppImage.sha256",
           "size": 103
         },
         {
           "name": "ArtemisPrompter-linux-x86_64.AppImage",
-          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-linux-x86_64.AppImage",
-          "size": 128512388
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.3/ArtemisPrompter-linux-x86_64.AppImage",
+          "size": 129578229
         },
         {
           "name": "ArtemisPrompter-linux-x86_64.AppImage.sha256",
-          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-linux-x86_64.AppImage.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.3/ArtemisPrompter-linux-x86_64.AppImage.sha256",
           "size": 104
         },
         {
           "name": "ArtemisPrompter-mac-arm64.dmg",
-          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-mac-arm64.dmg",
-          "size": 134147043
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.3/ArtemisPrompter-mac-arm64.dmg",
+          "size": 135344180
         },
         {
           "name": "ArtemisPrompter-mac-arm64.dmg.sha256",
-          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-mac-arm64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.3/ArtemisPrompter-mac-arm64.dmg.sha256",
           "size": 96
         },
         {
           "name": "ArtemisPrompter-mac-x64.dmg",
-          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-mac-x64.dmg",
-          "size": 139661110
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.3/ArtemisPrompter-mac-x64.dmg",
+          "size": 140884561
         },
         {
           "name": "ArtemisPrompter-mac-x64.dmg.sha256",
-          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-mac-x64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.3/ArtemisPrompter-mac-x64.dmg.sha256",
           "size": 94
         },
         {
           "name": "ArtemisPrompter-win-arm64.exe",
-          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-win-arm64.exe",
-          "size": 117177476
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.3/ArtemisPrompter-win-arm64.exe",
+          "size": 117938606
         },
         {
           "name": "ArtemisPrompter-win-arm64.exe.sha256",
-          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-win-arm64.exe.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.3/ArtemisPrompter-win-arm64.exe.sha256",
           "size": 96
         },
         {
           "name": "ArtemisPrompter-win-x64.exe",
-          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-win-x64.exe",
-          "size": 122635737
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.3/ArtemisPrompter-win-x64.exe",
+          "size": 123397359
         },
         {
           "name": "ArtemisPrompter-win-x64.exe.sha256",
-          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.1/ArtemisPrompter-win-x64.exe.sha256",
+          "browser_download_url": "https://github.com/danecohn/artemisprompter/releases/download/v0.1.3/ArtemisPrompter-win-x64.exe.sha256",
           "size": 94
         }
       ]
@@ -602,29 +602,29 @@ export const verifiedReleases = {
   ],
   "lookout": [
     {
-      "tag_name": "v0.1.0",
-      "published_at": "2026-10-25T06:42:38Z",
-      "html_url": "https://github.com/danecohn/lookout/releases/tag/v0.1.0",
+      "tag_name": "v0.1.2",
+      "published_at": "2026-10-27T12:22:41Z",
+      "html_url": "https://github.com/danecohn/lookout/releases/tag/v0.1.2",
       "draft": false,
       "assets": [
         {
           "name": "ArtemisLookout-mac-arm64.dmg",
-          "browser_download_url": "https://github.com/danecohn/lookout/releases/download/v0.1.0/ArtemisLookout-mac-arm64.dmg",
-          "size": 5172000
+          "browser_download_url": "https://github.com/danecohn/lookout/releases/download/v0.1.2/ArtemisLookout-mac-arm64.dmg",
+          "size": 1747014
         },
         {
           "name": "ArtemisLookout-mac-arm64.dmg.sha256",
-          "browser_download_url": "https://github.com/danecohn/lookout/releases/download/v0.1.0/ArtemisLookout-mac-arm64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/lookout/releases/download/v0.1.2/ArtemisLookout-mac-arm64.dmg.sha256",
           "size": 105
         },
         {
           "name": "ArtemisLookout-mac-x64.dmg",
-          "browser_download_url": "https://github.com/danecohn/lookout/releases/download/v0.1.0/ArtemisLookout-mac-x64.dmg",
-          "size": 5199031
+          "browser_download_url": "https://github.com/danecohn/lookout/releases/download/v0.1.2/ArtemisLookout-mac-x64.dmg",
+          "size": 1778085
         },
         {
           "name": "ArtemisLookout-mac-x64.dmg.sha256",
-          "browser_download_url": "https://github.com/danecohn/lookout/releases/download/v0.1.0/ArtemisLookout-mac-x64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/lookout/releases/download/v0.1.2/ArtemisLookout-mac-x64.dmg.sha256",
           "size": 103
         }
       ]

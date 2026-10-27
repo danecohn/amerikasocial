@@ -466,7 +466,7 @@ const server = http.createServer(async(req,res)=>{
     if(path==='/apt'||path==='/apt/'){res.statusCode=302;res.setHeader('Location','/downloads/os');return res.end();}
     if(path.startsWith('/apt/'))return aptRepository(req,res,path);
     if(path==='/api/software-downloads'){if(req.method!=='GET')fail(405,'Use GET.');const data=await softwareDownloads(url.searchParams.get('product'));res.setHeader('Cache-Control','public,max-age=30');return json(res,200,data);}
-    if(path==='/api/fmjournal-downloads'){if(req.method!=='GET')fail(405,'Use GET.');const release=await fetch('https://api.github.com/repos/danecohn/F-M-Journal/releases/latest',{headers:{Accept:'application/vnd.github+json'},signal:AbortSignal.timeout(12000)});if(!release.ok)return json(res,200,{tag:null,assets:[]});const data=await release.json();res.setHeader('Cache-Control','public,max-age=60');return json(res,200,{tag:data.tag_name,assets:data.assets.filter(a=>a.name.startsWith('FMJournal-')).map(a=>({name:a.name,url:a.browser_download_url}))});}
+    if(path==='/api/fmjournal-downloads'){if(req.method!=='GET')fail(405,'Use GET.');const data=await softwareDownloads('journal');res.setHeader('Cache-Control','public,max-age=60');return json(res,200,{tag:data.assets[0]?.version||null,assets:data.assets.map(({name,url,size,checksumUrl})=>({name,url,size,...(checksumUrl?{checksumUrl}:{})}))});}
     if(['/fm-journal','/fm-journal/','/journal','/journal/'].includes(path)){res.writeHead(302,{'Location':'https://fmjournal-production.up.railway.app/','Cache-Control':'no-store'});res.end();return;}
     if (!path.startsWith('/api/')) {
       if(req.method!=='GET') fail(405,'Method not allowed.');

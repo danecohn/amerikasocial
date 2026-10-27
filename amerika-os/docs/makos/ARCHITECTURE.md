@@ -1,7 +1,7 @@
 # MakOS architecture
 
 MakOS is an independent, opt-in ARM64 Wayland session on Ubuntu. It reuses the
-working compositor/session patterns from Amerika OS without running either
+working compositor/session patterns from AltStack Desktop without running either
 Plasma shell or GNOME Shell. Internal inspiration: classic 2009-era Mac desktop conventions.
 All product-facing names and shipped graphics are original.
 
@@ -59,7 +59,7 @@ replacement for mature file managers' full safe editing/trash/network functional
 ## Packaging
 
 `tools/builders/makos.py` registers six separate packages with an independent
-`0.1.0~dev1` version. It adds no MakOS dependency to Amerika OS. Only the new
+`0.1.0~dev1` version. It adds no MakOS dependency to AltStack Desktop. Only the new
 packages are built; existing large packages are never regenerated. `makos-apps`
 recommends the real terminal/browser/office engines, it does not misrepresent wrappers
 as new rendering engines. Local signed staging is isolated under `dist/makos`.

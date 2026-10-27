@@ -6,7 +6,7 @@ import shutil
 ROOT=Path(__file__).resolve().parents[1]
 SOURCE=ROOT/'src/os'
 TARGET=ROOT/'src/makos/compat'
-NAMES={'Amerika Studio':'Studio','Amerika Render':'Render','Amerika Engine':'Engine','Amerika Sprite':'Sprite','AmerikaBox':'MakBox','Amerika OS':'MakOS'}
+NAMES={'Amerika Studio':'Studio','Amerika Render':'Render','Amerika Engine':'Engine','Amerika Sprite':'Sprite','AmerikaBox':'AltStack Box','AltStack Desktop':'MakOS'}
 
 
 def prepare():

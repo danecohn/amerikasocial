@@ -13,9 +13,9 @@ test('swarm engagement is grouped, self-support excluded, feeds deduplicated and
  const api=async(path,body,token)=>{const r=await fetch(base+'/api/'+path,{method:body?'POST':'GET',headers:{...(body?{'Content-Type':'application/json'}:{}),...(token?{Authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});return {status:r.status,data:await r.json()};};
  let db;
  try{
-  const register=async handle=>(await api('register',{handle,name:handle,kind:'human',password:'boost-test-password',americanConfirmed:true,rulesAccepted:true})).data;
+  const register=async handle=>(await api('register',{handle,name:handle,kind:'human',password:'boost-test-password',humanConfirmed:true,country:'US',rulesAccepted:true})).data;
   const owner=await register('boostowner.demo'),other=await register('boostother.demo'),viewer=await register('boostviewer.demo');
-  async function bot(handle,human){const a=(await api('agents',{handle,name:handle,password:'boost-test-password',americanConfirmed:true,rulesAccepted:true},human.token)).data.actor;const key=(await api('agent-keys',{actor:a.id,name:'Boost test',scopes:['read','like','post'],neverExpires:true},human.token)).data;return {...a,token:key.token};}
+  async function bot(handle,human){const a=(await api('agents',{handle,name:handle,password:'boost-test-password',humanConfirmed:true,country:'US',rulesAccepted:true},human.token)).data.actor;const key=(await api('agent-keys',{actor:a.id,name:'Boost test',scopes:['read','like','post'],neverExpires:true},human.token)).data;return {...a,token:key.token};}
   const b1=await bot('boostone.demo',owner),b2=await bot('boosttwo.demo',owner),b3=await bot('boostthree.demo',other);
   const old=(await api('posts',{text:'Older original'},owner.token)).data.post;
   const newer=(await api('posts',{text:'Newer original'},other.token)).data.post;

@@ -16,8 +16,8 @@ OV, OP, SS, FP, SU, DR, GD, HW, VN, SA, PS = ('amerika-os-overview','operate-des
     'diagnose-and-repair','game-dev-studio','hardware-surface-laptop-7','voice-and-notifications','schedule-and-automation','privacy-and-safety')
 
 # ---- start
-c('Start here','amerika','Index of every Amerika OS command, grouped, with what each one does','[topic]',OV,'''
-Show the user the Amerika OS command index. Topic filter (may be empty): $ARGUMENTS
+c('Start here','amerika','Index of every AltStack Desktop command, grouped, with what each one does','[topic]',OV,'''
+Show the user the AltStack Desktop command index. Topic filter (may be empty): $ARGUMENTS
 Read `commands.md` in the plugin folder if you can; otherwise list the groups below. Group the commands, one line each, and say they are invoked as `/amerika-os:<name>` (short names that clash with Claude Code built-ins such as /status or /logout need the prefix). If a topic was given, show only the matching group and then offer the most likely next command. Do not call any tool for this command except `amerika.system.status` to confirm the OS is connected.
 ''')
 c('Start here','status','One-screen status of this computer: system, power, network, windows, hardware, services','',OV,'''
@@ -260,7 +260,7 @@ idx = OUT / 'amerika.md'
 t = idx.read_text().replace('Read `commands.md` in the plugin folder if you can; otherwise list the groups below.', 'Use this list:\n' + '\n'.join(rows) + '\n')
 idx.write_text(t)
 # cheat sheet
-md = ['# Amerika OS commands', '', 'Type these in Claude Code (plugin `amerika-os`) as `/amerika-os:<name>`; the short name works where it does not clash with a Claude Code built-in (for example /status, /logout need the prefix). In Claude Desktop without the plugin, say the same thing in words and Claude will use the amerika tools.', '',
+md = ['# AltStack Desktop commands', '', 'Type these in Claude Code (plugin `amerika-os`) as `/amerika-os:<name>`; the short name works where it does not clash with a Claude Code built-in (for example /status, /logout need the prefix). In Claude Desktop without the plugin, say the same thing in words and Claude will use the amerika tools.', '',
       'Every command makes Claude check the result with a read tool and report only what it verified. Risky actions ask first; reboot, shutdown, logout and sleep always confirm.', '']
 for g, items in groups.items():
     md += [f'## {g}', '', '| Command | What it does |', '|---|---|']

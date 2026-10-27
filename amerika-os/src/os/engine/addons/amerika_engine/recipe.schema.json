@@ -1,7 +1,7 @@
 {
  "$schema": "https://json-schema.org/draft/2020-12/schema",
  "$id": "https://amerika.social/schemas/amerika-engine-recipe-1.json",
- "title": "Amerika Engine game recipe",
+ "title": "Engine game recipe",
  "description": "Describes a whole game. The recipe assembler turns it into scenes, scripts, input map, autoloads and project settings. Stored as res://amerika_recipe.json.",
  "type": "object",
  "required": [
@@ -161,7 +161,7 @@
       "pattern": "^res://[^\\\\]*$",
       "description": "res:// path inside the project"
      },
-     "description": "Track key -> res:// path (AmerikaBox export, .ogg/.wav/.mp3)"
+     "description": "Track key -> res:// path (AltStack Box export, .ogg/.wav/.mp3)"
     },
     "sfx": {
      "type": "object",
@@ -387,7 +387,7 @@
     "sprite": {
      "type": "object",
      "additionalProperties": false,
-     "description": "2D sprite sheet (Amerika Sprite export)",
+     "description": "2D sprite sheet (Sprite export)",
      "properties": {
       "texture": {
        "type": "string",
@@ -418,7 +418,7 @@
     "model": {
      "type": "string",
      "pattern": "^res://[^\\\\]*$",
-     "description": "3D model (.glb/.gltf from Amerika Render) instanced as the visual"
+     "description": "3D model (.glb/.gltf from Render) instanced as the visual"
     },
     "model_scale": {
      "type": "number",

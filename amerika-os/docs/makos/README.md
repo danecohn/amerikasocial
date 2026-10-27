@@ -21,7 +21,7 @@ The owner has not confirmed a real MakOS login or app compatibility.
 * Seek: curated apps, local filename fallback, safe calculator, common length/mass conversion.
 * Settings pane grid; appearance/launcher controls; read-only hardware status for some panes.
 * Small Text Editor with unsaved-change protection, Notes, Calculator, Calendar, Activity, Screenshot, System Information and read-only Disks. Native utilities run as separate applications in a normal session.
-* Original catalog: Venture, Paper, Digits, Slides, MakBox, Studio, Render, Engine, Sprite;
+* Original catalog: Venture, Paper, Digits, Slides, AltStack Box, Studio, Render, Engine, Sprite;
   ChatGPT and Claude remain available. Terminal has one visible entry and a preferred backend.
 * Freedesktop notification banners/history/actions, a Do Not Disturb control, four original synthesized sound files and a compiled original cursor theme. Sound playback policy remains unfinished.
 * Studio cosmetic copies remove the failed Agent controls; they preserve upstream engines and do not edit user projects or credential configuration.
@@ -61,7 +61,7 @@ the provided installer. It does not remove apps, stop the current desktop, selec
 default session, modify PAM or enable any login/boot theme. Finish current work,
 log out normally, choose **MakOS** in the login screen's session selector and log in.
 
-To return: log out, choose **Plasma (Wayland)** or **Amerika OS**, and log in.
+To return: log out, choose **Plasma (Wayland)** or **AltStack Desktop**, and log in.
 If MakOS is blank, press Ctrl+Alt+F3, log in yourself and inspect:
 
 ```sh

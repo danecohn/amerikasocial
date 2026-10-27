@@ -27,7 +27,7 @@ def register(b):
     flavor=b.ROOT/'flavor'
     def package(name,description,**kwargs):
         p=b.Pkg(name,b.DE_VERSION,description,**kwargs)
-        p.copyright('Copyright Amerika LLC, GPL-3.0-only.\nUbuntu remains Ubuntu; this package supplies Amerika desktop flavour assets.\n')
+        p.copyright('Copyright AltStack LLC, GPL-3.0-only.\nUbuntu remains Ubuntu; this package supplies Amerika desktop flavour assets.\n')
         return p
 
     def branding():
@@ -37,8 +37,8 @@ def register(b):
         p.copy(flavor/'branding/amerika-wallpapers.xml','/usr/share/gnome-background-properties/amerika-wallpapers.xml')
         p.copy(flavor/'branding/50-amerika-motd','/etc/update-motd.d/50-amerika',0o755)
         p.file('/usr/share/amerika-os/flavour',
-               f'NAME="Amerika OS"\nVERSION="{b.DE_VERSION}"\nBASE="Ubuntu"\nBASE_VERSION_ID="26.10"\n'
-               'ARCHITECTURE="arm64"\nCHANNEL="stable"\nSUPPORT_URL="https://www.amerika.social/downloads/os"\n'
+               f'NAME="AltStack Desktop"\nVERSION="{b.DE_VERSION}"\nBASE="Ubuntu"\nBASE_VERSION_ID="26.10"\n'
+               'ARCHITECTURE="arm64"\nCHANNEL="stable"\nSUPPORT_URL="https://altstack.io/downloads/os"\n'
                'STATUS="Independent development flavour; not an official Ubuntu flavour"\n')
         return p
 

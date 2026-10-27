@@ -1,6 +1,6 @@
 ---
 name: diagnose-and-repair
-description: Diagnose and repair problems on Amerika OS - something is slow, broken, missing or will not start. Reads the user journal, hardware report, units and status first, applies the safest fix, and knows the recovery paths for the login, boot and session screens. Use when the user reports an error, crash, black screen, lag, no sound/Wi-Fi, or a service that does not work.
+description: Diagnose and repair problems on AltStack Desktop - something is slow, broken, missing or will not start. Reads the user journal, hardware report, units and status first, applies the safest fix, and knows the recovery paths for the login, boot and session screens. Use when the user reports an error, crash, black screen, lag, no sound/Wi-Fi, or a service that does not work.
 ---
 
 # Diagnose and repair

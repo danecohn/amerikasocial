@@ -12,7 +12,7 @@ bl_info = {
     'description': 'Talk to Blender: an AI modelling assistant (Studio)',
     'category': 'Interface',
     'warning': '',
-    'doc_url': 'https://www.amerika.social',
+    'doc_url': 'https://altstack.io',
 }
 
 _registered = False

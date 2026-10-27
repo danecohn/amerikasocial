@@ -5,10 +5,10 @@ Native implementation uses Expo IAP / StoreKit 2. The backend uses Apple's offic
 ## App Store Connect
 
 1. Enroll in Apple Developer. Register `social.amerika.ios` and create an iOS app record. Complete Apple's paid-app agreements, tax and banking setup.
-2. Create an auto-renewable subscription group and monthly product `social.amerika.plus.monthly`, named Makk Social Plus. Set the desired Apple price tier in App Store Connect; the app shows Apple's localized price rather than inventing or hardcoding a price. Website pricing remains $8/month.
+2. Create an auto-renewable subscription group and monthly product `social.amerika.plus.monthly`, named AltStack Social Plus. Set the desired Apple price tier in App Store Connect; the app shows Apple's localized price rather than inventing or hardcoding a price. Website pricing remains $8/month.
 3. Add subscription description, required screenshots/review metadata, privacy and Terms URLs. Add a sandbox tester for testing. Do not put real Apple purchases through the sandbox verification path.
 4. Under Users and Access → Integrations → In-App Purchase, create the server API key. Keep its `.p8` private key, issuer ID and key ID private. Never place them in this mobile project or Expo public variables.
-5. Set App Store Server Notifications V2 to `https://www.amerika.social/api/apple/notifications`. Use a separately deployed staging backend configured for Sandbox to test renewals/refunds, with separate test accounts. Build/start that test app with `EXPO_PUBLIC_API_ORIGIN` set to the staging HTTPS origin (no trailing slash or path); production builds default to the existing website. This first version accepts one configured Apple environment per backend; it does not auto-fallback across environments.
+5. Set App Store Server Notifications V2 to `https://altstack.io/api/apple/notifications`. Use a separately deployed staging backend configured for Sandbox to test renewals/refunds, with separate test accounts. Build/start that test app with `EXPO_PUBLIC_API_ORIGIN` set to the staging HTTPS origin (no trailing slash or path); production builds default to the existing website. This first version accepts one configured Apple environment per backend; it does not auto-fallback across environments.
 
 ## Railway backend variables
 

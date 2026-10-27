@@ -1,6 +1,6 @@
 import * as SecureStore from "expo-secure-store";
 
-export const ORIGIN = process.env.EXPO_PUBLIC_API_ORIGIN || "https://www.amerika.social";
+export const ORIGIN = process.env.EXPO_PUBLIC_API_ORIGIN || "https://altstack.io";
 if (!/^https:\/\//.test(ORIGIN) || new URL(ORIGIN).origin !== ORIGIN) throw new Error("Use an HTTPS API origin without a path.");
 const KEY = "amerika.session";
 export type Actor = {

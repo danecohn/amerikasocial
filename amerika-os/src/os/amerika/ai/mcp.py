@@ -1,4 +1,4 @@
-"""amerika-mcp: a Model Context Protocol server (stdio) that lets an AI app operate Amerika OS.
+"""amerika-mcp: a Model Context Protocol server (stdio) that lets an AI app operate AltStack Desktop.
 
 The AI app starts this process. It forwards tool calls to the running Amerika Shell's broker over a private Unix
 socket; the shell decides what is allowed, asks the user when needed, and writes the audit log.
@@ -11,7 +11,7 @@ import sys
 from .. import __version__, common
 
 INSTRUCTIONS = (
-    'You are connected to Amerika OS. These tools operate the user\'s computer: windows, apps, audio, display, '
+    'You are connected to AltStack Desktop. These tools operate the user\'s computer: windows, apps, audio, display, '
     'network, notifications, files in the home folder and (with approval) shell commands. The user sees every action '
     'in the top bar and can stop you at any time. Prefer read tools first (system_status, windows_list, apps_list), '
     'make the smallest change that does the job, and say what you did. Risky tools ask the user for approval; if '
@@ -88,7 +88,7 @@ def serve(client, stdin=sys.stdin, stdout=sys.stdout, broker=ask_broker):
                     name = aliases.get(name, name)  # advertised alias -> registry name; real dotted names still work
                     resp = broker({'id': 1, 'method': 'call', 'client': client, 'tool': name, 'args': args})
                 except OSError:
-                    resp = {'ok': False, 'error': 'Amerika Shell is not running. Log in to the Amerika OS session to use these tools.'}
+                    resp = {'ok': False, 'error': 'Amerika Shell is not running. Log in to the AltStack Desktop session to use these tools.'}
                 if resp.get('ok'):
                     send({'jsonrpc': '2.0', 'id': mid, 'result': {'content': [{'type': 'text', 'text': json.dumps(resp['result'], ensure_ascii=False)}]}})
                 else:

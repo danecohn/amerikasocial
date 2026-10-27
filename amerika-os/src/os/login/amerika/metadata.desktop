@@ -1,12 +1,12 @@
 [SddmGreeterTheme]
-Name=Amerika OS
-Description=Retro-futurist login screen for Amerika OS
+Name=AltStack Desktop
+Description=Retro-futurist login screen for AltStack Desktop
 Author=Artemis Softworks LLC
 Copyright=(c) 2026 Artemis Softworks LLC
 License=GPL-3.0-only
 Type=sddm-theme
 Version=3.0
-Website=https://www.amerika.social
+Website=https://altstack.io
 Screenshot=assets/preview.png
 MainScript=Main.qml
 ConfigFile=theme.conf

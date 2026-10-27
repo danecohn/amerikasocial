@@ -1,4 +1,4 @@
-"""Dev-time generator: builds theme/amerika.xml (Blender interface theme preset) from the Amerika OS palette.
+"""Dev-time generator: builds theme/amerika.xml (Blender interface theme preset) from the AltStack Desktop palette.
 
     blender -b --factory-startup --python tools/make_theme.py -- theme/amerika.xml
 
@@ -17,20 +17,20 @@ def hexc(h):
     return tuple(int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
 
 
-# palette taken from the Amerika OS icons: warm night sky, hot-pink sun, amber neon, chrome rim
-BG = hexc('#0e0810')
-BG2 = hexc('#150f1b')
-HEADER = hexc('#1c1426')
-PANEL = hexc('#251b32')
-PANEL_HI = hexc('#33264a')
-OUTLINE = hexc('#0a0610')
-TEXT = hexc('#e9e4f2')
-TEXT_DIM = hexc('#9c93b3')
-CHROME = hexc('#cfcfe4')
+# palette taken from the AltStack Desktop icons: warm night sky, hot-pink sun, amber neon, chrome rim
+BG = hexc('#e7edf3')
+BG2 = hexc('#eef3f8')
+HEADER = hexc('#cbd5df')
+PANEL = hexc('#f8fafc')
+PANEL_HI = hexc('#d5eaff')
+OUTLINE = hexc('#aebdcb')
+TEXT = hexc('#233649')
+TEXT_DIM = hexc('#51677c')
+CHROME = hexc('#233649')
 AMBER = hexc('#ffb02e')
-PINK = hexc('#ff3d6e')
-CYAN = hexc('#4fd8ff')
-GRID = hexc('#2a2038')
+PINK = hexc('#1764bd')
+CYAN = hexc('#237dcc')
+GRID = hexc('#aebdcb')
 
 MAP = {
     # generic space colours
@@ -39,14 +39,14 @@ MAP = {
     'tab_active': PANEL_HI, 'tab_inactive': HEADER, 'tab_back': BG, 'tab_outline': OUTLINE,
     'navigation_bar': BG, 'execution_buts': PANEL, 'tab_active_text': AMBER,
     # widgets
-    'outline': OUTLINE, 'inner': PANEL, 'inner_sel': hexc('#a8294f'), 'item': AMBER, 'text_sel': (1, 1, 1),
+    'outline': OUTLINE, 'inner': PANEL, 'inner_sel': hexc('#1764bd'), 'item': AMBER, 'text_sel': (1, 1, 1),
     # 3D view and friends
     'object_selected': AMBER, 'object_active': hexc('#fff0cf'), 'vertex_select': AMBER, 'edge_select': AMBER, 'face_select': PINK,
     'grid': GRID, 'wire': hexc('#000000'), 'wire_edit': hexc('#000000'), 'transform': PINK, 'light': hexc('#ffb02e'),
     'selected_highlight': PANEL_HI, 'active': PINK, 'selected': AMBER, 'handle_vertex_select': AMBER,
     'frame_current': PINK, 'time_marker_line_selected': AMBER, 'cursor': AMBER, 'space_active': PINK,
     'lastsel_point': hexc('#fff0cf'), 'dopesheet_channel': PANEL, 'summary': HEADER,
-    'panel_back': hexc('#1a1323'), 'panel_header': HEADER, 'panel_sub_back': hexc('#211a2c'), 'panel_title': CHROME, 'panel_text': TEXT,
+    'panel_back': hexc('#eef3f8'), 'panel_header': HEADER, 'panel_sub_back': hexc('#e3ebf3'), 'panel_title': CHROME, 'panel_text': TEXT,
     'row_alternate': (1, 1, 1),
 }
 KEEP_ALPHA = True
@@ -88,7 +88,7 @@ try:
     g = theme.view_3d.space.gradients
     g.background_type = 'LINEAR'
     g.high_gradient = hexc('#2a1a3a')
-    g.gradient = hexc('#0e0810')
+    g.gradient = hexc('#e7edf3')
     count += 2
 except Exception as e:
     print('gradient skipped', e)

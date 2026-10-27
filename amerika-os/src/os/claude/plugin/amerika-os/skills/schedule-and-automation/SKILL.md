@@ -1,6 +1,6 @@
 ---
 name: schedule-and-automation
-description: Schedule tasks and reminders on Amerika OS with systemd user timers (and cron when needed) safely - one-off reminders, recurring scripts, listing and removing them. Use when the user asks to do something later, every day, on a schedule, at login, or to remove such automation.
+description: Schedule tasks and reminders on AltStack Desktop with systemd user timers (and cron when needed) safely - one-off reminders, recurring scripts, listing and removing them. Use when the user asks to do something later, every day, on a schedule, at login, or to remove such automation.
 ---
 
 # Schedule and automation

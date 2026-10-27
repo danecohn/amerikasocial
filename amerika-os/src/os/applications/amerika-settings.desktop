@@ -2,7 +2,7 @@
 Type=Application
 Name=Amerika Settings
 GenericName=System Settings
-Comment=Make Amerika OS yours
+Comment=Make AltStack Desktop yours
 Exec=amerika-settings
 Icon=amerika-settings
 Terminal=false

@@ -1,6 +1,6 @@
 ---
 name: system-settings
-description: Read and change Amerika OS settings safely - appearance, sound, brightness, display scale, Wi-Fi, power profile, Copilot key, top bar, home mode - one page at a time, with a way back. Use when the user asks to change how the computer looks, sounds or behaves.
+description: Read and change AltStack Desktop settings safely - appearance, sound, brightness, display scale, Wi-Fi, power profile, Copilot key, top bar, home mode - one page at a time, with a way back. Use when the user asks to change how the computer looks, sounds or behaves.
 ---
 
 # System settings

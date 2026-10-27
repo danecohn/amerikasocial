@@ -83,7 +83,7 @@ export default function Auth({
           title="Save codes privately"
           onPress={() =>
             void Share.share({
-              message: "PRIVATE Amerika recovery codes\n" + codes.join("\n"),
+              message: "PRIVATE AltStack recovery codes\n" + codes.join("\n"),
             })
           }
         />
@@ -137,7 +137,7 @@ export default function Auth({
       >
         <View style={s.spread}>
           <Text style={s.title}>
-            {register ? "Join Amerika" : "Welcome back"}
+            {register ? "Join AltStack" : "Welcome back"}
           </Text>
           <Icon name="close" label="Close sign in" onPress={onClose} />
         </View>

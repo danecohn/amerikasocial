@@ -1,4 +1,4 @@
-@font-face{font-family:Inter;src:url(/fonts/Inter.ttf);font-weight:100 900;font-display:swap}
+
 :root{color-scheme:dark;--bg:#0d0d13;--panel:#16161f;--line:#34344a;--text:#ecebf2;--muted:#a3a1b4;--red:#e0243a;--pink:#ff3d6e;--chrome:linear-gradient(180deg,#f4f4fa,#9a9aae 55%,#d8d8e6)}
 *{box-sizing:border-box}html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
@@ -38,3 +38,5 @@ footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;paddin
 @media(max-width:900px){.sun{left:50%;opacity:.4;bottom:26%}}
 @media(max-width:700px){.bar nav a:not(.pill){display:none}.hero{padding-top:50px;min-height:520px}.steps>li{padding-left:0;padding-top:46px}.chrome span{padding-right:0}}
 @media(prefers-reduced-motion:no-preference){.sun{animation:pulse 6s ease-in-out infinite}@keyframes pulse{50%{box-shadow:0 0 170px 40px rgba(224,36,58,.6)}}}
+
+.platform-links{display:flex;flex-wrap:wrap;gap:20px;padding:12px 24px;border:1px solid #bac8d5;border-radius:8px;background:linear-gradient(#fff,#e0e8f0);font-size:13px}.platform-links a{color:#365c83;text-decoration:none;font-weight:650}

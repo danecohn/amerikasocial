@@ -18,7 +18,7 @@ def register(b):
         if package['version'] != lock['version']:
             raise RuntimeError('the staged OpenClaw version does not match the pinned version')
         p = b.Pkg('amerika-agent', b.DE_VERSION,
-                  'Amerika Agent, built on OpenClaw\nThe opt-in, keyring-backed agent for Amerika OS. '
+                  'Amerika Agent, built on OpenClaw\nThe opt-in, keyring-backed agent for AltStack Desktop. '
                   'Includes the pinned OpenClaw engine, local authenticated gateway, Settings integration and desktop tools.',
                   arch='arm64', depends='nodejs (>= 24.16), nodejs (<< 25), libsecret-tools, python3, ca-certificates, '
                   f'amerika-desktop-shell (>= {b.DE_VERSION}), gir1.2-webkit-6.0',
@@ -48,7 +48,7 @@ def register(b):
                              '  if command -v deb-systemd-invoke >/dev/null 2>&1; then\n'
                              '    deb-systemd-invoke --user stop amerika-agent-gateway.service amerika-agent-activity.service || true\n'
                              '  fi\nfi\nexit 0\n')
-        p.copyright('Amerika integration: Copyright Amerika LLC, GPL-3.0-only.\n'
+        p.copyright('Amerika integration: Copyright AltStack LLC, GPL-3.0-only.\n'
                     'See /usr/share/common-licenses/GPL-3.\n'
                     'OpenClaw and its dependencies retain their respective licences; see NOTICE and OpenClaw-MIT-LICENSE.\n')
         return p

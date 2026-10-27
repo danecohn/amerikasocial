@@ -113,3 +113,5 @@ Pickle browser builds also apply `scripts/patch-pickles.py`: the animated assist
 ## Licence
 
 First-party code is free software under GNU GPL v3 or later (`LICENSE`). Upstream components retain their own licences; bundled Vigil Sans is SIL OFL 1.1. A product of VigilTech, vigiltech.org.
+
+Icons: [VigilTech](https://github.com/danecohn/vigilicons). Product assignments follow repos.json; all icon files are copied unchanged.

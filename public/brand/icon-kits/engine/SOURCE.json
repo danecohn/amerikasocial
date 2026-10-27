@@ -1,0 +1,42 @@
+{
+  "repository": "https://github.com/danecohn/vigilicons",
+  "commit": "41f4ba10777880a6929e593638efbe86f8e2a64c",
+  "product": "engine",
+  "files": [
+    {
+      "path": "web/favicon.ico",
+      "source": "products/engine/web/favicon.ico",
+      "sha256": "82095a739edcf01972636515a69969bf81f23d95f21cd0ffe5013c629a4c56e8"
+    },
+    {
+      "path": "web/apple-touch-icon.png",
+      "source": "products/engine/web/apple-touch-icon.png",
+      "sha256": "464122241fc504c5b11486bdc524c67d9efa7768a0a60e0c87c58afbdaa7565a"
+    },
+    {
+      "path": "web/favicon-16.png",
+      "source": "products/engine/web/favicon-16.png",
+      "sha256": "beb11598abe9d6a4b989af622ab2815ca76527300b57100478473d930f82460b"
+    },
+    {
+      "path": "web/icon-192.png",
+      "source": "products/engine/web/icon-192.png",
+      "sha256": "dce20990108651850f0e839e7da0d917882bc7301069a27ea888ea6aeed4c582"
+    },
+    {
+      "path": "web/maskable-512.png",
+      "source": "products/engine/web/maskable-512.png",
+      "sha256": "589694fa42d0a66bea0ab234ff5c45e5b9bffe6df728035661706293371975dd"
+    },
+    {
+      "path": "web/favicon-32.png",
+      "source": "products/engine/web/favicon-32.png",
+      "sha256": "7d812f760be249d8fe3d600c5f9b2b6511f322b1275b7afb0169c531ed9f1bf0"
+    },
+    {
+      "path": "web/icon-512.png",
+      "source": "products/engine/web/icon-512.png",
+      "sha256": "589694fa42d0a66bea0ab234ff5c45e5b9bffe6df728035661706293371975dd"
+    }
+  ]
+}

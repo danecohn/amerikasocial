@@ -2,69 +2,89 @@
 export const verifiedReleases = {
   "gameproducer": [
     {
-      "tag_name": "v0.1.4",
-      "published_at": "2026-10-25T01:09:10Z",
-      "html_url": "https://github.com/danecohn/GameProducer/releases/tag/v0.1.4",
+      "tag_name": "v0.1.6",
+      "published_at": "2026-10-27T11:41:21Z",
+      "html_url": "https://github.com/danecohn/GameProducer/releases/tag/v0.1.6",
       "draft": false,
       "assets": [
         {
           "name": "AltStackGameProducer-linux-arm64.AppImage",
-          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.4/AltStackGameProducer-linux-arm64.AppImage",
-          "size": 128175983
+          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.6/AltStackGameProducer-linux-arm64.AppImage",
+          "size": 129631254
         },
         {
           "name": "AltStackGameProducer-linux-arm64.AppImage.sha256",
-          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.4/AltStackGameProducer-linux-arm64.AppImage.sha256",
+          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.6/AltStackGameProducer-linux-arm64.AppImage.sha256",
           "size": 108
         },
         {
+          "name": "AltStackGameProducer-linux-arm64.deb",
+          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.6/AltStackGameProducer-linux-arm64.deb",
+          "size": 97573384
+        },
+        {
+          "name": "AltStackGameProducer-linux-arm64.deb.sha256",
+          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.6/AltStackGameProducer-linux-arm64.deb.sha256",
+          "size": 103
+        },
+        {
           "name": "AltStackGameProducer-linux-x64.AppImage",
-          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.4/AltStackGameProducer-linux-x64.AppImage",
-          "size": 126995478
+          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.6/AltStackGameProducer-linux-x64.AppImage",
+          "size": 128450766
         },
         {
           "name": "AltStackGameProducer-linux-x64.AppImage.sha256",
-          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.4/AltStackGameProducer-linux-x64.AppImage.sha256",
+          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.6/AltStackGameProducer-linux-x64.AppImage.sha256",
           "size": 106
         },
         {
+          "name": "AltStackGameProducer-linux-x64.deb",
+          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.6/AltStackGameProducer-linux-x64.deb",
+          "size": 102186500
+        },
+        {
+          "name": "AltStackGameProducer-linux-x64.deb.sha256",
+          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.6/AltStackGameProducer-linux-x64.deb.sha256",
+          "size": 101
+        },
+        {
           "name": "AltStackGameProducer-mac-arm64.dmg",
-          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.4/AltStackGameProducer-mac-arm64.dmg",
-          "size": 132875747
+          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.6/AltStackGameProducer-mac-arm64.dmg",
+          "size": 134809593
         },
         {
           "name": "AltStackGameProducer-mac-arm64.dmg.sha256",
-          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.4/AltStackGameProducer-mac-arm64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.6/AltStackGameProducer-mac-arm64.dmg.sha256",
           "size": 101
         },
         {
           "name": "AltStackGameProducer-mac-x64.dmg",
-          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.4/AltStackGameProducer-mac-x64.dmg",
-          "size": 138430967
+          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.6/AltStackGameProducer-mac-x64.dmg",
+          "size": 140333774
         },
         {
           "name": "AltStackGameProducer-mac-x64.dmg.sha256",
-          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.4/AltStackGameProducer-mac-x64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.6/AltStackGameProducer-mac-x64.dmg.sha256",
           "size": 99
         },
         {
           "name": "AltStackGameProducer-win-arm64.exe",
-          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.4/AltStackGameProducer-win-arm64.exe",
-          "size": 117258775
+          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.6/AltStackGameProducer-win-arm64.exe",
+          "size": 118544111
         },
         {
           "name": "AltStackGameProducer-win-arm64.exe.sha256",
-          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.4/AltStackGameProducer-win-arm64.exe.sha256",
+          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.6/AltStackGameProducer-win-arm64.exe.sha256",
           "size": 101
         },
         {
           "name": "AltStackGameProducer-win-x64.exe",
-          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.4/AltStackGameProducer-win-x64.exe",
-          "size": 122717145
+          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.6/AltStackGameProducer-win-x64.exe",
+          "size": 124002877
         },
         {
           "name": "AltStackGameProducer-win-x64.exe.sha256",
-          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.4/AltStackGameProducer-win-x64.exe.sha256",
+          "browser_download_url": "https://github.com/danecohn/GameProducer/releases/download/v0.1.6/AltStackGameProducer-win-x64.exe.sha256",
           "size": 99
         }
       ]
@@ -72,69 +92,129 @@ export const verifiedReleases = {
   ],
   "social": [
     {
-      "tag_name": "altstack-social-v1.3.0",
-      "published_at": "2026-10-25T01:59:52Z",
-      "html_url": "https://github.com/danecohn/AmerikaWindows/releases/tag/altstack-social-v1.3.0",
+      "tag_name": "altstack-social-v1.3.2",
+      "published_at": "2026-10-27T11:42:51Z",
+      "html_url": "https://github.com/danecohn/AmerikaWindows/releases/tag/altstack-social-v1.3.2",
       "draft": false,
       "assets": [
         {
+          "name": "AltStackSocial-linux-arm64.AppImage",
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-linux-arm64.AppImage",
+          "size": 106453512
+        },
+        {
+          "name": "AltStackSocial-linux-arm64.AppImage.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-linux-arm64.AppImage.sha256",
+          "size": 102
+        },
+        {
+          "name": "AltStackSocial-linux-arm64.deb",
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-linux-arm64.deb",
+          "size": 132130006
+        },
+        {
+          "name": "AltStackSocial-linux-arm64.deb.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-linux-arm64.deb.sha256",
+          "size": 97
+        },
+        {
           "name": "AltStackSocial-linux-arm64.tar.gz",
-          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.0/AltStackSocial-linux-arm64.tar.gz",
-          "size": 115884822
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-linux-arm64.tar.gz",
+          "size": 116110725
         },
         {
           "name": "AltStackSocial-linux-arm64.tar.gz.sha256",
-          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.0/AltStackSocial-linux-arm64.tar.gz.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-linux-arm64.tar.gz.sha256",
           "size": 100
         },
         {
+          "name": "AltStackSocial-linux-x64.AppImage",
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-linux-x64.AppImage",
+          "size": 106658296
+        },
+        {
+          "name": "AltStackSocial-linux-x64.AppImage.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-linux-x64.AppImage.sha256",
+          "size": 100
+        },
+        {
+          "name": "AltStackSocial-linux-x64.deb",
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-linux-x64.deb",
+          "size": 131292640
+        },
+        {
+          "name": "AltStackSocial-linux-x64.deb.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-linux-x64.deb.sha256",
+          "size": 95
+        },
+        {
           "name": "AltStackSocial-linux-x64.tar.gz",
-          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.0/AltStackSocial-linux-x64.tar.gz",
-          "size": 115489649
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-linux-x64.tar.gz",
+          "size": 115692583
         },
         {
           "name": "AltStackSocial-linux-x64.tar.gz.sha256",
-          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.0/AltStackSocial-linux-x64.tar.gz.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-linux-x64.tar.gz.sha256",
           "size": 98
         },
         {
           "name": "AltStackSocial-macos-arm64.dmg",
-          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.0/AltStackSocial-macos-arm64.dmg",
-          "size": 65223628
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-macos-arm64.dmg",
+          "size": 65864381
         },
         {
           "name": "AltStackSocial-macos-arm64.dmg.sha256",
-          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.0/AltStackSocial-macos-arm64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-macos-arm64.dmg.sha256",
           "size": 97
         },
         {
           "name": "AltStackSocial-macos-x64.dmg",
-          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.0/AltStackSocial-macos-x64.dmg",
-          "size": 71718605
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-macos-x64.dmg",
+          "size": 71694355
         },
         {
           "name": "AltStackSocial-macos-x64.dmg.sha256",
-          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.0/AltStackSocial-macos-x64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-macos-x64.dmg.sha256",
           "size": 95
         },
         {
+          "name": "AltStackSocial-windows-arm64-setup.exe",
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-windows-arm64-setup.exe",
+          "size": 36078085
+        },
+        {
+          "name": "AltStackSocial-windows-arm64-setup.exe.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-windows-arm64-setup.exe.sha256",
+          "size": 106
+        },
+        {
           "name": "AltStackSocial-windows-arm64.zip",
-          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.0/AltStackSocial-windows-arm64.zip",
-          "size": 53956502
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-windows-arm64.zip",
+          "size": 54208387
         },
         {
           "name": "AltStackSocial-windows-arm64.zip.sha256",
-          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.0/AltStackSocial-windows-arm64.zip.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-windows-arm64.zip.sha256",
           "size": 100
         },
         {
+          "name": "AltStackSocial-windows-x64-setup.exe",
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-windows-x64-setup.exe",
+          "size": 51926925
+        },
+        {
+          "name": "AltStackSocial-windows-x64-setup.exe.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-windows-x64-setup.exe.sha256",
+          "size": 104
+        },
+        {
           "name": "AltStackSocial-windows-x64.zip",
-          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.0/AltStackSocial-windows-x64.zip",
-          "size": 75946227
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-windows-x64.zip",
+          "size": 76196426
         },
         {
           "name": "AltStackSocial-windows-x64.zip.sha256",
-          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.0/AltStackSocial-windows-x64.zip.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaWindows/releases/download/altstack-social-v1.3.2/AltStackSocial-windows-x64.zip.sha256",
           "size": 98
         }
       ]

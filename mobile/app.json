@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Makk Social",
+    "name": "AltStack Social",
     "slug": "amerika-social",
     "version": "0.2.0",
     "orientation": "portrait",
@@ -22,7 +22,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Choose photos or videos to share on Makk Social.",
+          "photosPermission": "Choose photos or videos to share on AltStack Social.",
           "cameraPermission": false,
           "microphonePermission": false
         }
@@ -38,7 +38,7 @@
       [
         "expo-media-library",
         {
-          "savePhotosPermission": "Save branded Makk Social post images to your photo library.",
+          "savePhotosPermission": "Save branded AltStack Social post images to your photo library.",
           "photosPermission": "Choose media for your posts and Dating profile.",
           "preventAutomaticLimitedAccessAlert": true
         }

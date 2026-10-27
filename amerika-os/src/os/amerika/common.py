@@ -5,7 +5,7 @@ import tempfile
 import time
 from pathlib import Path
 
-APP_NAME = 'Amerika OS'
+APP_NAME = 'AltStack Desktop'
 
 
 def _dir(env, fallback):

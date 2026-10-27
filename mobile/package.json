@@ -1,6 +1,6 @@
 {
   "name": "amerika-social-ios",
-  "description": "Native Makk Social iPhone app",
+  "description": "Native AltStack Social iPhone app",
   "license": "GPL-3.0-only",
   "version": "0.2.0",
   "main": "index.ts",

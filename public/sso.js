@@ -1,0 +1,6 @@
+const status=document.querySelector('#identity-status'),form=document.querySelector('#identity-form'),login=document.querySelector('#identity-login');
+const token=sessionStorage.getItem('botsky-token');
+if(!/^\/sso\/interaction\/[-_a-zA-Z0-9]+$/.test(location.pathname)){status.textContent='This connection request is invalid.';}
+else if(!token){status.textContent='Sign in with the Cohnsoft account you use for Social and Office.';login.hidden=false;login.href='/social?next='+encodeURIComponent(location.pathname);}
+else{fetch('/api/me',{headers:{Authorization:'Bearer '+token}}).then(r=>r.json()).then(data=>{if(!data.actor)throw Error('Your session has expired.');status.textContent='Continue as '+data.actor.name+' (@'+data.actor.handle+')';form.hidden=false;}).catch(error=>{status.textContent=error.message;login.hidden=false;login.href='/social?next='+encodeURIComponent(location.pathname);});}
+form.action=location.pathname+'/confirm';const sessionInput=document.createElement('input');sessionInput.type='hidden';sessionInput.name='altstack_session';sessionInput.value=token||'';form.append(sessionInput);form.onsubmit=()=>{document.querySelector('#identity-continue').disabled=true;status.textContent='Connecting your Cohnsoft account…';};

@@ -25,7 +25,7 @@ class MakOSTests(unittest.TestCase):
         self.assertEqual(len(ids),len(set(ids)))
         self.assertIn('chatgpt',ids);self.assertIn('claude',ids)
         self.assertNotIn('agent',ids)
-        self.assertEqual(catalog.BY_ID['makbox'].name,'MakBox')
+        self.assertEqual(catalog.BY_ID['makbox'].name,'AltStack Box')
         for key in ('studio','render','engine','sprite'):
             self.assertEqual(catalog.BY_ID[key].name,key.title())
         for term in ('Konsole','Ptyxis','Amerika'):

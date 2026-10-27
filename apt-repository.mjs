@@ -2,7 +2,7 @@ import {createReadStream} from 'node:fs';
 import {stat,readFile} from 'node:fs/promises';
 import {join,resolve,sep} from 'node:path';
 
-// Serves the signed Amerika OS APT repository from a fixed directory. Only paths that match the
+// Serves the signed Cohnsoft Desktop APT repository from a fixed directory. Only paths that match the
 // repository layout below are ever mapped to files; nothing from the request is used to build another path.
 const SUITE='stable',ARCH='arm64';
 const PACKAGE_FILE='[a-z0-9][a-z0-9+.~_-]{1,120}_[A-Za-z0-9.+~:-]{1,60}_(?:arm64|all)\\.deb';

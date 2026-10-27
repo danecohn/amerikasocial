@@ -1,6 +1,6 @@
 ---
 name: hardware-surface-laptop-7
-description: What the Surface Laptop 7 (Snapdragon X, Adreno X1-85, Hexagon NPU) can and cannot do under Amerika OS - Vulkan on the turnip driver, performance modes, thermals, memory, NPU reality, x86 emulation. Use for performance, battery, thermal, GPU, game-speed or "can the NPU do X" questions.
+description: What the Surface Laptop 7 (Snapdragon X, Adreno X1-85, Hexagon NPU) can and cannot do under AltStack Desktop - Vulkan on the turnip driver, performance modes, thermals, memory, NPU reality, x86 emulation. Use for performance, battery, thermal, GPU, game-speed or "can the NPU do X" questions.
 ---
 
 # Hardware: Surface Laptop 7 (Snapdragon X)

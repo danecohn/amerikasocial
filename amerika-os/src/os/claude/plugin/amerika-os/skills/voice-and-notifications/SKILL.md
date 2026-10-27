@@ -1,6 +1,6 @@
 ---
 name: voice-and-notifications
-description: Send, read and silence desktop notifications and control audio on Amerika OS - notifications, Do Not Disturb, volume, mute. Use when the user asks to be notified or reminded, to mute or silence things, to read recent notifications, or to change the sound level.
+description: Send, read and silence desktop notifications and control audio on AltStack Desktop - notifications, Do Not Disturb, volume, mute. Use when the user asks to be notified or reminded, to mute or silence things, to read recent notifications, or to change the sound level.
 ---
 
 # Voice, sound and notifications

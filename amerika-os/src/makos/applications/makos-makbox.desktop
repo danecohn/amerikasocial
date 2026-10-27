@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=MakBox
+Name=AltStack Box
 Exec=makos-app makbox %U
 Icon=makos-music
 Terminal=false

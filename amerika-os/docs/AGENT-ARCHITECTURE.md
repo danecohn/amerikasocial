@@ -1,6 +1,6 @@
 # Amerika Agent: architecture (v3.1)
 
-Amerika Agent is the agentic layer of Amerika OS. It **bundles OpenClaw (MIT, https://github.com/openclaw/openclaw)** as its engine and wires it into the Amerika shell, Settings, login-keyring and the existing `amerika-mcp` tool broker. Upstream licence (MIT, "Copyright OpenClaw contributors/Foundation") and notices must ship in the package (`/usr/share/doc/amerika-agent/`), and the UI must say plainly that Amerika Agent is built on OpenClaw. Do not fork or vendor the 1 GB source tree; install the **published npm package `openclaw` at a pinned version** (currently 2026.10.5) into `/opt/amerika/agent` with Node 24.x (Ubuntu 26.10 `nodejs` 24.19 satisfies OpenClaw's `>=24.16 <25`).
+Amerika Agent is the agentic layer of AltStack Desktop. It **bundles OpenClaw (MIT, https://github.com/openclaw/openclaw)** as its engine and wires it into the Amerika shell, Settings, login-keyring and the existing `amerika-mcp` tool broker. Upstream licence (MIT, "Copyright OpenClaw contributors/Foundation") and notices must ship in the package (`/usr/share/doc/amerika-agent/`), and the UI must say plainly that Amerika Agent is built on OpenClaw. Do not fork or vendor the 1 GB source tree; install the **published npm package `openclaw` at a pinned version** (currently 2026.10.5) into `/opt/amerika/agent` with Node 24.x (Ubuntu 26.10 `nodejs` 24.19 satisfies OpenClaw's `>=24.16 <25`).
 
 Verified on this ARM64 machine: `npm install openclaw@2026.10.5 --omit=dev` works (614 MB node_modules), `openclaw gateway run` starts headless on loopback, `/` serves the Control UI (HTTP 200), `openclaw health` answers. Dev Node lives at `work/tools/node/bin` (v24.22.1) and a reference install at `work/openclaw-src/stage-install` (do not run it with the real `$HOME`; use a throwaway `HOME`). OpenClaw docs are at `work/openclaw-src/src/docs` (read `gateway/`, `plugins/`, `providers/anthropic.md`, `providers/openai.md`, `gateway/secrets/*`, `gateway/sandboxing*`, `gateway/permission-modes.md`, `gateway/configuration-reference.md`, `platforms/linux*` before designing against it).
 
@@ -28,7 +28,7 @@ Security invariants (all subagents):
 3. Agent actions that touch the system go through `amerika-mcp` and its approval broker; "critical" always asks. The global Stop switch must stop the agent.
 4. Nothing in this work may change login manager, GRUB, initramfs or default session without the existing opt-in/revert pattern.
 5. Don't touch the user's real `~/.openclaw`, `~/.claude`, `~/.codex`.
-6. Production Amerika Social/PDS services are off limits. Railway builds are paused: do not deploy.
+6. Production AltStack Social/PDS services are off limits. Railway builds are paused: do not deploy.
 7. No test credentials against real services; no network calls to model providers in tests.
 
 ## Build conventions

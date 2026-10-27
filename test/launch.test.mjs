@@ -11,14 +11,14 @@ import { createRecovery } from '../recovery.mjs';
 
 async function launch(env={}){const dir=await mkdtemp(join(tmpdir(),'amerika-launch-'));const child=spawn(process.execPath,['server.mjs'],{env:{...process.env,PDS_URL:'',BACKUPS_ENABLED:'false',STRIPE_SECRET_KEY:'',PORT:'0',DATA_DIR:dir,ADMIN_HANDLES:'ant',...env},stdio:['ignore','pipe','pipe']});const base=await new Promise((resolve,reject)=>{let output='';const timer=setTimeout(()=>reject(Error('Startup timed out')),15000);child.once('exit',()=>{clearTimeout(timer);reject(Error('Server exited'));});child.stdout.on('data',chunk=>{output+=chunk;const m=output.match(/"port":(\d+)/);if(m){clearTimeout(timer);resolve('http://127.0.0.1:'+m[1]);}});});return {dir,base,async stop(){const exited=new Promise(r=>child.once('exit',r));child.kill();await exited;await rm(dir,{recursive:true,force:true});}};}
 async function api(app,path,body,token){const response=await fetch(app.base+'/api/'+path,{method:body?'POST':'GET',headers:{...(body?{'Content-Type':'application/json'}:{}),...(token?{Authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});return {status:response.status,data:await response.json()};}
-async function register(app,handle){const result=await api(app,'register',{handle,name:handle,kind:'human',password:'original-password',americanConfirmed:true,rulesAccepted:true});assert.equal(result.status,200);return result.data;}
+async function register(app,handle){const result=await api(app,'register',{handle,name:handle,kind:'human',password:'original-password',humanConfirmed:true,country:'US',rulesAccepted:true});assert.equal(result.status,200);return result.data;}
 
 test('recovery codes are private, require reauthentication, replace old codes, work once, and revoke sessions and agent credentials',async()=>{
  const app=await launch();try{const owner=await register(app,'owner.demo'),other=await register(app,'other.demo');assert.equal(owner.recoveryCodes.length,10);
  const db=new DatabaseSync(join(app.dir,'botsky.sqlite'));const hashes=db.prepare('SELECT hash FROM recovery_codes WHERE actor=?').all(owner.actor.id);assert.equal(hashes.length,10);assert.ok(hashes.every(h=>!owner.recoveryCodes.includes(h.hash)));db.close();
  assert.equal(JSON.stringify((await api(app,'profile?id='+encodeURIComponent(owner.actor.id))).data).includes(owner.recoveryCodes[0]),false);
  assert.equal((await api(app,'recovery/codes',{password:'wrong-password'},owner.token)).status,401);
- const created=await api(app,'agents',{handle:'owned.agent',name:'Agent',password:'agent-password',americanConfirmed:true,rulesAccepted:true},owner.token);assert.equal(created.status,201);assert.equal(created.data.recoveryCodes.length,10);
+ const created=await api(app,'agents',{handle:'owned.agent',name:'Agent',password:'agent-password',humanConfirmed:true,country:'US',rulesAccepted:true},owner.token);assert.equal(created.status,201);assert.equal(created.data.recoveryCodes.length,10);
  assert.equal((await api(app,'recovery/status?actor='+encodeURIComponent(created.data.actor.id),null,other.token)).status,403);
  const key=(await api(app,'agent-keys',{actor:created.data.actor.id,name:'Test',days:1,scopes:['post','read']},owner.token)).data;
  assert.equal((await api(app,'recovery/status',null,key.token)).status,403);

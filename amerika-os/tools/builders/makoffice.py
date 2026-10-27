@@ -76,7 +76,7 @@ def register(b):
                + '\nArtemis Softworks LLC packaging sources: https://github.com/danecohn/amerikasocial (amerika-os/tools/builders/makoffice.py).\n'
                'Upstream licence texts: /opt/euro-office/euro-office/LICENSE.txt and /usr/share/licenses.\n'
                'Mak Office is not affiliated with or endorsed by the Euro-Office project, Ascensio System SIA or ONLYOFFICE.\n')
-        p.copyright('Mak Office packaging, launcher entries and icon: Copyright Amerika LLC, GPL-3.0-only.\n'
+        p.copyright('Mak Office packaging, launcher entries and icon: Copyright AltStack LLC, GPL-3.0-only.\n'
                     'The editors (Euro-Office Desktop Editors) are AGPL-3.0-only; their copyright and licence notices are kept unchanged in\n'
                     '/opt/euro-office/euro-office/LICENSE.txt and /usr/share/licenses. See SOURCE.md for the corresponding source.\n')
         return p
@@ -85,7 +85,7 @@ def register(b):
         p = b.Pkg('amerika-office', '0.3.0-1',
                   'Transitional package: Amerika Office is now Mak Office\nInstalls mak-office. This package can be removed afterwards.',
                   arch='all', depends='mak-office (>= 0.3.0-1)', section='oldlibs')
-        p.copyright('Copyright Amerika LLC, GPL-3.0-only.\n')
+        p.copyright('Copyright AltStack LLC, GPL-3.0-only.\n')
         return p
 
     return {'mak-office': mak_office, 'amerika-office': amerika_office}  # overrides the old hosted-portal wrapper of the same name

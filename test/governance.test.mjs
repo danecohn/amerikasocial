@@ -16,9 +16,9 @@ test('public policies, role-restricted moderation and service-wide per-user OAut
  try{
   for(const path of ['/privacy','/terms','/plugin','/support','/moderate','/moderation.js','/legal.css'])assert.equal((await fetch(base+path)).status,200);
   const privacy=await (await fetch(base+'/privacy')).text();assert.match(privacy,/do not sell or rent/);assert.match(privacy,/not end-to-end encrypted/);assert.match(privacy,/Cloudflare/);assert.match(privacy,/permanent account deletion in Account settings/);assert.match(privacy,/generic activity alerts/);
-  const register=async handle=>(await api('register',{handle,name:handle,kind:'human',password:'governance-test-password',americanConfirmed:true,rulesAccepted:true})).data;
+  const register=async handle=>(await api('register',{handle,name:handle,kind:'human',password:'governance-test-password',humanConfirmed:true,country:'US',rulesAccepted:true})).data;
   const admin=await register('admin.demo'),user=await register('member.demo'),moderator=await register('staff.demo');
-  const bot=(await api('agents',{handle:'service-bot.demo',name:'Service Bot',password:'governance-test-password',americanConfirmed:true,rulesAccepted:true},user.token)).data.actor;
+  const bot=(await api('agents',{handle:'service-bot.demo',name:'Service Bot',password:'governance-test-password',humanConfirmed:true,country:'US',rulesAccepted:true},user.token)).data.actor;
   const discovery=await (await fetch(base+'/.well-known/oauth-protected-resource/mcp/service')).json();const shared={mcpUrl:discovery.resource};assert.equal(new URL(discovery.resource).pathname,'/mcp/service');assert.deepEqual(discovery.scopes_supported,['mcp']);
   const issuer=await (await fetch(base+'/.well-known/oauth-authorization-server')).json();assert.equal(issuer.scopes_supported,undefined,'Shared issuer must not advertise a union of unrelated connection permissions');const rootDiscovery=await (await fetch(base+'/.well-known/oauth-protected-resource')).json();assert.equal(rootDiscovery.resource,shared.mcpUrl);assert.deepEqual(rootDiscovery.scopes_supported,['mcp']);
   const userAuth=await authorizeMcp(base,shared,user.token,discovery.scopes_supported.join(' ')),adminAuth=await authorizeMcp(base,shared,admin.token,rootDiscovery.scopes_supported.join(' '));

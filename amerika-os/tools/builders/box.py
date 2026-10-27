@@ -34,6 +34,6 @@ def register(b):
                     f'Source: {lock["upstream"]} at commit {lock["commit"]}. AmerikaBox is not affiliated with BeepBox or John Nesky.\n'
                     'The MIT licence text is in /usr/share/doc/amerika-box/LICENSE-BeepBox.md.\n\n'
                     'lamejs 1.2.0 (LAME MP3 encoder): LGPL-3.0, separate unmodified file; see NOTICE and LICENSE-lamejs.txt.\n\n'
-                    'Amerika additions: Copyright Amerika LLC, GPL-3.0-only (see /usr/share/common-licenses/GPL-3).\n')
+                    'Amerika additions: Copyright AltStack LLC, GPL-3.0-only (see /usr/share/common-licenses/GPL-3).\n')
         return p
     return {'amerika-box': build}

@@ -1,10 +1,10 @@
-> **Amerika OS 3.1.0**: adds the opt-in Amerika Agent (OpenClaw engine, MIT, bundled and pinned), native Settings, virtual desktops, switcher/overview, clipboard, calendar, OSD, KWin-enforced lock screen and the flavour packaging (branding, defaults, update channels, manuals, ISO and installer preparation). Items that need real hardware, your own API key, or a VM install are listed honestly in [release gates](docs/RELEASE-GATES.md); the bootable ISO and installer are **not** finished. Nothing has been pushed, uploaded or deployed. See the [Agent guide](docs/agent/README.md), [testing](docs/DEVELOPMENT-TESTING.md) and [flavour status](docs/FLAVOR.md).
+> **AltStack Desktop 3.1.0**: adds the opt-in Amerika Agent (OpenClaw engine, MIT, bundled and pinned), native Settings, virtual desktops, switcher/overview, clipboard, calendar, OSD, KWin-enforced lock screen and the flavour packaging (branding, defaults, update channels, manuals, ISO and installer preparation). Items that need real hardware, your own API key, or a VM install are listed honestly in [release gates](docs/RELEASE-GATES.md); the bootable ISO and installer are **not** finished. Nothing has been pushed, uploaded or deployed. See the [Agent guide](docs/agent/README.md), [testing](docs/DEVELOPMENT-TESTING.md) and [flavour status](docs/FLAVOR.md).
 
-# Amerika OS 3.0
+# AltStack Desktop 3.0
 
-Amerika OS is its own desktop environment for Ubuntu 26.10 (ARM64), designed so that the **Claude** and **ChatGPT** desktop
+AltStack Desktop is its own desktop environment for Ubuntu 26.10 (ARM64), designed so that the **Claude** and **ChatGPT** desktop
 apps can operate the computer, under the user's control, with a retro-futurist look. Packages come from the signed APT
-repository at <https://www.amerika.social/apt>; install instructions are at <https://www.amerika.social/downloads/os>.
+repository at <https://altstack.io/apt>; install instructions are at <https://altstack.io/downloads/os>.
 
 It is not a Linux distribution or kernel. **KWin** (from KDE) is the window compositor; everything the user sees and uses is
 Amerika's own: the shell (top bar, dock, launcher, notifications, quick controls), the settings app, the icons and

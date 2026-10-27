@@ -5,7 +5,7 @@ name = "Render"
 tagline = "Talk to Blender: an AI modelling assistant from Studio"
 maintainer = "Artemis Softworks LLC <noreply@amerika.social>"
 type = "add-on"
-website = "https://www.amerika.social"
+website = "https://altstack.io"
 blender_version_min = "4.2.0"
 license = [
   "SPDX:GPL-3.0-or-later",

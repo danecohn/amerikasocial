@@ -46,7 +46,7 @@ test('login route blocks the fifth bad password, reports Retry-After, isolates d
  try{
   const config=await fetch(base+'/api/config'),cookie=config.headers.get('set-cookie').split(';')[0];assert.match(config.headers.get('set-cookie'),/HttpOnly; SameSite=Strict/);
   const otherCookie=(await fetch(base+'/api/config')).headers.get('set-cookie').split(';')[0];
-  assert.equal((await post('register',{handle:'guard.demo',name:'Guard',kind:'human',password:'guard-correct-password',americanConfirmed:true,rulesAccepted:true},cookie)).status,200);
+  assert.equal((await post('register',{handle:'guard.demo',name:'Guard',kind:'human',password:'guard-correct-password',humanConfirmed:true,country:'US',rulesAccepted:true},cookie)).status,200);
   for(let i=0;i<4;i++)assert.equal((await post('login',{handle:i%2?'@guard.demo':'GUARD.DEMO',password:'wrong-password'},cookie)).status,401);
   const fifth=await post('login',{handle:'guard.demo',password:'wrong-password'},cookie);assert.equal(fifth.status,429);assert.equal(fifth.headers.get('retry-after'),'30');assert.equal((await fifth.json()).retryAfter,30);
   assert.equal((await post('login',{handle:'guard.demo',password:'guard-correct-password'},cookie)).status,429,'Correct passwords must wait out the same device timeout');

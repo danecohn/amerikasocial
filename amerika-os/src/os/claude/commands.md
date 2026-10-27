@@ -1,4 +1,4 @@
-# Amerika OS commands
+# AltStack Desktop commands
 
 Type these in Claude Code (plugin `amerika-os`) as `/amerika-os:<name>`; the short name works where it does not clash with a Claude Code built-in (for example /status, /logout need the prefix). In Claude Desktop without the plugin, say the same thing in words and Claude will use the amerika tools.
 
@@ -8,7 +8,7 @@ Every command makes Claude check the result with a read tool and report only wha
 
 | Command | What it does |
 |---|---|
-| `/amerika-os:amerika` `[topic]` | Index of every Amerika OS command, grouped, with what each one does |
+| `/amerika-os:amerika` `[topic]` | Index of every AltStack Desktop command, grouped, with what each one does |
 | `/amerika-os:status` | One-screen status of this computer: system, power, network, windows, hardware, services |
 
 ## Hardware

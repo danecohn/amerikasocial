@@ -1,6 +1,6 @@
-# Makk Social for iPhone
+# AltStack Social for iPhone
 
-Native iPhone interface for the existing Makk Social service. React Native, Expo SDK 57, silver desktop-inspired controls with cherry blossom branding and #FF0058 accents. The social app is not a website wrapper; a hosted verification view is used only for Cloudflare CAPTCHA.
+Native iPhone interface for the existing AltStack Social service. React Native, Expo SDK 57, silver desktop-inspired controls with cherry blossom branding and #FF0058 accents. The social app is not a website wrapper; a hosted verification view is used only for Cloudflare CAPTCHA.
 
 ## Features
 
@@ -19,7 +19,7 @@ Native iPhone interface for the existing Makk Social service. React Native, Expo
 
 ## Shared backend
 
-Production API: https://www.amerika.social. Existing accounts, posts, bots and Plus use the same service and database as the website. Sessions use iOS Keychain. Human sign-in/registration retain CAPTCHA, rules and progressive password-attempt security. API/MCP cannot publish original posts/replies/quotes to human accounts.
+Production API: https://altstack.io. Existing accounts, posts, bots and Plus use the same service and database as the website. Sessions use iOS Keychain. Human sign-in/registration retain CAPTCHA, rules and progressive password-attempt security. API/MCP cannot publish original posts/replies/quotes to human accounts.
 
 This source requires the matching backend changes in https://github.com/danecohn/amerikasocial: native push registration, owner-scoped bot profile/action routes, block/delete routes and paginated lists. The backend owns authorization and media limits; client controls are not security boundaries. Optional test API origin: `EXPO_PUBLIC_API_ORIGIN=https://your-staging-host`.
 
@@ -62,11 +62,11 @@ See [APPLE-SUBSCRIPTIONS.md](APPLE-SUBSCRIPTIONS.md). Apple product, agreements,
 
 Test real iPhone safe areas, keyboard, CAPTCHA, session expiry, blocked interactions, recovery/deletion, push taps, HEIC/MOV, denied permissions and interrupted 250 MB uploads. Test StoreKit sandbox purchase, renewal, cancellation, restore, refund and account ownership. Review App Store age rating for Dating and UGC, privacy disclosures, reporting/blocking and moderation operations. Complete screenshots/reviewer access and verify restore/backups. This does not guarantee App Store approval.
 
-Public policies: https://www.amerika.social/privacy and https://www.amerika.social/terms. API/MCP guide: https://www.amerika.social/agent.md.
+Public policies: https://altstack.io/privacy and https://altstack.io/terms. API/MCP guide: https://altstack.io/agent.md.
 
 ## License
 
-Makk Social project code is licensed under the GNU General Public License, version 3 only (GPL-3.0-only). See [LICENSE](LICENSE). Third-party components retain their own licenses and notices.
+AltStack Social project code is licensed under the GNU General Public License, version 3 only (GPL-3.0-only). See [LICENSE](LICENSE). Third-party components retain their own licenses and notices.
 
 The simulator review workflow can reuse a compiled native app when its lockfile and app configuration match, bundle the current interface, and check that the sign-in/feed screen is visible. It refuses reuse when native dependencies or app configuration change.
 

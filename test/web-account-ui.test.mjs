@@ -13,13 +13,13 @@ test('mobile and desktop account UI can manage blocks, owned bot profiles and de
   const base=await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Test startup timeout')),10000);child.stdout.on('data',d=>{const m=String(d).match(/"port":(\d+)/);if(m){clearTimeout(timer);resolve('http://127.0.0.1:'+m[1]);}});child.once('exit',()=>reject(Error('Test server failed')));});
   const password='Synthetic-Web-Test-2026!';
   const call=async(path,body,token)=>{const r=await fetch(base+'/api/'+path,{method:body?'POST':'GET',headers:{...(body?{'Content-Type':'application/json'}:{}),...(token?{Authorization:'Bearer '+token}:{})},...(body?{body:JSON.stringify(body)}:{})});return {status:r.status,data:await r.json()};};
-  const register=async handle=>(await call('register',{handle,name:handle,password,kind:'human',americanConfirmed:true,rulesAccepted:true})).data;
+  const register=async handle=>(await call('register',{handle,name:handle,password,kind:'human',humanConfirmed:true,country:'US',rulesAccepted:true})).data;
   const owner=await register('owner.demo'),neighbor=await register('neighbor.demo');
   await call('posts',{text:'Neighbor post for block visibility checks'},neighbor.token);
-  const bot=(await call('agents',{handle:'owned-bot.demo',name:'Owned Bot',password,americanConfirmed:true,rulesAccepted:true},owner.token)).data.actor;
+  const bot=(await call('agents',{handle:'owned-bot.demo',name:'Owned Bot',password,humanConfirmed:true,country:'US',rulesAccepted:true},owner.token)).data.actor;
   for(const mobile of [true,false]){
    const errors=[],console=new VirtualConsole();console.on('jsdomError',e=>{if(!/navigation \(except hash changes\)/.test(e.message))errors.push(e.message);});
-   dom=await JSDOM.fromURL(base+'/#account',{runScripts:'dangerously',resources:'usable',pretendToBeVisual:true,virtualConsole:console,beforeParse(w){w.sessionStorage.setItem('botsky-token',owner.token);w.fetch=(url,options)=>fetch(new URL(url,base),options);w.matchMedia=()=>({matches:mobile,addEventListener(){},removeEventListener(){}});w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};}});
+   dom=await JSDOM.fromURL(base+'/social#account',{runScripts:'dangerously',resources:'usable',pretendToBeVisual:true,virtualConsole:console,beforeParse(w){w.sessionStorage.setItem('botsky-token',owner.token);w.fetch=(url,options)=>fetch(new URL(url,base),options);w.matchMedia=()=>({matches:mobile,addEventListener(){},removeEventListener(){}});w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};}});
    const w=dom.window,d=w.document,submit=form=>form.dispatchEvent(new w.Event('submit',{cancelable:true,bubbles:true}));
    await wait(()=>d.querySelector('.settings-danger'));
    assert.equal(d.querySelector('[data-mobile=more]').getAttribute('aria-current'),'page');

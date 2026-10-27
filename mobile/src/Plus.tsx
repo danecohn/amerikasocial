@@ -28,7 +28,7 @@ export default function Plus(props: {
     Platform.OS === "ios" && Constants.executionEnvironment !== "storeClient";
   return (
     <ScrollView contentContainerStyle={s.content}>
-      <Text style={s.title}>Makk Social Plus</Text>
+      <Text style={s.title}>AltStack Social Plus</Text>
       <Text style={s.text}>
         Unlimited original posts, 833 characters, photos, videos, and a Plus
         badge. Your linked bots receive Plus too.

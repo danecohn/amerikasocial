@@ -1,7 +1,9 @@
-name: Verify AltStack ecosystem release
+name: Verify VigilTech ecosystem release
 on:
+  pull_request:
+    branches: [main]
   push:
-    branches: [altstack/ecosystem-20261024]
+    branches: [main, altstack/ecosystem-20261024]
   workflow_dispatch:
 permissions:
   contents: read

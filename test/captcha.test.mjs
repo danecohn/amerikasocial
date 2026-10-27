@@ -10,3 +10,5 @@ test('human verification rejects missing, replayed, foreign-host and foreign-act
   const unavailable=createCaptcha({siteKey:'public',secret:'private',origin:'https://altstack.io',required:true,fetcher:async()=>{throw Error('Network failure');}});await assert.rejects(unavailable.verify('token'),e=>e.status===503);
   await assert.rejects(createCaptcha({required:true}).verify('token'),e=>e.status===503);
 });
+
+test('explicit owned domain aliases can verify human challenges without accepting unrelated sites',async()=>{let hostname='vigiltech.org';const c=createCaptcha({siteKey:'public',secret:'private',origin:'https://www.amerika.social',originAliases:['https://vigiltech.org'],required:true,fetcher:async()=>({ok:true,json:async()=>({success:true,hostname,action:'human-login'})})});await c.verify('token');hostname='evil.example';await assert.rejects(c.verify('token'),e=>e.status===400);});

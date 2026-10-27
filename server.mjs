@@ -1,3 +1,4 @@
+import {company,productNames} from './brand.mjs';
 import {createSearchPreferences} from './search-preferences.mjs';
 import {createIdentity} from './identity.mjs';
 import {proxySearch} from './search-proxy.mjs';
@@ -187,7 +188,7 @@ function fail(status,message) { throw Object.assign(new Error(message), { status
 function locationOwner(a){return a.kind==='agent'&&a.operator_id?db.prepare('SELECT * FROM actors WHERE id=?').get(a.operator_id):a;}
 function requireMediaAccess(actor,video){
   if(billing.plus(actor.id))return;
-  if(video)fail(403,'Video posting requires AltStack Social Plus.');
+  if(video)fail(403,'Video posting requires Cohnsoft Social Plus.');
   if(!locationOwner(actor)?.human_confirmed_at)fail(403,'Confirm that you are human before uploading photos.');
 }
 function publicActor(a) {
@@ -298,14 +299,14 @@ const welcome=createOnboarding(db,{handleDomain,publicActor,addFriend:async(acto
 const sharing=createSharing({origin:()=>publicOrigin||`http://localhost:${server.address().port}`,handleDomain,getPost:uri=>{const row=db.prepare('SELECT * FROM posts WHERE uri=?').get(uri);if(!row)fail(404,'Post not found.');const p=viewPost(row,null);if(p.deleted)fail(410,'This post is unavailable.');return p;},getImages:uri=>db.prepare("SELECT m.bytes FROM post_media pm JOIN media m ON m.id=pm.media WHERE pm.post=? AND m.mime!='video/mp4' ORDER BY pm.position").all(uri).map(m=>Buffer.from(m.bytes))});
 function oauthTarget(id,user){
  if(id==='gaming'){
-  if(!user)return {id,kind:'gaming',owner:null,actor:null,name:'Amerika Gaming Publisher',actorName:'Your game library only',scopes:['gaming.read','gaming.publish'],expires:null};
+  if(!user)return {id,kind:'gaming',owner:null,actor:null,name:'Cohnsoft Gaming Publisher',actorName:'Your game library only',scopes:['gaming.read','gaming.publish'],expires:null};
   const a=db.prepare('SELECT * FROM actors WHERE id=?').get(user);if(!a||a.kind!=='human'||a.deleted_at||a.suspended_at||a.rules_version!==rulesVersion||!a.rules_accepted_at)return null;
-  return {id,kind:'gaming',owner:a.id,actor:a.id,name:'Amerika Gaming Publisher',actorName:a.name,scopes:['gaming.read','gaming.publish'],expires:null};
+  return {id,kind:'gaming',owner:a.id,actor:a.id,name:'Cohnsoft Gaming Publisher',actorName:a.name,scopes:['gaming.read','gaming.publish'],expires:null};
  }
  if(id==='service'){
-  if(!user)return {id:'service',kind:'operator',owner:null,actor:null,name:'AltStack Social',actorName:'Your account and owned bots',scopes:['mcp'],expires:null};
+  if(!user)return {id:'service',kind:'operator',owner:null,actor:null,name:'Cohnsoft Social',actorName:'Your account and owned bots',scopes:['mcp'],expires:null};
   const a=db.prepare('SELECT * FROM actors WHERE id=?').get(user);if(!a||a.kind!=='human'||a.suspended_at||a.rules_version!==rulesVersion||!a.rules_accepted_at)return null;
-  return {id:'service',kind:'operator',owner:a.id,actor:a.id,name:'AltStack Social',actorName:a.name,scopes:['mcp'],expires:null};
+  return {id:'service',kind:'operator',owner:a.id,actor:a.id,name:'Cohnsoft Social',actorName:a.name,scopes:['mcp'],expires:null};
  }
  const staffConnection=moderation.connection(id);if(staffConnection)return staffConnection;
  const current=new Date().toISOString();
@@ -333,9 +334,9 @@ const server = http.createServer(async(req,res)=>{
     const url=new URL(req.url,'http://localhost');
     const path=url.pathname;
     if(path.startsWith('/sso/')){
-      if(!identity)fail(503,'AltStack account connections are not configured.');
+      if(!identity)fail(503,'Cohnsoft account connections are not configured.');
       if(/^\/sso\/interaction\/[-_a-zA-Z0-9]+\/confirm$/.test(path)){if(req.method!=='POST')fail(405,'Use POST.');await identity.confirm(req,res);return;}
-      if(/^\/sso\/interaction\/[-_a-zA-Z0-9]+$/.test(path)){if(req.method!=='GET')fail(405,'Use GET.');res.setHeader('Content-Type','text/html; charset=utf-8');res.setHeader('Cache-Control','no-store');const details=await identity.details(req,res),mail=details.params.client_id==='altstack-mail';return res.end((await readFile(join(root,'public','sso.html'),'utf8')).replaceAll('__APP_NAME__',mail?'Mail &amp; Calendar':'Warehouse').replaceAll('__APP_DESCRIPTION__',mail?'AltStack Mail and Calendar receives your account identity. You sign into your separate Tuta mailbox account inside Mail.':'Warehouse receives your account identifier, display name, country and storage allowance.'));}
+      if(/^\/sso\/interaction\/[-_a-zA-Z0-9]+$/.test(path)){if(req.method!=='GET')fail(405,'Use GET.');res.setHeader('Content-Type','text/html; charset=utf-8');res.setHeader('Cache-Control','no-store');const details=await identity.details(req,res),mail=details.params.client_id==='altstack-mail';return res.end((await readFile(join(root,'public','sso.html'),'utf8')).replaceAll('__APP_NAME__',mail?'Mail &amp; Calendar':'Warehouse').replaceAll('__APP_DESCRIPTION__',mail?'Cohnsoft Mail & Calendar receives your account identity. You sign into your separate Tuta mailbox account inside Mail.':'Warehouse receives your account identifier, display name, country and storage allowance.'));}
       await identity.handle(req,res);return;
     }
     if(path==='/search'||path.startsWith('/search/')){await proxySearch(req,res,{upstream:process.env.SEARCH_INTERNAL_ORIGIN,origin:publicOrigin||'http://localhost:3000'});return;}
@@ -362,7 +363,7 @@ const server = http.createServer(async(req,res)=>{
     if(path.startsWith('/api/gaming/')){
       const credential=req.headers.authorization?.replace(/^Bearer /,''),signed=session(credential);const route=path.slice(12);
       if(req.method==='GET'&&route==='catalog')return json(res,200,gaming.catalog(signed?.actor));
-      if(!signed)fail(401,'Sign in to AltStack Social to play and save progress.');enforcement.requireActive(db.prepare('SELECT * FROM actors WHERE id=?').get(signed.actor));requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(signed.actor));const owner=operatorOnly(signed);
+      if(!signed)fail(401,'Sign in to Cohnsoft Social to play and save progress.');enforcement.requireActive(db.prepare('SELECT * FROM actors WHERE id=?').get(signed.actor));requireRules(db.prepare('SELECT * FROM actors WHERE id=?').get(signed.actor));const owner=operatorOnly(signed);
       const key='gaming:'+owner.id,bucket=limits.get(key)||{n:0,until:Date.now()+60000};if(bucket.until<Date.now()){bucket.n=0;bucket.until=Date.now()+60000;}limits.set(key,bucket);if(++bucket.n>180)fail(429,'Too many gaming requests. Retry shortly.');
       if(req.method==='GET'&&route==='mine')return json(res,200,gaming.mine(owner.id));
       if(req.method==='GET'&&route==='reports')return json(res,200,gaming.reports(owner.id));
@@ -379,7 +380,7 @@ const server = http.createServer(async(req,res)=>{
     if(path==='/api/internal/mail-account'){
       if(req.method!=='GET')fail(405,'Use GET.');const secret=process.env.MAIL_SERVICE_SECRET;if(!secret||secret.length<32)fail(503,'Mail account connections are unavailable.');
       const time=req.headers['x-altstack-time'],signature=req.headers['x-altstack-signature'];if(typeof time!=='string'||!/^\d{13}$/.test(time)||Math.abs(Date.now()-Number(time))>60000||typeof signature!=='string'||!/^[-_A-Za-z0-9]{43}$/.test(signature))fail(401,'Invalid service authorization.');const expected=createHmac('sha256',secret).update(time+'\nGET\n'+url.pathname+url.search).digest('base64url');if(!timingSafeEqual(Buffer.from(signature),Buffer.from(expected)))fail(401,'Invalid service authorization.');
-      const actor=db.prepare('SELECT * FROM actors WHERE id=?').get(url.searchParams.get('actor'));if(!actor)fail(404,'Account not found.');enforcement.requireActive(actor);if(actor.kind!=='human')fail(403,'Sign in with your human AltStack account.');res.setHeader('Cache-Control','no-store');return json(res,200,{actor:actor.id,active:true});
+      const actor=db.prepare('SELECT * FROM actors WHERE id=?').get(url.searchParams.get('actor'));if(!actor)fail(404,'Account not found.');enforcement.requireActive(actor);if(actor.kind!=='human')fail(403,'Sign in with your huma Cohnsoft account.');res.setHeader('Cache-Control','no-store');return json(res,200,{actor:actor.id,active:true});
     }
     if(path==='/api/internal/warehouse-entitlement'){
       if(req.method!=='GET')fail(405,'Use GET.');const secret=process.env.WAREHOUSE_SERVICE_SECRET;if(!secret||secret.length<32||!identity)fail(503,'Warehouse entitlements are unavailable.');
@@ -429,6 +430,14 @@ const server = http.createServer(async(req,res)=>{
       if(auth){const bucket='mcp:'+id;const l=limits.get(bucket)||{n:0,until:Date.now()+60000};if(l.until<Date.now()){l.n=0;l.until=Date.now()+60000;}limits.set(bucket,l);if(++l.n>120)fail(429,'Too many MCP requests. Retry shortly.');}
       return serveMcp(req,res,{auth,readBody:body,request:id==='gaming'?gamingPublisher.request:mcpRequest,events:id==='gaming'?undefined:mcpEvents,custom:id==='gaming'?gamingMcp:undefined,origin:allowedOrigin&&req.headers.origin?req.headers.origin:origin});
     }
+    if(['/artemis','/artemis/'].includes(path)){res.writeHead(301,{'Location':'/cohnsoft','Cache-Control':'no-store'});return res.end();}
+    if(path.startsWith('/brand/cohnsoft/')){
+      if(!['GET','HEAD'].includes(req.method))fail(405,'Method not allowed.');
+      const rel=path.slice('/brand/cohnsoft/'.length),manifest=JSON.parse(await readFile(join(root,'public/brand/cohnsoft/UPSTREAM.json'),'utf8'));
+      if(rel!=='UPSTREAM.json'&&!manifest.files.some(f=>f.path===rel))fail(404,'Not found.');
+      const type={css:'text/css',woff2:'font/woff2',ttf:'font/ttf',png:'image/png',svg:'image/svg+xml',ico:'image/x-icon',json:'application/json',md:'text/plain',txt:'text/plain'}[rel.split('.').pop()]||'application/octet-stream';
+      res.setHeader('Content-Type',type);res.setHeader('Cache-Control','public,max-age=3600');const bytes=await readFile(join(root,'public/brand/cohnsoft',rel));return res.end(req.method==='HEAD'?undefined:bytes);
+    }
     if(path==='/apt'||path==='/apt/'){res.statusCode=302;res.setHeader('Location','/downloads/os');return res.end();}
     if(path.startsWith('/apt/'))return aptRepository(req,res,path);
     if(path==='/api/software-downloads'){if(req.method!=='GET')fail(405,'Use GET.');const data=await softwareDownloads(url.searchParams.get('product'));res.setHeader('Cache-Control','public,max-age=30');return json(res,200,data);}
@@ -445,6 +454,13 @@ const server = http.createServer(async(req,res)=>{
       Object.assign(files,{'/downloads/banshees':['banshees-downloads.html','text/html'],'/downloads/banshees/':['banshees-downloads.html','text/html'],'/banshees-downloads.css':['banshees-downloads.css','text/css']});
       files['/mobile-verification']=['mobile-verification.html','text/html'];
       Object.assign(files,{"/artemis":["artemis.html","text/html"],"/artemis/":["artemis.html","text/html"],"/artemis.css":["artemis.css","text/css"],"/artemis.js":["artemis.js","text/javascript"],"/artemis-assets/artemis-mark-gold.svg":["artemis-assets/artemis-mark-gold.svg","image/svg+xml"],"/artemis-assets/03-silver-thread.mp3":["artemis-assets/03-silver-thread.mp3","audio/mpeg"],"/artemis-assets/05-wildwood-circuit.song.json":["artemis-assets/05-wildwood-circuit.song.json","application/json"],"/artemis-assets/04-quiet-orbit.song.json":["artemis-assets/04-quiet-orbit.song.json","application/json"],"/artemis-assets/03-silver-thread.song.json":["artemis-assets/03-silver-thread.song.json","application/json"],"/artemis-assets/06-home-by-moonlight.song.json":["artemis-assets/06-home-by-moonlight.song.json","application/json"],"/artemis-assets/05-wildwood-circuit.mp3":["artemis-assets/05-wildwood-circuit.mp3","audio/mpeg"],"/artemis-assets/artemis-app-icon.png":["artemis-assets/artemis-app-icon.png","image/png"],"/artemis-assets/01-the-archer.song.json":["artemis-assets/01-the-archer.song.json","application/json"],"/artemis-assets/artemis-sonic-logo.song.json":["artemis-assets/artemis-sonic-logo.song.json","application/json"],"/artemis-assets/01-the-archer.mp3":["artemis-assets/01-the-archer.mp3","audio/mpeg"],"/artemis-assets/04-quiet-orbit.mp3":["artemis-assets/04-quiet-orbit.mp3","audio/mpeg"],"/artemis-assets/lunar-companion-cover.png":["artemis-assets/lunar-companion-cover.png","image/png"],"/artemis-assets/artemis-mark-light.svg":["artemis-assets/artemis-mark-light.svg","image/svg+xml"],"/artemis-assets/06-home-by-moonlight.mp3":["artemis-assets/06-home-by-moonlight.mp3","audio/mpeg"],"/artemis-assets/artemis-wordmark.svg":["artemis-assets/artemis-wordmark.svg","image/svg+xml"],"/artemis-assets/artemis-mark.svg":["artemis-assets/artemis-mark.svg","image/svg+xml"],"/artemis-assets/02-first-light.mp3":["artemis-assets/02-first-light.mp3","audio/mpeg"],"/artemis-assets/artemis-sonic-logo.wav":["artemis-assets/artemis-sonic-logo.wav","audio/wav"],"/artemis-assets/02-first-light.song.json":["artemis-assets/02-first-light.song.json","application/json"]});
+      Object.assign(files,{'/cohnsoft':['cohnsoft.html','text/html'],'/cohnsoft/':['cohnsoft.html','text/html'],'/altstack':['index.html','text/html'],'/cohnsoft.css':['cohnsoft.css','text/css'],'/cohnsoft.js':['cohnsoft.js','text/javascript'],'/cohnsoft-company.css':['cohnsoft-company.css','text/css']});
+      // Preserve existing icon endpoints while serving the unchanged Cohnsoft identity.
+      for(const name of ['lookout','mind','prompter','altstack','social','venture','office','warehouse','mail','search','journal','sprite','box','engine','render','gameproducer','calendar','os'])files['/app-icons/'+name+'.webp']=['brand/'+(name==='altstack'?'cohnsoft/logos/app-icon/cohnsoft-app-256.png':'products/'+name+'.png'),'image/png'];
+      for(const name of ['search','lookout','office','warehouse','mail','calendar','social','mind','prompter','journal','gameproducer','sprite','box','engine','render','venture','os'])files['/brand/products/'+name+'.png']=['brand/products/'+name+'.png','image/png'];
+      files['/altstack-lockup.svg']=['brand/cohnsoft/logos/lockup/cohnsoft-lockup.svg','image/svg+xml'];
+      files['/fm-journal-mark.svg']=['brand/cohnsoft/logos/mark/cohnsoft-mark.svg','image/svg+xml'];
+      files['/venture-icon.svg']=['brand/cohnsoft/logos/mark/cohnsoft-mark.svg','image/svg+xml'];
       const f=files[path]; if(!f) fail(404,'Not found.');
       res.setHeader('Content-Type',f[1]); if(['social.html','platform.css','platform.js','makk.css','desktop-ui.css','gaming.html','gaming.js','gaming.css','gaming-guide.html','gaming-bridge.js','downloads.html','downloads.css','index.html','app.js','account.js','style.css','dating.js','communities.js','features.css','privacy.html','terms.html','plugin.html','support.html','legal.css','moderation.js'].includes(f[0]))res.setHeader('Cache-Control','no-store'); res.end(await readFile(join(root,'public',f[0]))); return;
     }
@@ -464,7 +480,7 @@ const server = http.createServer(async(req,res)=>{
       if(path==='/api/recovery/status'){if(!s)fail(401,'Sign in to manage recovery.');if(s.keyId)fail(403,'Account sign-in required.');const target=billingActor(s,url.searchParams.get('actor'));return json(res,200,recovery.status(target.id));}
       if(path==='/api/welcome'){if(!s)fail(401,'Sign in to see invitations.');allow(s,'read');const actor=billingActor(s,url.searchParams.get('actor'));return json(res,200,welcome.status(actor.id));}
       if(path==='/api/share'){const uri=url.searchParams.get('uri');sharing.page('<head></head>',uri);return json(res,200,{url:sharing.url(uri),image:(publicOrigin||`http://localhost:${server.address().port}`)+'/share-image?uri='+encodeURIComponent(uri)});}
-      if(path==='/api/oembed'){let shared;try{shared=new URL(url.searchParams.get('url'));}catch{fail(400,'Choose a post URL.');}if(shared.origin!==(publicOrigin||`http://localhost:${server.address().port}`)||!shared.pathname.startsWith('/post/'))fail(400,'Choose an AltStack Social post URL.');let uri;try{uri=decodeURIComponent(shared.pathname.slice(6));}catch{fail(400,'Invalid post URL.');}sharing.page('<head></head>',uri);const src=(publicOrigin||`http://localhost:${server.address().port}`)+'/embed?uri='+encodeURIComponent(uri);return json(res,200,{version:'1.0',type:'rich',provider_name:'AltStack Social',provider_url:publicOrigin||`http://localhost:${server.address().port}`,width:550,height:550,html:`<iframe src="${escapeHtml(src)}" width="550" height="550" title="AltStack Social post" loading="lazy" style="max-width:100%;border:0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"></iframe>`});}
+      if(path==='/api/oembed'){let shared;try{shared=new URL(url.searchParams.get('url'));}catch{fail(400,'Choose a post URL.');}if(shared.origin!==(publicOrigin||`http://localhost:${server.address().port}`)||!shared.pathname.startsWith('/post/'))fail(400,'Choose a Cohnsoft Social post URL.');let uri;try{uri=decodeURIComponent(shared.pathname.slice(6));}catch{fail(400,'Invalid post URL.');}sharing.page('<head></head>',uri);const src=(publicOrigin||`http://localhost:${server.address().port}`)+'/embed?uri='+encodeURIComponent(uri);return json(res,200,{version:'1.0',type:'rich',provider_name:'Cohnsoft Social',provider_url:publicOrigin||`http://localhost:${server.address().port}`,width:550,height:550,html:`<iframe src="${escapeHtml(src)}" width="550" height="550" title="Cohnsoft Social post" loading="lazy" style="max-width:100%;border:0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"></iframe>`});}
       if(path==='/api/health'){db.prepare('SELECT 1').get();return json(res,200,{ok:true});}
       if(path.startsWith('/api/moderation/'))return json(res,200,moderation.get(path.slice(16),url,s));
       if(path==='/api/admin'){const a=me&&db.prepare('SELECT * FROM actors WHERE id=?').get(me);enforcement.requireAdmin(s,a);return json(res,200,{...enforcement.queue(),operations:operations.status(),billingConfigured:billing.enabled,billingVerification:billing.verification()});}
@@ -480,7 +496,7 @@ const server = http.createServer(async(req,res)=>{
         return json(res,200,{conversations:rows.filter(m=>!accountSafety.blocked(me,m.peer)).map(m=>({...m,peer:publicActor(db.prepare('SELECT * FROM actors WHERE id=?').get(m.peer)),unread:db.prepare('SELECT COUNT(*) AS n FROM messages WHERE recipient=? AND sender=? AND seen=0').get(me,m.peer).n})),unread:db.prepare('SELECT sender FROM messages WHERE recipient=? AND seen=0').all(me).filter(n=>!accountSafety.blocked(me,n.sender)).length});
       }
       if(path==='/api/config')loginGuard.identity(req,res);
-      if(path==='/api/config') return json(res,200,{name:'AltStack Social',canonicalOrigin:publicOrigin,tagline:"Why Can't We Be Friends?",humanConfirmationRequired:true,countries,rules:{version:rulesVersion,prohibited},feedOrder:'newest-first',mode:pds?'atproto':'preview',pds:pds||null,handleDomain,managedInvites:!!process.env.PDS_ADMIN_PASSWORD,legacyAccounts:process.env.ALLOW_LEGACY_ACCOUNTS==='true',captcha:{enabled:captcha.required,siteKey:captcha.siteKey}});
+      if(path==='/api/config') return json(res,200,{name:productNames.social,canonicalOrigin:publicOrigin,tagline:"Why Can't We Be Friends?",humanConfirmationRequired:true,countries,rules:{version:rulesVersion,prohibited},feedOrder:'newest-first',mode:pds?'atproto':'preview',pds:pds||null,handleDomain,managedInvites:!!process.env.PDS_ADMIN_PASSWORD,legacyAccounts:process.env.ALLOW_LEGACY_ACCOUNTS==='true',captcha:{enabled:captcha.required,siteKey:captcha.siteKey}});
       if(path==='/api/search/preferences'){if(!s)fail(401,'Sign in to sync search settings.');const owner=operatorOnly(s);return json(res,200,searchPreferences.get(owner.id));}
       if(path==='/api/me') {const a=me&&db.prepare('SELECT * FROM actors WHERE id=?').get(me);return json(res,200,{actor:a?ownActor(a):null});}
       if(path==='/api/actors'){
@@ -597,7 +613,7 @@ const server = http.createServer(async(req,res)=>{
         a=actorByHandle(handle);
         // Trust the enrolled account type, never a client-supplied human/agent flag.
         if(a?.kind!=='agent')await captcha.verify(b.captchaToken);
-        if(pds&&(!a||networkActor(a.id))){ if(!a&&handleDomain&&!handle.includes('.'))handle=handle+'.'+handleDomain;auth=await xrpc('com.atproto.server.createSession',{identifier:a?.handle||handle,password}); a=db.prepare('SELECT * FROM actors WHERE id=?').get(auth.did); if(!a)fail(403,'This account is not enrolled in AltStack Social. Register through AltStack Social first.'); }
+        if(pds&&(!a||networkActor(a.id))){ if(!a&&handleDomain&&!handle.includes('.'))handle=handle+'.'+handleDomain;auth=await xrpc('com.atproto.server.createSession',{identifier:a?.handle||handle,password}); a=db.prepare('SELECT * FROM actors WHERE id=?').get(auth.did); if(!a)fail(403,'This account is not enrolled in Cohnsoft Social. Register through Cohnsoft Social first.'); }
         else {if(!a?.password || !timingSafeEqual(Buffer.from(a.password,'hex'),scryptSync(password,a.salt,64)))fail(401,'Incorrect handle or password.');}
         loginGuard.success(loginIdentity);
         }catch(error){if(error.status===401||error.code==='AuthenticationRequired')loginGuard.failure(loginIdentity);throw error;}finally{releaseLogin();}
@@ -803,5 +819,5 @@ if(path==='/api/register'||creatingAgent)db.prepare('UPDATE actors SET human_con
 });
 server.requestTimeout=30*60000;
 void gaming.bootstrap();
-server.listen(Number(process.env.PORT||3000),process.env.HOST||'127.0.0.1',()=>console.log(`AltStack Social ${pds?'AT Protocol':'local preview'} listening on ${JSON.stringify(server.address())}`));
+server.listen(Number(process.env.PORT||3000),process.env.HOST||'127.0.0.1',()=>console.log(`Cohnsoft Social ${pds?'AT Protocol':'local preview'} listening on ${JSON.stringify(server.address())}`));
 

@@ -16,7 +16,7 @@ export function createAppleBilling(db,{env=process.env,client,verifier,now=Date.
  const requireEnabled=()=>{if(!enabled)fail(503,'Apple subscriptions are not available yet.');};
  function account(actor){requireEnabled();db.prepare('INSERT OR IGNORE INTO apple_accounts VALUES (?,?)').run(actor,randomUUID());return {enabled,productId:product,appAccountToken:db.prepare('SELECT token FROM apple_accounts WHERE actor=?').get(actor).token};}
  function apply(t,expectedActor){
-  if(t.bundleId!==bundle||t.productId!==product||t.environment!==environment||t.type!=='Auto-Renewable Subscription'||t.inAppOwnershipType!=='PURCHASED')fail(400,'This transaction is not an AltStack Plus subscription.');
+  if(t.bundleId!==bundle||t.productId!==product||t.environment!==environment||t.type!=='Auto-Renewable Subscription'||t.inAppOwnershipType!=='PURCHASED')fail(400,'This transaction is not a Cohnsoft Plus subscription.');
   if(!t.transactionId||!t.originalTransactionId||!Number.isSafeInteger(t.expiresDate)||!Number.isSafeInteger(t.signedDate)||!t.appAccountToken)fail(400,'Apple returned incomplete subscription data.');
   const owner=db.prepare('SELECT actor FROM apple_accounts WHERE token=?').get(t.appAccountToken)?.actor;
   if(!owner||expectedActor&&owner!==expectedActor)fail(403,'This Apple subscription belongs to a different Amerika account.');

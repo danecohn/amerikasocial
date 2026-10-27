@@ -1,0 +1,94 @@
+{
+  "repository": "https://github.com/danecohn/cohnsoftassets",
+  "commit": "752e894f90f1e58e62ae466352cb03c8bfd7d703",
+  "files": [
+    {
+      "path": "BRAND.md",
+      "sha256": "aeb1b668b7db3debd84af7b04652c292dd02447331ac8fff9030072f62d3cced"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "tokens.json",
+      "sha256": "2fc6c44e8642adb1064a627894ce82eb08a1f61d6e10cdddad5fab59a3e5306f"
+    },
+    {
+      "path": "css/cohnsans.css",
+      "sha256": "5e0f1e4f664e84be0d531e495ecd086af37f8403c759272fabbcdc38278dffa1"
+    },
+    {
+      "path": "css/goldengate.css",
+      "sha256": "0e4e0318767bd9567d733cd88e4446ff27a74268e2b637b1083cd0456d82fabb"
+    },
+    {
+      "path": "fonts/OFL.txt",
+      "sha256": "c985424e4b443932ae3d7d306f39a3f20fcdbdc747c743fbf9bf28d8aeea134c"
+    },
+    {
+      "path": "fonts/CohnSans-Regular.woff2",
+      "sha256": "45bae0e6d29885e8b8fa94b1757bd9faff983dccf1dda1526eb9806d4b57f889"
+    },
+    {
+      "path": "fonts/CohnSans-Bold.woff2",
+      "sha256": "e75127d5bbd04bec2d7771f20b026c3785e0a061cc9055f73fe70f825278e0ea"
+    },
+    {
+      "path": "fonts/CohnSans-Regular.ttf",
+      "sha256": "35a2bbe16f52fd36c74ee8a33a48df4d1ff29423d6a79d0542d1536336d1653d"
+    },
+    {
+      "path": "fonts/CohnSans-Bold.ttf",
+      "sha256": "7e8b456bf34ea01d78cfc26d641fe638fd1786a1ba25819c8e3cb6efe2b0007f"
+    },
+    {
+      "path": "logos/mark/cohnsoft-mark.svg",
+      "sha256": "8d479ee63e4c51a2531c66c390d835fbe75836c6abe65ec64a718e2d0c1e3c66"
+    },
+    {
+      "path": "logos/mark/cohnsoft-mark-32.png",
+      "sha256": "f4bd0b5bdd91aad3ebbecb7fdf86a7046232dda08cb9cba7318a33622c9bfb4d"
+    },
+    {
+      "path": "logos/mark/cohnsoft-mark-128.png",
+      "sha256": "cc9e0740a4867bf41a5c7207163cb3b5baf74d53238e9cfb02474c417e084888"
+    },
+    {
+      "path": "logos/mark/cohnsoft-mark-512.png",
+      "sha256": "32c67bdd8b26190577f63ec7ef002cf2e8eedc226f1530e6bfcfc716f2b2daf7"
+    },
+    {
+      "path": "logos/app-icon/cohnsoft-app-256.png",
+      "sha256": "4130a327078c974dcd686adf81fb601cfa045b5fff69979694ca1fceb4283af4"
+    },
+    {
+      "path": "logos/lockup/cohnsoft-lockup.svg",
+      "sha256": "3ac65b760d47d263080ed9a780b3e2135b4232acf1854962b2268ef86b6d9b3a"
+    },
+    {
+      "path": "logos/lockup/cohnsoft-lockup-dark.svg",
+      "sha256": "a050d7f27a7f4d86849dcae575143268eb987b622f74ff946a3ae411ed89d787"
+    },
+    {
+      "path": "logos/lockup/cohnsoft-lockup@2x.png",
+      "sha256": "c71d275fad92199216692626820cbe10cbd7e3746005500fc17f3360e8bafeab"
+    },
+    {
+      "path": "logos/lockup/cohnsoft-lockup-dark@2x.png",
+      "sha256": "57e0f4b7848d26f6dcb2699fc2456a3a17fbdb1f6fe0143fe4321849697286fa"
+    },
+    {
+      "path": "logos/social/cohnsoft-social-1200x630.png",
+      "sha256": "24a9fa0d200dac26447eb9e78111a713572de5784a4fb5f09f4ce2fd7a3849aa"
+    },
+    {
+      "path": "icons/favicon.ico",
+      "sha256": "c78162b2f0a2782354bde7c3bc044162f12b8fc9739f8f27121a11917148907c"
+    },
+    {
+      "path": "icons/apple-touch-icon.png",
+      "sha256": "7679b9ebff30d0478c37a2a0497b70b4d2218a9c12a2fe071a3cc175f9ebdeac"
+    }
+  ]
+}

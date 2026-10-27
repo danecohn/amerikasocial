@@ -42,7 +42,7 @@ test('desktop browser pairing creates an independent session and bot media deleg
    const form=document.querySelector('#form');await wait(()=>!document.querySelector('#submit').disabled&&[...form.elements.country.options].some(option=>option.value==='FR'));form.elements.handle.value='desktop-browser.demo';form.elements.name.value='Desktop browser reviewer';form.elements.password.value=password;form.elements.humanConfirmed.checked=true;form.elements.country.value='FR';form.elements.rulesAccepted.checked=true;
    form.dispatchEvent(new dom.window.Event('submit',{cancelable:true,bubbles:true}));
    await wait(()=>!document.querySelector('#codes').hidden);assert.ok(document.querySelector('#code-list').textContent.length>20);
-   document.querySelector('#saved').click();await wait(()=>document.body.textContent.includes('Connected. Return to AltStack Social'));
+   document.querySelector('#saved').click();await wait(()=>document.body.textContent.includes('Connected. Return to Cohnsoft Social'));
    assert.deepEqual(errors,[]);assert.ok(!dom.window.location.href.includes('token='));
    const fromBrowser=await call('desktop/exchange',{id:browserRequest.data.id,verifier});assert.equal(fromBrowser.status,200);assert.equal(fromBrowser.data.actor.name,'Desktop browser reviewer');
   }finally{dom.window.close();}

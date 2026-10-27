@@ -16,7 +16,7 @@ test('rate limited GitHub uses verified current installers for all six platforms
   const result=await read(product);assert.equal(result.assets.length,product==='social'?12:(product==='gameproducer'||product==='journal')?8:6);assert.equal(result.source,'verified-catalogue');
   assert.ok(result.assets.every(a=>a.checksumUrl===a.url+'.sha256'));
  }
- assert.equal((await read('office')).assets[0].version,'altoffice-desktop-v0.3.0');
+ assert.equal((await read('office')).assets[0].version,'altoffice-desktop-v0.5.0');
 });
 test('verified catalogue cannot replace a newer previously fetched release',async()=>{
  let fail=false;const read=createSoftwareDownloads({now:()=>fail?700000:0,request:async()=>{

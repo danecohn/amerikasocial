@@ -1,0 +1,116 @@
+{
+  "write.png": {
+    "repository": "vigilicons",
+    "source": "products/write/desktop/write-128.png",
+    "commit": "41f4ba10777880a6929e593638efbe86f8e2a64c",
+    "sha256": "c530b2bc62b8914984583439a88b4d59081dee3b0bff1da4bb3acb97004bd0e0"
+  },
+  "sheets.png": {
+    "repository": "vigilicons",
+    "source": "products/sheets/desktop/sheets-128.png",
+    "commit": "41f4ba10777880a6929e593638efbe86f8e2a64c",
+    "sha256": "f35c4d6cb6cba3621bff99703a35ff5382dc530f45f1e6925fd5b81090f58dfe"
+  },
+  "slides.png": {
+    "repository": "vigilicons",
+    "source": "products/slides/desktop/slides-128.png",
+    "commit": "41f4ba10777880a6929e593638efbe86f8e2a64c",
+    "sha256": "0bad1c896d6423a4e5130125b2268df34fb08f051d0affb4962af0386bc7304d"
+  },
+  "office.png": {
+    "repository": "vigilicons",
+    "source": "products/office/desktop/office-128.png",
+    "commit": "41f4ba10777880a6929e593638efbe86f8e2a64c",
+    "sha256": "8cd560e5c17e0d8de92244f094f96cdcd34a9a6579a472199f378473193f7075"
+  },
+  "mind.png": {
+    "repository": "vigilicons",
+    "source": "products/mind/desktop/mind-128.png",
+    "commit": "41f4ba10777880a6929e593638efbe86f8e2a64c",
+    "sha256": "2db3165f03ca4996ad58eb253c687866da88a4f59e4a956335dbefe0c3429e01"
+  },
+  "sprite.png": {
+    "repository": "vigilicons",
+    "source": "products/sprite/desktop/sprite-128.png",
+    "commit": "41f4ba10777880a6929e593638efbe86f8e2a64c",
+    "sha256": "cd1266a0f77e3a2f8c57217698cd867c0822184df73733ee9e768a5edc3258e0"
+  },
+  "box.png": {
+    "repository": "vigilicons",
+    "source": "products/box/desktop/box-128.png",
+    "commit": "41f4ba10777880a6929e593638efbe86f8e2a64c",
+    "sha256": "ee7d67f3d0a2430bf662b128310c0fb880f407c40199490a308668edb98b2741"
+  },
+  "render.png": {
+    "repository": "vigilicons",
+    "source": "products/render/desktop/render-128.png",
+    "commit": "41f4ba10777880a6929e593638efbe86f8e2a64c",
+    "sha256": "6781ec942d57411ac572ca701936f5780b12452e4ce2901c49538ac1dceeafde"
+  },
+  "engine.png": {
+    "repository": "vigilicons",
+    "source": "products/engine/desktop/engine-128.png",
+    "commit": "41f4ba10777880a6929e593638efbe86f8e2a64c",
+    "sha256": "d54b68a6887f6cc01fb45487f72c2e15f2c41bc875bd2d73e44e104f87e7fe82"
+  },
+  "social.png": {
+    "repository": "vigilicons",
+    "source": "products/social/desktop/social-128.png",
+    "commit": "41f4ba10777880a6929e593638efbe86f8e2a64c",
+    "sha256": "150b01a5b817838b738340828fa8b780a091e6f704cb7a732e6fab5ba4179bff"
+  },
+  "ridge-night.jpg": {
+    "repository": "vigilmacos",
+    "source": "wallpapers/ridge-night.jpg",
+    "commit": "0df11670978a9a8e1f99741bac30a0550cac1c96",
+    "sha256": "d977d5c3d81edfc9a9e38a1158c37e72d86dae62016af5942ae78e15c7b7f1bf"
+  },
+  "ridge-dawn.jpg": {
+    "repository": "vigilmacos",
+    "source": "wallpapers/ridge-dawn.jpg",
+    "commit": "0df11670978a9a8e1f99741bac30a0550cac1c96",
+    "sha256": "600afedd4df56e78b04f1678335e82c25c7d8e08ecf3b885ebab9f588d8c66da"
+  },
+  "archive.png": {
+    "repository": "vigilmacos",
+    "source": "folders/rose/archive.png",
+    "commit": "0df11670978a9a8e1f99741bac30a0550cac1c96",
+    "sha256": "26f973def2959a214f39b2d9f74310aa00adb29441cead9cd9957566cbfdaa66"
+  },
+  "VigilSans-Regular.woff2": {
+    "repository": "cohnsoftassets",
+    "source": "fonts/VigilSans-Regular.woff2",
+    "commit": "f8b52a14a9122879e159f6d7060f52d46deb4c7e",
+    "sha256": "9742fc194977abd82be65c79ca09302034c332cba0c4c32eff1a3a1250df6f33"
+  },
+  "VigilSans-Bold.woff2": {
+    "repository": "cohnsoftassets",
+    "source": "fonts/VigilSans-Bold.woff2",
+    "commit": "f8b52a14a9122879e159f6d7060f52d46deb4c7e",
+    "sha256": "3473a272b16f6c52085ce69646523fec7c4b7ed4a8f16e31ddcf4265aebbf7c2"
+  },
+  "wordmark-white.svg": {
+    "repository": "cohnsoftassets",
+    "source": "logos/lockup/vigiltech-wordmark-white.svg",
+    "commit": "f8b52a14a9122879e159f6d7060f52d46deb4c7e",
+    "sha256": "cabf830be6a1948de57b06b04df0884516744690670d44ece5a2799d9635dbcd"
+  },
+  "wordmark-black.svg": {
+    "repository": "cohnsoftassets",
+    "source": "logos/lockup/vigiltech-wordmark-black.svg",
+    "commit": "f8b52a14a9122879e159f6d7060f52d46deb4c7e",
+    "sha256": "faf08a56a3ee6e30eb5c7aea5fc1e4d3df31fe869b40a19f408c9aa7d1cd8506"
+  },
+  "OFL.txt": {
+    "repository": "cohnsoftassets",
+    "source": "fonts/OFL.txt",
+    "commit": "f8b52a14a9122879e159f6d7060f52d46deb4c7e",
+    "sha256": "c985424e4b443932ae3d7d306f39a3f20fcdbdc747c743fbf9bf28d8aeea134c"
+  },
+  "ARTWORK-LICENSE.txt": {
+    "repository": "vigilicons",
+    "source": "LICENSE",
+    "commit": "41f4ba10777880a6929e593638efbe86f8e2a64c",
+    "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+  }
+}

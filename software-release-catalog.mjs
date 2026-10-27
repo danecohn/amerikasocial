@@ -292,80 +292,80 @@ export const verifiedReleases = {
   ],
   "office": [
     {
-      "tag_name": "altoffice-desktop-v0.3.0",
-      "published_at": "2026-10-25T02:19:23Z",
-      "html_url": "https://github.com/danecohn/AmerikaOffice/releases/tag/altoffice-desktop-v0.3.0",
+      "tag_name": "altoffice-desktop-v0.5.0",
+      "published_at": "2026-10-27T13:04:27Z",
+      "html_url": "https://github.com/danecohn/AmerikaOffice/releases/tag/altoffice-desktop-v0.5.0",
       "draft": false,
       "assets": [
         {
           "name": "AltOffice-downloads.json",
-          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.3.0/AltOffice-downloads.json",
+          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.5.0/AltOffice-downloads.json",
           "size": 1189
         },
         {
           "name": "AltOffice-linux-arm64.deb",
-          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.3.0/AltOffice-linux-arm64.deb",
-          "size": 138615018
+          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.5.0/AltOffice-linux-arm64.deb",
+          "size": 136692418
         },
         {
           "name": "AltOffice-linux-arm64.deb.sha256",
-          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.3.0/AltOffice-linux-arm64.deb.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.5.0/AltOffice-linux-arm64.deb.sha256",
           "size": 92
         },
         {
           "name": "AltOffice-linux-x64.deb",
-          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.3.0/AltOffice-linux-x64.deb",
-          "size": 142108982
+          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.5.0/AltOffice-linux-x64.deb",
+          "size": 140163946
         },
         {
           "name": "AltOffice-linux-x64.deb.sha256",
-          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.3.0/AltOffice-linux-x64.deb.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.5.0/AltOffice-linux-x64.deb.sha256",
           "size": 90
         },
         {
           "name": "AltOffice-mac-arm64.dmg",
-          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.3.0/AltOffice-mac-arm64.dmg",
-          "size": 123530627
+          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.5.0/AltOffice-mac-arm64.dmg",
+          "size": 120413926
         },
         {
           "name": "AltOffice-mac-arm64.dmg.sha256",
-          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.3.0/AltOffice-mac-arm64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.5.0/AltOffice-mac-arm64.dmg.sha256",
           "size": 90
         },
         {
           "name": "AltOffice-mac-x64.dmg",
-          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.3.0/AltOffice-mac-x64.dmg",
-          "size": 130002879
+          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.5.0/AltOffice-mac-x64.dmg",
+          "size": 126886860
         },
         {
           "name": "AltOffice-mac-x64.dmg.sha256",
-          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.3.0/AltOffice-mac-x64.dmg.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.5.0/AltOffice-mac-x64.dmg.sha256",
           "size": 88
         },
         {
           "name": "AltOffice-windows-arm64.exe",
-          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.3.0/AltOffice-windows-arm64.exe",
-          "size": 94684555
+          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.5.0/AltOffice-windows-arm64.exe",
+          "size": 94800693
         },
         {
           "name": "AltOffice-windows-arm64.exe.sha256",
-          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.3.0/AltOffice-windows-arm64.exe.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.5.0/AltOffice-windows-arm64.exe.sha256",
           "size": 94
         },
         {
           "name": "AltOffice-windows-x64.exe",
-          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.3.0/AltOffice-windows-x64.exe",
-          "size": 94921825
+          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.5.0/AltOffice-windows-x64.exe",
+          "size": 95008551
         },
         {
           "name": "AltOffice-windows-x64.exe.sha256",
-          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.3.0/AltOffice-windows-x64.exe.sha256",
+          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.5.0/AltOffice-windows-x64.exe.sha256",
           "size": 92
         },
         {
           "name": "SOURCE.txt",
-          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.3.0/SOURCE.txt",
-          "size": 431
+          "browser_download_url": "https://github.com/danecohn/AmerikaOffice/releases/download/altoffice-desktop-v0.5.0/SOURCE.txt",
+          "size": 422
         }
       ]
     }

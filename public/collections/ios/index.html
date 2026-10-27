@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VigilTech iOS 27 Icon Pack</title>
+<link rel="stylesheet" href="css/vigilsans.css">
+<style>
+:root{--pink:#ff0058;--bg:#140812;--panel:#22101c;--ink:#fff4f8;--dim:#c9a3b4;--line:#ffffff1f;--font:"Vigil Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+:root[data-v="rose"]{--bg:#fff1f6;--panel:#ffffffcc;--ink:#3d0016;--dim:#8a4a63;--line:#3d001622}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 var(--font);transition:background .3s}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(60rem 30rem at 85% -5%,#ff005855,transparent 60%);pointer-events:none}
+header,main{max-width:1180px;margin:0 auto;padding:0 20px;position:relative}
+header{padding-top:48px}h1{font-size:clamp(2rem,6vw,3.4rem);line-height:1.05;margin:.2em 0}h1 b{color:var(--pink)}
+p.lead{color:var(--dim);max-width:46rem}
+.bar{position:sticky;top:0;z-index:5;display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:12px 20px;margin:20px -20px;background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+button,input{font:inherit;color:inherit}button{border:1px solid var(--line);background:var(--panel);padding:7px 14px;border-radius:12px;cursor:pointer}
+button[aria-pressed=true]{background:var(--pink);border-color:var(--pink);color:#fff}input{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:7px 12px;flex:1;min-width:140px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:22px 16px;margin:20px 0 40px}
+.ic{text-align:center;font-size:.8rem;color:var(--dim)}.ic a{display:block;color:inherit;text-decoration:none}
+.ic img{width:100%;aspect-ratio:1;border-radius:22.37%;display:block;box-shadow:0 8px 22px #0006;transition:transform .15s}.ic a:hover img{transform:translateY(-3px) scale(1.03)}
+.ic span{display:block;margin-top:8px}
+h2{margin:44px 0 6px;font-size:1.6rem}.walls{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:18px;margin:16px 0}
+.walls img{width:100%;border-radius:26px;display:block;box-shadow:0 10px 30px #0006}.walls a{color:inherit;text-decoration:none;text-align:center;font-size:.85rem;color:var(--dim)}
+.covers{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}.covers img{width:100%;border-radius:22px;display:block}
+footer{padding:40px 20px 60px;color:var(--dim);text-align:center;font-size:.85rem}code{background:var(--panel);padding:2px 6px;border-radius:6px}
+</style></head><body>
+<header><p style="color:var(--pink);margin:0;letter-spacing:.08em;font-weight:700">VIGILTECH</p>
+<h1>iOS 27 icon pack, in <b>pink</b>.</h1>
+<p class="lead"><span id="count"></span> icons in two looks (Rose and Night), six wallpapers and widget covers. Every glyph is drawn at 1024&times;1024. Tap an icon to download it, and see <a href="INSTALL.md" style="color:var(--pink)">INSTALL.md</a> for putting them on your Home Screen. Free software, GNU GPL v3.</p></header>
+<main>
+<div class="bar" id="bar"></div>
+<div class="grid" id="grid"></div>
+<h2>Wallpapers</h2><p class="lead">1290&times;2796, drawn natively. The top third stays calm for the clock.</p><div class="walls" id="walls"></div>
+<h2>Widget covers</h2><p class="lead">Small 474&times;474, medium 1014&times;474, large 1014&times;1062, in six styles, plus labelled covers and a set with short Latin phrases. Use them as widget backgrounds in any widget app.</p><div class="covers" id="covers"></div>
+</main>
+<footer>VigilTech &middot; vigiltech.org &middot; free software under the GNU GPL v3. App names belong to their owners.</footer>
+<script>
+const G=[["all","All"],["apple","Apple"],["apps","Apps"],["faith","Faith"],["vigiltech","VigilTech"]];
+let v=(()=>{try{return localStorage.v}catch(e){}})()||"night",g="all",q="",list=[];
+const $=id=>document.getElementById(id);
+function bar(){$("bar").innerHTML="";const mk=(t,p,f)=>{const b=document.createElement("button");b.textContent=t;b.setAttribute("aria-pressed",p);b.onclick=f;$("bar").append(b)};
+ mk("Night",v==="night",()=>set("night"));mk("Rose",v==="rose",()=>set("rose"));G.forEach(([k,n])=>mk(n,g===k,()=>{g=k;draw()}));
+ const i=document.createElement("input");i.placeholder="Search icons";i.value=q;i.oninput=()=>{q=i.value.toLowerCase();grid()};$("bar").append(i)}
+function set(x){v=x;try{localStorage.v=x}catch(e){}draw()}
+function grid(){const el=$("grid");el.innerHTML="";list.filter(d=>(g==="all"||d.group===g)&&(!q||d.name.toLowerCase().includes(q))).forEach(d=>{const a=document.createElement("div");a.className="ic";
+ a.innerHTML=`<a href="icons/${v}/${d.group}/${d.id}.png" download="${d.id}-${v}.png"><img loading="lazy" alt="${d.name}" src="gallery/thumbs/${v}/${d.group}/${d.id}.png"><span>${d.name}</span></a>`;el.append(a)})}
+function draw(){document.documentElement.dataset.v=v;bar();grid()}
+fetch("icons.json").then(r=>r.json()).then(j=>{list=j;$("count").textContent=j.length;draw()});
+fetch("wallpapers.json").then(r=>r.json()).then(j=>{$("walls").innerHTML=j.map(w=>`<a href="wallpapers/${w.id}.png" download><img loading="lazy" alt="${w.name}" src="gallery/wallpapers/${w.id}.png">${w.name}</a>`).join("")});
+$("covers").innerHTML=["rose","night","wine","plum","blush","stars"].map(s=>`<a href="widget-covers/plain/${s}-medium.png"><img loading="lazy" alt="${s} cover" src="gallery/covers/${s}.png"></a>`).join("")+["vigilate","lumen-christi","fiat","kyrie-eleison","sursum-corda","ora-et-labora"].map(s=>`<a href="widget-covers/verses/${s}-night-medium.png"><img loading="lazy" alt="${s}" src="gallery/covers/verse-${s}.png"></a>`).join("");
+</script></body></html>

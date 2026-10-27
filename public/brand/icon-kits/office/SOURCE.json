@@ -1,0 +1,42 @@
+{
+  "repository": "https://github.com/danecohn/vigilicons",
+  "commit": "41f4ba10777880a6929e593638efbe86f8e2a64c",
+  "product": "office",
+  "files": [
+    {
+      "path": "web/favicon.ico",
+      "source": "products/office/web/favicon.ico",
+      "sha256": "ba61a6148c60a493dfcaffc68d690fbefd85564dd4ed33e5901c68f1cb2c9c94"
+    },
+    {
+      "path": "web/apple-touch-icon.png",
+      "source": "products/office/web/apple-touch-icon.png",
+      "sha256": "719667e53faa2eab5dfd3d5605da90cb84fcb0c19842df8d22f84ab11475a9c5"
+    },
+    {
+      "path": "web/favicon-16.png",
+      "source": "products/office/web/favicon-16.png",
+      "sha256": "c3a4fae909b54ab5596ca68a41936b68d4b1825d5c1b1e8c13bb1e6489f3d988"
+    },
+    {
+      "path": "web/icon-192.png",
+      "source": "products/office/web/icon-192.png",
+      "sha256": "0f023afe43865eacd69e30e4b3f505749869ae2454df5a46b3fce68aaeb92664"
+    },
+    {
+      "path": "web/maskable-512.png",
+      "source": "products/office/web/maskable-512.png",
+      "sha256": "d36e3adab8e7194f22f99c6092c6f7aaba163fbd050219291c57460a2468f2b4"
+    },
+    {
+      "path": "web/favicon-32.png",
+      "source": "products/office/web/favicon-32.png",
+      "sha256": "a74a7e222c7803634b5d41c5ba38c9367256950c2a4e878d036a5526dc96d565"
+    },
+    {
+      "path": "web/icon-512.png",
+      "source": "products/office/web/icon-512.png",
+      "sha256": "d36e3adab8e7194f22f99c6092c6f7aaba163fbd050219291c57460a2468f2b4"
+    }
+  ]
+}

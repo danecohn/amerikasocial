@@ -1,92 +1,134 @@
 [
   {
+    "product": "social",
+    "kit": "social",
+    "source": "products/social/desktop/social-256.png",
+    "sha256": "70f912e395997fb398c990d7069fa3e03b20be77eccd521556d4ead430a8c1e8"
+  },
+  {
     "product": "lookout",
-    "source": "ios27icons/icons/night/vigiltech/lookout.png",
-    "sha256": "369380f1a6866cd5a272fc0b1f5e0e6b2a2dfb9d76fa61e7b5c8ae0ab3ac9986"
+    "kit": "lookout",
+    "source": "products/lookout/desktop/lookout-256.png",
+    "sha256": "283a44565362e1723048709cad95df66283830847da80e5a3f474e82c89f7c7c"
   },
   {
     "product": "mind",
-    "source": "ios27icons/icons/night/vigiltech/notes.png",
-    "sha256": "a731bda12c3cfb48860ae0065cfbad71dd25e24f22c2ca87a939eac4ea13bde9"
+    "kit": "mind",
+    "source": "products/mind/desktop/mind-256.png",
+    "sha256": "4e1d11b9e896493669a24e97287114bad59fdceb3cb77e210816a71078ad880e"
   },
   {
     "product": "prompter",
-    "source": "cohnsoftassets/logos/app-icon/vigiltech-app-128.png",
-    "sha256": "0fcd2f3618a8b85ad95061ee555dcbc6e934ebf231da3032d3cf7d5f23ad0c1b"
-  },
-  {
-    "product": "altstack",
-    "source": "cohnsoftassets/logos/app-icon/vigiltech-app-128.png",
-    "sha256": "0fcd2f3618a8b85ad95061ee555dcbc6e934ebf231da3032d3cf7d5f23ad0c1b"
-  },
-  {
-    "product": "social",
-    "source": "ios27icons/icons/night/vigiltech/social.png",
-    "sha256": "df49e205ce50445cee6a7d2f7c8c68acd9a077ede0bcd7c619873b245ff8a3b5"
+    "kit": "prompter",
+    "source": "products/prompter/desktop/prompter-256.png",
+    "sha256": "6b1c63b8585c9344fb90710cbb0d21de26914df8230103815e3393e68238b30c"
   },
   {
     "product": "venture",
-    "source": "cohnsoftassets/logos/app-icon/vigiltech-app-128.png",
-    "sha256": "0fcd2f3618a8b85ad95061ee555dcbc6e934ebf231da3032d3cf7d5f23ad0c1b"
+    "kit": "venture",
+    "source": "products/venture/desktop/venture-256.png",
+    "sha256": "3ef673341fd3b694900222c322956c0baa4c21f73da9c1c78a1d7fa66ec90e62"
   },
   {
     "product": "office",
-    "source": "cohnsoftassets/logos/app-icon/vigiltech-app-128.png",
-    "sha256": "0fcd2f3618a8b85ad95061ee555dcbc6e934ebf231da3032d3cf7d5f23ad0c1b"
+    "kit": "office",
+    "source": "products/office/desktop/office-256.png",
+    "sha256": "1c076d9588ebb2706967adbf0ba94b1d87de99342f95d7f1e2565dbf5027d39a"
+  },
+  {
+    "product": "write",
+    "kit": "write",
+    "source": "products/write/desktop/write-256.png",
+    "sha256": "4b0ba46dba8ab5828b20e26d331a92f4e58eb7b584dc67d4717f18e1b0dbbeee"
+  },
+  {
+    "product": "sheets",
+    "kit": "sheets",
+    "source": "products/sheets/desktop/sheets-256.png",
+    "sha256": "aae72d3ba4f08b79acfbaf6ec0154c5a309551defc6f0eee504791fa107cc3fd"
+  },
+  {
+    "product": "slides",
+    "kit": "slides",
+    "source": "products/slides/desktop/slides-256.png",
+    "sha256": "067fe2c18a3f352d6a6e05adfc5f9973a705f7105c7bdd3f6215ce26ba537ef7"
   },
   {
     "product": "warehouse",
-    "source": "ios27icons/icons/night/vigiltech/drive.png",
-    "sha256": "dff8a68d32283ce7e7cf31d2fa0ff47fb8ac4ca3e7ac31c4ff1c53c8e984a4c2"
+    "kit": "drive",
+    "source": "products/drive/desktop/drive-256.png",
+    "sha256": "4e78c7fd3b4bb26700eea5052d8410d4dadc309ec885e46c8ce85faf04f020ca"
   },
   {
     "product": "mail",
-    "source": "ios27icons/icons/night/vigiltech/mail.png",
-    "sha256": "87bb526d16c5f62b457815bfb38773043b5d45e7a2bbda73937ab3848a2e7619"
-  },
-  {
-    "product": "search",
-    "source": "cohnsoftassets/logos/app-icon/vigiltech-app-128.png",
-    "sha256": "0fcd2f3618a8b85ad95061ee555dcbc6e934ebf231da3032d3cf7d5f23ad0c1b"
-  },
-  {
-    "product": "journal",
-    "source": "cohnsoftassets/logos/app-icon/vigiltech-app-128.png",
-    "sha256": "0fcd2f3618a8b85ad95061ee555dcbc6e934ebf231da3032d3cf7d5f23ad0c1b"
-  },
-  {
-    "product": "sprite",
-    "source": "ios27icons/icons/night/vigiltech/sprite.png",
-    "sha256": "3c8ffe80a8282c61551abc46e0108251ee9fdbc957b5da74afd0728dd9f09316"
-  },
-  {
-    "product": "box",
-    "source": "ios27icons/icons/night/vigiltech/box.png",
-    "sha256": "1ad4f7da1a8ccb863cfbfb22f728314d24f46ea34522f4efb096b9b3ea86e87c"
-  },
-  {
-    "product": "engine",
-    "source": "ios27icons/icons/night/vigiltech/engine.png",
-    "sha256": "01970328e012a9408f02ad6a0edb1eabaa0d8ab67ab3fdaaaf172f0938750527"
-  },
-  {
-    "product": "render",
-    "source": "ios27icons/icons/night/vigiltech/render.png",
-    "sha256": "c7fd66008d6e7072d1207cd6f4ecf02b4d0a183dcfab5da104cf418e5604b37d"
-  },
-  {
-    "product": "gameproducer",
-    "source": "ios27icons/icons/night/vigiltech/producer.png",
-    "sha256": "e42e1538e6364c327bb3a2ac102bee72b5fb1858bfc2dcd62cb8fc08c6d90e44"
+    "kit": "mail",
+    "source": "products/mail/desktop/mail-256.png",
+    "sha256": "deaa49baf686448cc48f623421202a4b75976f5b77ad05c815d537daf9eb5ab7"
   },
   {
     "product": "calendar",
-    "source": "ios27icons/icons/night/vigiltech/calendar.png",
-    "sha256": "4879a1404da513b9da227c379e490485cb28a39faf5c36929525243dbbe453a4"
+    "kit": "calendar",
+    "source": "products/calendar/desktop/calendar-256.png",
+    "sha256": "de8002c9fa582a73341ea9f11b1fccb4db50557a0b6053bcffd60b01b7272beb"
+  },
+  {
+    "product": "search",
+    "kit": "search",
+    "source": "products/search/desktop/search-256.png",
+    "sha256": "567f90140705c9abbfda5633351e9dc33a18d4ab00c5600e29926e23720435d0"
+  },
+  {
+    "product": "journal",
+    "kit": "journal",
+    "source": "products/journal/desktop/journal-256.png",
+    "sha256": "c2db6ec801e210a6a5153048dec9cbde79f39f249aed1cdb6533376ddee44f24"
+  },
+  {
+    "product": "sprite",
+    "kit": "sprite",
+    "source": "products/sprite/desktop/sprite-256.png",
+    "sha256": "2091bd0e016f97c912e021c47efb3e478843ba41c2377ea5d1e51377eb451670"
+  },
+  {
+    "product": "box",
+    "kit": "box",
+    "source": "products/box/desktop/box-256.png",
+    "sha256": "5ff5703a9789860061c1fe872959de69255878d8ec0597f31ab903c7e2de4604"
+  },
+  {
+    "product": "engine",
+    "kit": "engine",
+    "source": "products/engine/desktop/engine-256.png",
+    "sha256": "bb93ab41dceabd676faadd415f85f6d518c81e47c5c4a5f747b1a2889e841805"
+  },
+  {
+    "product": "render",
+    "kit": "render",
+    "source": "products/render/desktop/render-256.png",
+    "sha256": "8b0bb78b7ed9090160747938a79055e6ea314c7af301ae1db73f0a7aa812665f"
+  },
+  {
+    "product": "gameproducer",
+    "kit": "producer",
+    "source": "products/producer/desktop/producer-256.png",
+    "sha256": "ade801a397b20ea4ab87cb0188c22d4a407773e013676a62dfa7fbe48c690c6f"
   },
   {
     "product": "os",
-    "source": "cohnsoftassets/logos/app-icon/vigiltech-app-128.png",
-    "sha256": "0fcd2f3618a8b85ad95061ee555dcbc6e934ebf231da3032d3cf7d5f23ad0c1b"
+    "kit": "os",
+    "source": "products/os/desktop/os-256.png",
+    "sha256": "bb80e57c59b83a705d23b0b6c61d25de96b046e7525d7a16cae81530497aebf6"
+  },
+  {
+    "product": "banshees",
+    "kit": "banshees",
+    "source": "products/banshees/desktop/banshees-256.png",
+    "sha256": "7d999e2b2f0c295a7bc94d843a5719c7c19ed416708507a4e2df094a29b13423"
+  },
+  {
+    "product": "altstack",
+    "kit": "vigiltech",
+    "source": "products/vigiltech/desktop/vigiltech-256.png",
+    "sha256": "8c840efc93762be68817e9ef2e6395d454351468efde739548230be2271be4b9"
   }
 ]

@@ -47,3 +47,5 @@ body.vt .desktop-app img,body.vt .dock-app img,body.vt .company-product img{bord
 @media(prefers-color-scheme:light){:root:not([data-theme=dark]){--vt-desktop-wallpaper:url('/brand/vigiltech/logos/wallpaper/vigiltech-wallpaper-dawn-2560x1600.png')}}
 body.vt .desktop{background-image:linear-gradient(var(--vt-glass),var(--vt-glass)),var(--vt-desktop-wallpaper)}
 @media(prefers-reduced-transparency:reduce){body.vt .desktop{background-image:none}}
+/* Supplied desktop kits already include their margins and shadows. Show the complete files. */
+body.vt .desktop-app img,body.vt .dock-app img,body.vt .company-product img{border-radius:0!important;filter:none!important}

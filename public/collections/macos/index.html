@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VigilTech for macOS</title><link rel="stylesheet" href="css/vigilsans.css">
+<style>
+:root{--pink:#ff0058;--bg:#140812;--panel:#22101c;--ink:#fff4f8;--dim:#c9a3b4;--line:#ffffff1f;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Vigil Sans",-apple-system,BlinkMacSystemFont,sans-serif}
+header,main{max-width:1180px;margin:0 auto;padding:0 20px}header{padding-top:48px}h1{font-size:clamp(2rem,6vw,3.2rem);line-height:1.05;margin:.2em 0}h1 b{color:var(--pink)}p.lead{color:var(--dim);max-width:46rem}
+.bar{position:sticky;top:0;z-index:5;display:flex;gap:10px;flex-wrap:wrap;padding:12px 20px;margin:20px -20px;background:#140812cc;backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+button,input{font:inherit;color:inherit;border:1px solid var(--line);background:var(--panel);padding:7px 14px;border-radius:12px}button{cursor:pointer}button[aria-pressed=true]{background:var(--pink);border-color:var(--pink);color:#fff}input{flex:1;min-width:140px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:20px 14px;margin:20px 0 40px}.ic{text-align:center;font-size:.8rem;color:var(--dim)}.ic a{color:inherit;text-decoration:none;display:block}.ic img{width:100%;aspect-ratio:1;object-fit:contain;display:block}.ic span{display:block;margin-top:6px}
+h2{margin:44px 0 6px}.walls{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}.walls img{width:100%;border-radius:12px;display:block;aspect-ratio:16/9;object-fit:cover}.walls a{color:var(--dim);text-decoration:none;font-size:.85rem}
+footer{padding:40px 20px 60px;color:var(--dim);text-align:center;font-size:.85rem}
+</style></head><body>
+<header><p style="color:var(--pink);margin:0;letter-spacing:.08em;font-weight:700">VIGILTECH</p><h1>VigilTech for <b>macOS</b>.</h1>
+<p class="lead">App icons, folder icons, wallpapers, user pictures, sounds and editor themes. Click anything to download it. <a href="INSTALL.md" style="color:var(--pink)">INSTALL.md</a> explains how to apply each one. Free software, GNU GPL v3.</p></header>
+<main><div class="bar" id="bar"></div><div class="grid" id="grid"></div>
+<h2>Wallpapers</h2><div class="walls" id="walls"></div></main>
+<footer>VigilTech &middot; vigiltech.org &middot; free software under the GNU GPL v3. App names belong to their owners.</footer>
+<script>
+let v="night",g="all",q="",items=[];const $=i=>document.getElementById(i);
+const G=[["all","All"],["folders","Folders"],["system","macOS"],["apple","Apple"],["apps","Apps"],["vigiltech","VigilTech"]];
+function bar(){const b=$("bar");b.innerHTML="";const mk=(t,p,f)=>{const e=document.createElement("button");e.textContent=t;e.setAttribute("aria-pressed",p);e.onclick=f;b.append(e)};
+ mk("Night",v==="night",()=>{v="night";draw()});mk("Rose",v==="rose",()=>{v="rose";draw()});G.forEach(([k,n])=>mk(n,g===k,()=>{g=k;draw()}));
+ const i=document.createElement("input");i.placeholder="Search";i.value=q;i.oninput=()=>{q=i.value.toLowerCase();grid()};b.append(i)}
+function grid(){const el=$("grid");el.innerHTML="";items.filter(d=>(g==="all"||d.group===g)&&(!q||d.name.toLowerCase().includes(q))).forEach(d=>{const p=d.group==="folders"?`folders/${v}/${d.id}.png`:`icons/${v}/${d.group}/${d.id}.png`;const a=document.createElement("div");a.className="ic";a.innerHTML=`<a href="${p}" download="${d.id}-${v}.png"><img loading="lazy" alt="${d.name}" src="${p}"><span>${d.name}</span></a>`;el.append(a)})}
+function draw(){bar();grid()}
+Promise.all([fetch("icons.json").then(r=>r.json()),fetch("folders.json").then(r=>r.json())]).then(([a,f])=>{items=f.map(d=>({...d,group:"folders"})).concat(a);draw()});
+$("walls").innerHTML=["nave","ridge","starfall","rose-window"].map(n=>["night","dawn"].map(m=>`<a href="wallpapers/${n}-${m}.jpg"><img loading="lazy" alt="${n} ${m}" src="wallpapers/${n}-${m}.jpg"><br>${n.replace("-"," ")}, ${m}</a>`).join("")).join("");
+</script></body></html>

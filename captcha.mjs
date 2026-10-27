@@ -1,7 +1,7 @@
 const fail=(status,message)=>{throw Object.assign(new Error(message),{status});};
-export function createCaptcha({siteKey=process.env.TURNSTILE_SITE_KEY,secret=process.env.TURNSTILE_SECRET_KEY,origin,required=process.env.HUMAN_CAPTCHA_REQUIRED==='true'||!!(siteKey||secret),fetcher=fetch}={}){
+export function createCaptcha({siteKey=process.env.TURNSTILE_SITE_KEY,secret=process.env.TURNSTILE_SECRET_KEY,origin,originAliases=[],required=process.env.HUMAN_CAPTCHA_REQUIRED==='true'||!!(siteKey||secret),fetcher=fetch}={}){
   const hostname=origin?new URL(origin).hostname:null;
-  const hostnames=new Set([hostname,...(process.env.BROWSER_ORIGIN_ALIASES||'').split(',').filter(Boolean).map(value=>new URL(value.trim()).hostname)]);
+  const hostnames=new Set([hostname,...originAliases.map(value=>new URL(value).hostname),...(process.env.BROWSER_ORIGIN_ALIASES||'').split(',').filter(Boolean).map(value=>new URL(value.trim()).hostname)]);
   async function verify(token,action='human-login'){
     if(!required)return;
     if(!siteKey||!secret||!hostname)fail(503,'Human verification is unavailable. Please try again later.');

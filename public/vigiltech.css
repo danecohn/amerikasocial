@@ -49,3 +49,30 @@ body.vt .desktop{background-image:linear-gradient(var(--vt-glass),var(--vt-glass
 @media(prefers-reduced-transparency:reduce){body.vt .desktop{background-image:none}}
 /* Supplied desktop kits already include their margins and shadows. Show the complete files. */
 body.vt .desktop-app img,body.vt .dock-app img,body.vt .company-product img{border-radius:0!important;filter:none!important}
+
+/* Download pages: pair legacy labels and actions with opaque semantic surfaces. */
+body.vt[data-product] .brand span,body.vt[data-product] .tag,body.vt[data-product] .closing p{color:var(--vt-label-2)}
+body.vt[data-product] .downloads-products>a{background:var(--vt-surface);color:var(--vt-label);border-color:var(--vt-separator);box-shadow:var(--vt-shadow-1)}
+body.vt[data-product] .downloads-products strong,body.vt[data-product] .notice b{color:var(--vt-label)}
+body.vt[data-product] .downloads-products span{color:var(--vt-label-2)}
+body.vt[data-product] .platform{background:var(--vt-surface-2);color:var(--vt-label);border-color:var(--vt-separator)}
+body.vt[data-product] .button.outline,body.vt[data-product] .button.white{background:var(--vt-surface)!important;color:var(--vt-label)!important;border-color:var(--vt-separator)}
+body.vt[data-product] .button.outline:hover,body.vt[data-product] .button.white:hover{background:var(--vt-surface-2)!important;color:var(--vt-label)!important}
+body.vt[data-product] #release-status,body.vt[data-product] .bar,body.vt[data-product]>footer{background:var(--vt-surface);color:var(--vt-label-2)}
+body.vt[data-product] .arch-download small{color:var(--vt-label-2)}
+body.vt[data-product] .hero,body.vt[data-product] .card{background:var(--vt-surface);color:var(--vt-label);border-color:var(--vt-separator)}
+body.vt[data-product] .hero h1,body.vt[data-product] .card h3{color:var(--vt-label)}
+body.vt[data-product] .hero>p,body.vt[data-product] .hero .eyebrow{color:var(--vt-label-2)}
+body.vt[data-product] a:not(.button){color:var(--brand)}
+body.vt[data-product] main>p>a{color:var(--brand)}
+body.vt[data-product] .product-visual,body.vt[data-product] .flow-card,body.vt[data-product] .desktop-note{background:var(--vt-surface);color:var(--vt-label);border-color:var(--vt-separator)}
+body.vt[data-product] .product-hero p,body.vt[data-product] .feature-row p,body.vt[data-product] .install-guide p,body.vt[data-product] .install-guide li,body.vt[data-product] .eyebrow,body.vt[data-product] .mini-chrome,body.vt[data-product] .flow-card small,body.vt[data-product] .flow-arrow,body.vt[data-product] .product-family{color:var(--vt-label-2)}
+body.vt[data-product] .desktop-note strong{color:var(--vt-label)}
+body.vt[data-product] .button:not(.primary){background:var(--vt-surface);color:var(--brand)}
+body.vt[data-product] .button:hover{filter:none}
+body.vt[data-product] #downloads>.eyebrow{color:var(--vt-label-2)}
+body.vt[data-product] .wordmark span,body.vt[data-product] .features article>span,body.vt[data-product] .features p,body.vt[data-product] .ownership p,body.vt[data-product] aside,body.vt[data-product] .inner span{color:var(--vt-label-2)}
+body.vt[data-product] .orb{background:var(--vt-surface);border-color:var(--vt-separator);box-shadow:none}
+body.vt[data-product] .orb:before{border-color:var(--vt-separator)}
+body.vt[data-product] .orb:after{background:var(--vt-pink-600);box-shadow:none}
+body.vt[data-product] .inner img{border-radius:0;filter:none}

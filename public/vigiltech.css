@@ -76,3 +76,9 @@ body.vt[data-product] .orb{background:var(--vt-surface);border-color:var(--vt-se
 body.vt[data-product] .orb:before{border-color:var(--vt-separator)}
 body.vt[data-product] .orb:after{background:var(--vt-pink-600);box-shadow:none}
 body.vt[data-product] .inner img{border-radius:0;filter:none}
+/* Keep small release labels legible and controls usable on narrow screens. */
+body.vt[data-product] footer{font-size:12px;line-height:1.7;letter-spacing:normal}
+body.vt[data-product] .eyebrow,body.vt[data-product] .privacy,body.vt[data-product] .features article>span,body.vt[data-product] .flow-card small,body.vt[data-product] .mini-chrome{font-size:11px;letter-spacing:normal}
+body.vt[data-product] .button{min-height:44px;font-size:13px;line-height:1.4;max-width:100%;white-space:normal}
+body.vt[data-product] .card .button{width:100%}
+body.vt[data-product] .checksum{display:flex;align-items:center;min-height:36px;font-size:12px;line-height:1.5}

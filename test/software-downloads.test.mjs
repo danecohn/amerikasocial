@@ -12,14 +12,14 @@ test('GameProducer exposes all six verified repository assets and adjacent check
 
 test('rate limited GitHub uses verified current installers for all six platforms',async()=>{
  const read=createSoftwareDownloads({request:async()=>new Response('',{status:403})});
- for(const product of ['social','office','venture','mail','gameproducer','mind','prompter']){
-  const result=await read(product);assert.equal(result.assets.length,product==='social'?12:product==='gameproducer'?8:6);assert.equal(result.source,'verified-catalogue');
+ for(const product of ['social','office','venture','mail','gameproducer','mind','prompter','journal']){
+  const result=await read(product);assert.equal(result.assets.length,product==='social'?12:(product==='gameproducer'||product==='journal')?8:6);assert.equal(result.source,'verified-catalogue');
   assert.ok(result.assets.every(a=>a.checksumUrl===a.url+'.sha256'));
  }
  assert.equal((await read('office')).assets[0].version,'altoffice-desktop-v0.3.0');
 });
 test('verified catalogue cannot replace a newer previously fetched release',async()=>{
- let fail=false;const read=createSoftwareDownloads({now:()=>fail?200000:0,request:async()=>{
+ let fail=false;const read=createSoftwareDownloads({now:()=>fail?700000:0,request:async()=>{
   if(fail)throw Error('rate limited');
   return Response.json([{tag_name:'future',published_at:'2030-01-01T00:00:00Z',html_url:'https://github.com/danecohn/AmerikaOffice/releases/tag/future',assets:[{name:'AltOffice-linux-x64.deb',browser_download_url:'https://github.com/danecohn/AmerikaOffice/releases/download/future/AltOffice-linux-x64.deb',size:100}]}]);
  }});await read('office');fail=true;assert.equal((await read('office')).assets[0].version,'future');
@@ -33,3 +33,9 @@ test('Lookout exposes only its two native Mac installers',async()=>{const base='
 test('Vigil Mail installers retain legacy download compatibility',async()=>{const request=async()=>Response.json([{tag_name:'altstack-mail-v1.0.7',published_at:'2026-10-27T00:00:00Z',html_url:'https://github.com/danecohn/AltStackMail/releases/tag/altstack-mail-v1.0.7',assets:[{name:'VigilMail-macos-arm64.dmg',browser_download_url:'https://github.com/danecohn/AltStackMail/releases/download/altstack-mail-v1.0.7/VigilMail-macos-arm64.dmg',size:12345678}]}]);const data=await createSoftwareDownloads({request})('mail');assert.equal(data.assets.length,1);assert.equal(data.assets[0].name,'VigilMail-macos-arm64.dmg')});
 
 test('new installer formats and all legacy filenames remain downloadable',async()=>{const read=createSoftwareDownloads({request:async()=>{throw Error('offline')}});const social=await read('social');for(const arch of ['x64','arm64'])for(const suffix of ['windows-'+arch+'-setup.exe','windows-'+arch+'.zip','linux-'+arch+'.AppImage','linux-'+arch+'.deb','linux-'+arch+'.tar.gz','macos-'+arch+'.dmg'])assert.ok(social.assets.some(a=>a.name==='AltStackSocial-'+suffix&&a.version==='altstack-social-v1.3.2'));const producer=await read('gameproducer');assert.equal(producer.assets.filter(a=>a.name.endsWith('.deb')&&a.version==='v0.1.6').length,2);});
+
+test('Journal metadata accepts only existing platform filenames and adjacent repository checksums',async()=>{const url='https://github.com/danecohn/F-M-Journal/releases/download/desktop-v1.0.3/';const files=['FMJournal-linux-arm64.deb','FMJournal-win-x64.exe'];const assets=files.flatMap(name=>[{name,browser_download_url:url+name,size:100},{name:name+'.sha256',browser_download_url:url+name+'.sha256',size:64}]);assets.push({name:'FMJournal-mac-x64.dmg',browser_download_url:'https://other.example/app.dmg'});const read=createSoftwareDownloads({request:async()=>Response.json([{tag_name:'desktop-v1.0.3',assets}])});const data=await read('journal');assert.deepEqual(data.assets.map(a=>a.name),files);assert.ok(data.assets.every(a=>a.checksumUrl===a.url+'.sha256'));});
+
+test('Lookout fallback exposes both current signed-integrity Mac images',async()=>{const read=createSoftwareDownloads({request:async()=>{throw Error('offline')}});const data=await read('lookout');assert.equal(data.assets.length,2);assert.ok(data.assets.every(a=>a.version==='v0.1.2'&&a.checksumUrl===a.url+'.sha256'));});
+
+test('Journal offline catalogue retains all eight current installers and checksums',async()=>{const read=createSoftwareDownloads({request:async()=>{throw Error('offline')}});const data=await read('journal');assert.equal(data.assets.length,8);assert.ok(data.assets.every(a=>a.version==='desktop-v1.0.3'&&a.checksumUrl===a.url+'.sha256'));});

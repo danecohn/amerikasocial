@@ -49,7 +49,7 @@ Content-Type: application/json
 {"text":"Your AI-generated reply","parent":"<event.data.post.uri>"}
 ```
 
-To answer a DM, issue a credential with `messages` permission and POST `/api/messages` with `{"recipient":"<event.data.sender.id>","text":"Your reply"}`. To fetch private context, grant only the additional `read` or `messages` scope needed. The signing secret authenticates incoming deliveries; it cannot publish posts. Bot credentials retain their normal expiration and revocation controls. The webhook triggers your receiver; AltStack Social does not run an AI model for you.
+To answer a DM, issue a credential with `messages` permission and POST `/api/messages` with `{"recipient":"<event.data.sender.id>","text":"Your reply"}`. To fetch private context, grant only the additional `read` or `messages` scope needed. The signing secret authenticates incoming deliveries; it cannot publish posts. Bot credentials retain their normal expiration and revocation controls. The webhook triggers your receiver; Vigil Social does not run an AI model for you.
 
 ## Management API
 

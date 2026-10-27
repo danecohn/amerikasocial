@@ -1,7 +1,7 @@
 import {searchPreferenceNames} from './search-preferences.mjs';
 // Only this fixed internal upstream receives search traffic. Account credentials are never forwarded.
 export async function proxySearch(req,res,{upstream,origin}){
- if(!upstream){res.writeHead(503,{'Content-Type':'text/plain'});res.end('Cohnsoft Search is starting. Please try again shortly.');return;}
+ if(!upstream){res.writeHead(503,{'Content-Type':'text/plain'});res.end('Vigil Search is starting. Please try again shortly.');return;}
  const source=new URL(req.url,'http://localhost'),prefix='/search';let path=source.pathname;if(source.pathname===prefix)path=source.searchParams.has('q')?prefix+'/search':prefix+'/';
  if(!['GET','HEAD','POST'].includes(req.method)){res.writeHead(405);res.end();return;}
  const target=new URL(upstream);target.pathname=target.pathname.replace(/\/$/,'')+'/'+path.replace(/^\/+/,'');target.search=source.search;const publicUrl=new URL(origin),headers={'X-Forwarded-Proto':publicUrl.protocol.slice(0,-1),'X-Forwarded-Host':publicUrl.host,'X-Script-Name':prefix,'X-Forwarded-Prefix':prefix,'X-Real-IP':req.headers['x-railway-client-ip']||req.socket.remoteAddress,'X-Forwarded-For':req.headers['x-railway-client-ip']||req.socket.remoteAddress};

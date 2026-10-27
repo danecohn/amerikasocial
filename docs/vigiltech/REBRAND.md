@@ -1,0 +1,13 @@
+# VigilTech web rollout
+
+The public launcher, Social/account/sign-in pages, product downloads, company page, public gaming pages, PWA manifest and browser artwork now use VigilTech, Vigil product names, supplied Vigil Sans and the pink/plum Golden Gate tokens. The founder remains in credits. Six Nights at Banshee's keeps its game title.
+
+Canonical company artwork/fonts/CSS are copied byte-for-byte from danecohn/cohnsoftassets@30186592391b296d788f29b411d5701ef4f972e3. Product icons represented in the supplied iOS pack use its original Night PNGs; other products use the supplied company app icon. No new artwork was invented. Hash manifests record provenance. Historical procedural product-icon sources were removed so they cannot recreate the retired branding.
+
+The company page is /vigiltech. /cohnsoft and /artemis redirect there. Old company stylesheet/font/image paths redirect to the new canonical paths. The PWA id/start_url remain '/', preserving installed browser-app identity. A new public-shell cache replaces obsolete brand caches only; no account/API data is cached. Appearance preferences read the prior Cohnsoft keys once and write new VigilTech keys, preserving user choice. No data folders, credentials, issuer, OIDC clients, stored usernames or existing download URLs are renamed in this web rollout. Future native identifier changes require their own migration checks.
+
+Historical GitHub repository names, API namespaces, immutable downloaded artifact names, licence notices, canonical brand-guide provenance, old preference/cache prefixes used for migration, and original album-resource URLs are intentionally retained. User data is never rewritten to change text. The existing external service hostnames remain working until vigiltech.org DNS and subdomains are configured. Do not point working authentication at an unconfigured domain.
+
+First-party code is GPL-3.0-or-later. Font OFL and third-party notices remain unchanged. Hosted account/subscription integrations are not silently removed by a visual rebrand. The iOS gallery includes the entire supplied pack under the user's explicit exception for third-party marks and faith-themed artwork; unrelated product copy remains plain and non-religious. Audio remains user-initiated; this web shell has no startup sound.
+
+Validation: 89 Node tests pass, including canonical asset hashes, supplied product art, every branded HTML base class, legacy redirects, account/PDS/OIDC/security and Docker packaging checks. Real WebKit launcher Night/Dawn and 390px phone checks pass with no horizontal overflow or broken images. Full platform-specific native installers and other backend app deployments are tracked separately and are not claimed complete here.

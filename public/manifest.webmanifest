@@ -1,16 +1,16 @@
 {
   "id": "/",
-  "name": "Cohnsoft",
-  "short_name": "Cohnsoft",
-  "description": "Cohnsoft software: Search, Social, Office, Drive, Mail & Calendar and creative tools.",
+  "name": "VigilTech",
+  "short_name": "VigilTech",
+  "description": "VigilTech software: Search, Social, Office, Drive, Mail & Calendar and creative tools.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f2f2f7",
-  "theme_color": "#0a7a37",
+  "background_color": "#f6f1f4",
+  "theme_color": "#a8003a",
   "icons": [
     {
-      "src": "/brand/cohnsoft/logos/mark/cohnsoft-mark-512.png",
+      "src": "/brand/vigiltech/logos/mark/vigiltech-mark-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
@@ -18,23 +18,23 @@
   ],
   "shortcuts": [
     {
-      "name": "Cohnsoft Game Producer",
+      "name": "VigilTech Game Producer",
       "url": "/gameproducer"
     },
     {
-      "name": "Cohnsoft Office",
+      "name": "Vigil Office",
       "url": "/office"
     },
     {
-      "name": "Cohnsoft Mail",
+      "name": "Vigil Mail",
       "url": "/mail"
     },
     {
-      "name": "Cohnsoft Calendar",
+      "name": "Vigil Calendar",
       "url": "/calendar"
     },
     {
-      "name": "Cohnsoft Social",
+      "name": "Vigil Social",
       "url": "/social"
     }
   ]
